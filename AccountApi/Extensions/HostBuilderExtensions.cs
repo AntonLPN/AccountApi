@@ -20,7 +20,7 @@ public static class HostBuilderExtensions
             loggerConfig
                 .Enrich.FromLogContext()
                 .Enrich.WithProperty("Environment", env.EnvironmentName)
-                .Enrich.WithProperty("Application", "PRO_API")
+                .Enrich.WithProperty("Application", "Account_API")
                 .WriteTo.Console(
                     outputTemplate: 
                     "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] {Message:lj}{NewLine}{Exception}")
