@@ -1,20 +1,27 @@
+using Account.Infrastructure.Persistence;
+using AccountApi.Authorization;
 using AccountApi.Extensions;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllers(options => { options.Filters.Add<ApiKeyAuthFilter>(); });
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.EnableAnnotations(); 
+    options.EnableAnnotations();
     options.SwaggerDoc("v1.0.0", new Microsoft.OpenApi.Models.OpenApiInfo
     {
         Title = "Account API",
         Version = "v1.0.0"
     });
 });
+
 builder.Services.AddMemoryCache();
-builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true); 
+builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Host.AddSerilogLogging();
+builder.Services.AddMySqlDatabase(builder.Configuration);
+
 
 var app = builder.Build();
 
@@ -22,6 +29,31 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        //for the period of development it's ok because the database is empty, and we can easily reset it,
+        //but in production you should use migrations to avoid data loss
+        //await dbContext.Database.MigrateAsync();
+        await dbContext.Database.EnsureCreatedAsync();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        foreach (var role in new[] { "User", "Admin", "Moderator" })
+        {
+            if (!await roleManager.RoleExistsAsync(role))
+                await roleManager.CreateAsync(new IdentityRole(role));
+        }
+
+    }
+    catch (Exception ex)
+    {
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating or initializing the database.");
+        throw;
+    }
 }
 
 app.UseHttpsRedirection();
