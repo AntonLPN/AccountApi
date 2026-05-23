@@ -35,7 +35,9 @@ Resiliency Pipelines: Configured MassTransit retry configurations, exponential b
 
 🛠️ Technology Stack
 Runtime: .NET 8 
+
 Frameworks: ASP.NET Core Web API, Entity Framework Core
+
 Database: MySQL (Object-Relational Mapping & Migrations)
 
 
