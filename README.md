@@ -56,7 +56,11 @@ Abstraction Layer: MassTransit (Sagas, Outbox, Inboxes, Retries)
 Testing: xUnit, FluentAssertions, Moq/NSubstitute, WebApplicationFactory (for integration tests)
 🏗️ Project Structure & Clean Architecture Layers
 src/
+
 ├── Account.Domain/          # Pure Domain Layer (Aggregates, Value Objects, Domain Events, Repository Interfaces)
+
 ├── Account.Application/     # CQRS Commands/Queries, Handlers, DTOs, Event Consumers, Saga State Machines
+
 ├── Account.Infrastructure/  # DbContext, EF Configurations, Migrations, MassTransit Setup, External Services
+
 └── AccountApi/         # Entry Point: Controllers, Middlewares, Configuration, Program.cs
