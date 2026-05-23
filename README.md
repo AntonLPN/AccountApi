@@ -64,3 +64,16 @@ src/
 ├── Account.Infrastructure/  # DbContext, EF Configurations, Migrations, MassTransit Setup, External Services
 
 └── AccountApi/         # Entry Point: Controllers, Middlewares, Configuration, Program.cs
+
+---
+
+## 📄 License & Commercial Usage
+
+Copyright © 2026. All rights reserved.
+
+This software is **proprietary** and closed-source. It is **not** licensed under any open-source license (such as MIT, Apache, or GPL). 
+
+* **Restrictions:** You are strictly prohibited from copying, modifying, redistributing, or using this codebase for commercial production, white-labeling, or reselling as an independent API service without acquiring an explicit commercial license or written permission from the copyright owner.
+* **Intended Use:** This repository is published strictly for demonstration, code-review, and educational purposes.
+
+For licensing inquiries, B2B integrations, or custom feature deployment, please contact the author directly.
