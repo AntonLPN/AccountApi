@@ -14,23 +14,34 @@ The application strictly separates write operations (Commands) from read operati
 
 Write Side: Handled via commands that transition the account state, validated using FluentValidation pipelines before hitting the domain.
 Read Side: Highly optimized projections for user profiles and account statuses. While this project uses Entity Framework Core for both sides as a baseline, the architecture allows a seamless drop-in replacement for raw SQL/Dapper on the query side without affecting business logic.
+
+
 3. Event-Driven Architecture (EDA) & Messaging
 MassTransit over RabbitMQ: Leveraged as the enterprise service bus for reliable, asynchronous communication.
 Integration Events: Used for cross-context communication (e.g., notifying external services like Notification API or Analytics API when an account status changes).
 Idempotent Consumers: Every message consumer implements deduplication strategies to guarantee idempotency and handle network retries gracefully.
-4. Distributed Workflows via Saga Pattern
+
+
+5. Distributed Workflows via Saga Pattern
 MassTransit State Machine Saga: Orchestrates the complex, multi-stage User Onboarding Workflow. Registration requires multiple asynchronous steps: initial data entry, identity verification (mocked external service), and welcome flow triggers.
 Compensating Actions: Built-in rollback and fallback mechanisms. If identity verification fails or a duplicate check triggers a violation late in the process, the Saga gracefully transitions the account to a Rejected or RolledBack state.
-5. Advanced Infrastructure & Data Resiliency
+
+
+7. Advanced Infrastructure & Data Resiliency
 Database First-Class Citizen: MySQL database managed entirely via EF Core Code-First migrations.
 Transactional Outbox / Inbox Pattern: Guarantees At-Least-Once Delivery and prevents dual-write problems. Integration events are persisted to the database within the same ACID transaction as the account state change and published asynchronously.
 Resiliency Pipelines: Configured MassTransit retry configurations, exponential backoffs, and Dead-Letter Exchanges (DLX) for robust error handling.
+
+
 🛠️ Technology Stack
 Runtime: .NET 8 / .NET 10
 Frameworks: ASP.NET Core Web API, Entity Framework Core
 Database: MySQL (Object-Relational Mapping & Migrations)
+
+
 Service Bus: RabbitMQ
 Abstraction Layer: MassTransit (Sagas, Outbox, Inboxes, Retries)
+
 Testing: xUnit, FluentAssertions, Moq/NSubstitute, WebApplicationFactory (for integration tests)
 🏗️ Project Structure & Clean Architecture Layers
 src/
