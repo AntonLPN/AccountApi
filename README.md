@@ -1,15 +1,6 @@
 Account API (Distributed User Account & Identity Management System)
 A production-ready, highly scalable, and resilient backend microservice implementing Domain-Driven Design (DDD), CQRS, and Event-Driven Architecture (EDA). This project serves as a showcase of engineering practices, focusing on robust lifecycle management, explicit domain boundaries, fault tolerance, and asynchronous process orchestration for user management.
 
-Known Tradeoffs
-
-At the current stage, AppUser is linked to IdentityUser to maintain the stability of the production registration and authentication flow without risky Big Bang refactoring.
-
-This is a conscious compromise:
-
-Pros: Lower risk of regressions, faster functionality delivery.
-Cons: Some infrastructure dependencies creep into the domain model.
-
 ⚙️ Core Architecture & Design Patterns
 The system is built on the pillars of Clean Architecture combined with tactical and strategic DDD patterns, ensuring the identity and profile business logic remains isolated, testable, and independent of infrastructure.
 
