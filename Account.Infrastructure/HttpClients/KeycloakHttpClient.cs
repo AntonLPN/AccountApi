@@ -83,7 +83,7 @@ public class KeycloakHttpClient
         }
     }
 
-    public async Task<bool> RegisterUserAsync(string userName, string email, string firstName, string lastName,
+    public async Task<bool> RegisterUserAsync(string userName, string email,
         string password,
         string adminToken,
         KeycloakAdminOptions options)
@@ -95,9 +95,6 @@ public class KeycloakHttpClient
                 username = userName,
                 email = email,
                 enabled = true,
-                emailVerified = options.EmailVerifiedByDefault ?? false,
-                firstName = firstName,
-                lastName = lastName,
                 credentials = new[]
                 {
                     new { type = "password", value = password, temporary = false }

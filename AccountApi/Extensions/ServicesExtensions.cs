@@ -1,6 +1,8 @@
 using Account.Application.Features.Account.Register;
 using Account.Domain.Entities;
+using Account.Domain.Interfaces;
 using Account.Infrastructure.Persistence;
+using Account.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -61,14 +63,14 @@ public static class ServicesExtensions
             });
         return services;
     }
-    
+
     public static IServiceCollection AddLifeTimeServices(this IServiceCollection services)
     {
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(
-            typeof(RegisterCommand).Assembly 
+            typeof(RegisterCommand).Assembly
         ));
-        
+        services.AddScoped<IAuthService, KeycloakAuthService>();
+
         return services;
     }
-    
 }
