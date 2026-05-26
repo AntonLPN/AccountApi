@@ -49,8 +49,12 @@ Frameworks: ASP.NET Core Web API, Entity Framework Core
 
 Database: MySQL (Object-Relational Mapping & Migrations)
 
+Authentication: Keycloak
+
+CQRS: MediatR
 
 Service Bus: RabbitMQ
+
 Abstraction Layer: MassTransit (Sagas, Outbox, Inboxes, Retries)
 
 Testing: xUnit, FluentAssertions, Moq/NSubstitute, WebApplicationFactory (for integration tests)
