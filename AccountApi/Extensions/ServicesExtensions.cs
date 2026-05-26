@@ -1,3 +1,4 @@
+using Account.Application.Features.Account.Register;
 using Account.Domain.Entities;
 using Account.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
@@ -60,4 +61,14 @@ public static class ServicesExtensions
             });
         return services;
     }
+    
+    public static IServiceCollection AddLifeTimeServices(this IServiceCollection services)
+    {
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(
+            typeof(RegisterCommand).Assembly 
+        ));
+        
+        return services;
+    }
+    
 }

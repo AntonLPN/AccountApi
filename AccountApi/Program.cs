@@ -1,7 +1,10 @@
+using Account.Infrastructure.Configuration;
+using Account.Infrastructure.HttpClients;
 using Account.Infrastructure.Persistence;
 using AccountApi.Authorization;
 using AccountApi.Extensions;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers(options => { options.Filters.Add<ApiKeyAuthFilter>(); });
@@ -22,6 +25,25 @@ builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true
 builder.Host.AddSerilogLogging();
 builder.Services.AddMySqlDatabase(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddLifeTimeServices();
+builder.Services.AddRateLimiter(limiter =>
+{
+    limiter.AddFixedWindowLimiter("fixed", options =>
+    {
+        options.PermitLimit = 100;
+        options.Window = TimeSpan.FromSeconds(1);
+        options.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+        options.QueueLimit = 10;
+    });
+});
+builder.Services.Configure<KeycloakAdminOptions>(builder.Configuration.GetSection("KeycloakAdminClient"));
+builder.Services.AddHttpClient<KeycloakHttpClient>()
+    .AddStandardResilienceHandler(options =>
+    {
+        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(10);
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+    });
 
 var app = builder.Build();
 
@@ -54,10 +76,11 @@ using (var scope = app.Services.CreateScope())
         throw;
     }
 }
+
 builder.Services.AddAuthorization();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseHttpsRedirection();
-
+app.MapControllers().RequireRateLimiting("fixed");
 app.Run();

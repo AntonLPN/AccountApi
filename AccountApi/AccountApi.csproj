@@ -10,6 +10,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.27" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.13"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
+        <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="8.10.0" />
         <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
         <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
@@ -19,6 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Account.Application\Account.Application.csproj" />
       <ProjectReference Include="..\Account.Infrastructure\Account.Infrastructure.csproj" />
     </ItemGroup>
 
