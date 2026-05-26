@@ -21,7 +21,7 @@ builder.Services.AddMemoryCache();
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Host.AddSerilogLogging();
 builder.Services.AddMySqlDatabase(builder.Configuration);
-
+builder.Services.AddJwtAuthentication(builder.Configuration);
 
 var app = builder.Build();
 
@@ -46,7 +46,6 @@ using (var scope = app.Services.CreateScope())
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new IdentityRole(role));
         }
-
     }
     catch (Exception ex)
     {
@@ -55,6 +54,9 @@ using (var scope = app.Services.CreateScope())
         throw;
     }
 }
+builder.Services.AddAuthorization();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseHttpsRedirection();
 
