@@ -1,8 +1,8 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using Account.Domain.Models;
 using Account.Infrastructure.Configuration;
-using Account.Infrastructure.Models;
 using Microsoft.Extensions.Logging;
 
 namespace Account.Infrastructure.HttpClients;
@@ -18,6 +18,59 @@ public class KeycloakHttpClient
         _logger = logger;
     }
 
+    public async Task<string?> RegisterUserAsync(string userName, string email,
+        string password,
+        string adminToken,
+        KeycloakAdminOptions options)
+    {
+        try
+        {
+            var newUser = new
+            {
+                username = userName,
+                email = email,
+                enabled = true,
+                credentials = new[]
+                {
+                    new { type = "password", value = password, temporary = false }
+                }
+            };
+
+            var requestMessage = new HttpRequestMessage(HttpMethod.Post,
+                CombineUrls(options.BaseUrl, "admin/realms", options.Realm, "users"))
+            {
+                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", adminToken) },
+                Content = new StringContent(JsonSerializer.Serialize(newUser), Encoding.UTF8, "application/json")
+            };
+
+            var response = await _httpClient.SendAsync(requestMessage);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Created)
+            {
+                // http://localhost:8080/admin/realms/account-realm/users/uuid
+                var locationHeader = response.Headers.Location?.ToString();
+                var userId = locationHeader?.Split('/').Last();
+
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    _logger.LogInformation($"User {userName} registered successfully with ID: {userId}");
+                    return userId;
+                }
+
+                _logger.LogWarning($"User {userName} created but could not extract ID from Location header");
+                return null;
+            }
+
+            var errorContent = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning($"Failed to register user {userName}: {response.StatusCode} - {errorContent}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error during user registration for {userName}");
+            return null;
+        }
+    }
     public async Task<string?> GetAdminTokenAsync(KeycloakAdminOptions options)
     {
         try
@@ -82,51 +135,7 @@ public class KeycloakHttpClient
             return null;
         }
     }
-
-    public async Task<bool> RegisterUserAsync(string userName, string email,
-        string password,
-        string adminToken,
-        KeycloakAdminOptions options)
-    {
-        try
-        {
-            var newUser = new
-            {
-                username = userName,
-                email = email,
-                enabled = true,
-                credentials = new[]
-                {
-                    new { type = "password", value = password, temporary = false }
-                }
-            };
-
-            var requestMessage = new HttpRequestMessage(HttpMethod.Post,
-                CombineUrls(options.BaseUrl, "admin/realms", options.Realm, "users"))
-            {
-                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", adminToken) },
-                Content = new StringContent(JsonSerializer.Serialize(newUser), Encoding.UTF8, "application/json")
-            };
-
-            var response = await _httpClient.SendAsync(requestMessage);
-
-            if (response.StatusCode == System.Net.HttpStatusCode.Created)
-            {
-                _logger.LogInformation($"User {userName} registered successfully");
-                return true;
-            }
-
-            var errorContent = await response.Content.ReadAsStringAsync();
-            _logger.LogWarning($"Failed to register user {userName}: {response.StatusCode} - {errorContent}");
-            return false;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Error during user registration for {userName}");
-            return false;
-        }
-    }
-
+    
     private string CombineUrls(string baseUrl, params string[] segments)
     {
         var uri = new Uri(baseUrl.TrimEnd('/') + '/');

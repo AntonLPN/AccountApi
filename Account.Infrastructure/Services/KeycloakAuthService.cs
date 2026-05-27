@@ -1,7 +1,10 @@
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using Account.Domain.Interfaces;
+using Account.Domain.Models;
 using Account.Infrastructure.Configuration;
 using Account.Infrastructure.HttpClients;
-using Account.Infrastructure.Models;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -35,10 +38,10 @@ public class KeycloakAuthService : IAuthService
         return await _keycloakHttpClient.LoginAsync(email, password, _options.Value);
     }
 
-    public async Task<bool> RegisterUserAsync(string email, string password)
+    public async Task<string?> RegisterUserAsync(string email, string password)
     {
         if (!IsValidRegisterRequest(email, password))
-            return false;
+            return null;
 
         const string cacheKey = "keycloak_admin_token";
         var adminToken = await _cache.GetStringAsync(cacheKey);
@@ -49,7 +52,7 @@ public class KeycloakAuthService : IAuthService
             if (string.IsNullOrEmpty(adminToken))
             {
                 _logger.LogError("Failed to obtain admin token");
-                return false;
+                return null;
             }
 
             await _cache.SetStringAsync(
@@ -61,8 +64,12 @@ public class KeycloakAuthService : IAuthService
                 });
         }
 
-        return await _keycloakHttpClient.RegisterUserAsync(userName: email, email: email, password: password,
-            adminToken, _options.Value);
+        return await _keycloakHttpClient.RegisterUserAsync(
+            userName: email, 
+            email: email, 
+            password: password,
+            adminToken, 
+            _options.Value);
     }
 
     private bool IsValidLoginRequest(string email, string password)

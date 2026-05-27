@@ -99,10 +99,7 @@ public class ExceptionHandlingMiddleware(
 
             UnauthorizedAccessException =>
                 (HttpStatusCode.Unauthorized, "Unauthorized access", "UNAUTHORIZED"),
-
-            NotImplementedException =>
-                (HttpStatusCode.NotImplemented, "This feature is not implemented yet", "NOT_IMPLEMENTED"),
-
+            
             KeyNotFoundException knfe =>
                 (HttpStatusCode.NotFound, knfe.Message, "RESOURCE_NOT_FOUND"),
 
@@ -116,6 +113,8 @@ public class ExceptionHandlingMiddleware(
             HttpRequestException =>
                 (HttpStatusCode.BadGateway, "External service error", "EXTERNAL_SERVICE_ERROR"),
 
+            NotImplementedException =>
+                (HttpStatusCode.NotImplemented, "This feature is not implemented yet", "NOT_IMPLEMENTED"),
             _ =>
                 (HttpStatusCode.InternalServerError,
                     "An unexpected error occurred. Please contact support.",

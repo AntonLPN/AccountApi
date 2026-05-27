@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Account.Infrastructure.Models;
+namespace Account.Domain.Models;
 
 public class TokenResponse
 {
