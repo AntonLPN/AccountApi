@@ -13,17 +13,17 @@ builder.Services.AddControllers(options => { options.Filters.Add<ApiKeyAuthFilte
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.EnableAnnotations();
-    options.SwaggerDoc("v1.0.0", new Microsoft.OpenApi.Models.OpenApiInfo
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
         Title = "Account API",
-        Version = "v1.0.0"
+        Version = "1.0.0"
     });
 });
 
 builder.Services.AddMemoryCache();
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Host.AddSerilogLogging();
+
 builder.Services.AddMySqlDatabase(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddLifeTimeServices();
@@ -45,7 +45,13 @@ builder.Services.AddHttpClient<KeycloakHttpClient>()
         options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
         options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
     });
+//Use in production:
+// builder.Services.AddStackExchangeRedisCache(options =>
+//     options.Configuration = builder.Configuration.GetConnectionString("Redis"));
 
+// For debug
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddAuthorization();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -64,12 +70,6 @@ using (var scope = app.Services.CreateScope())
         //but in production you should use migrations to avoid data loss
         //await dbContext.Database.MigrateAsync();
         await dbContext.Database.EnsureCreatedAsync();
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        foreach (var role in new[] { "User", "Admin", "Moderator" })
-        {
-            if (!await roleManager.RoleExistsAsync(role))
-                await roleManager.CreateAsync(new IdentityRole(role));
-        }
     }
     catch (Exception ex)
     {
@@ -78,8 +78,6 @@ using (var scope = app.Services.CreateScope())
         throw;
     }
 }
-
-builder.Services.AddAuthorization();
 app.UseAuthentication();
 app.UseAuthorization();
 

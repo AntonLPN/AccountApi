@@ -4,11 +4,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Account.Infrastructure.Persistence;
 
-public class AppDbContext() : DbContext
+public class AppDbContext: DbContext
 {
     public DbSet<AppUser> AppUsers { get; set; } = null!;
     public DbSet<ApiKey> ApiKeys { get; set; } = null!;
 
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    {
+    }
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

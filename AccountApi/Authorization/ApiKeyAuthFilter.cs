@@ -57,13 +57,16 @@ public class ApiKeyAuthFilter(
             }
 
             // Cache only successful auth results
-            var infoToCache = new CachedApiKeyInfo(key.UserId, IsActive: true);
+            if (key.UserId != null)
+            {
+                var infoToCache = new CachedApiKeyInfo(key.UserId, IsActive: true);
 
-            var cacheOptions = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromMinutes(30))
-                .SetPriority(CacheItemPriority.High);
+                var cacheOptions = new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(30))
+                    .SetPriority(CacheItemPriority.High);
 
-            memoryCache.Set(cacheKey, infoToCache, cacheOptions);
+                memoryCache.Set(cacheKey, infoToCache, cacheOptions);
+            }
         }
         catch (Exception e)
         {
