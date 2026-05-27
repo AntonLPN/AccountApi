@@ -3,6 +3,7 @@ using Account.Infrastructure.HttpClients;
 using Account.Infrastructure.Persistence;
 using AccountApi.Authorization;
 using AccountApi.Extensions;
+using AccountApi.Middleware;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -53,12 +54,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 using (var scope = app.Services.CreateScope())
 {
     try
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        //for the period of development it's ok because the database is empty, and we can easily reset it,
+        //For the period of development it's ok because the database is empty, and we can easily reset it,
         //but in production you should use migrations to avoid data loss
         //await dbContext.Database.MigrateAsync();
         await dbContext.Database.EnsureCreatedAsync();

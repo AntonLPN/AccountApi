@@ -60,6 +60,7 @@ public static class ServicesExtensions
                     ValidIssuer = keycloakSettings["Authority"]
                 };
             });
+        
         return services;
     }
 
