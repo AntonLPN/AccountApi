@@ -11,14 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers(options => { options.Filters.Add<ApiKeyAuthFilter>(); });
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-    {
-        Title = "Account API",
-        Version = "1.0.0"
-    });
-});
+builder.Services.AddSwaggerGen();
+
 
 builder.Services.AddMemoryCache();
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
@@ -60,6 +54,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Account API v1");
+//for debug, to avoid caching of swagger.json and always get the latest version
+    options.ConfigObject.AdditionalItems["version"] = DateTime.UtcNow.Ticks.ToString();
+});
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 using (var scope = app.Services.CreateScope())
 {
@@ -78,6 +78,7 @@ using (var scope = app.Services.CreateScope())
         throw;
     }
 }
+
 app.UseAuthentication();
 app.UseAuthorization();
 

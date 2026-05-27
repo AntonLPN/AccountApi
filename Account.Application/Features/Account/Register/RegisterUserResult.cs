@@ -5,5 +5,9 @@ namespace Account.Application.Features.Account.Register;
 
 public class RegisterUserResult
 {
-    [JsonPropertyName("testTest")] public string Test { get; set; }
+    [JsonPropertyName("userId")]
+    public string? UserId { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
 }
