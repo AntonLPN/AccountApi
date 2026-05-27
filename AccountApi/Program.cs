@@ -4,7 +4,6 @@ using Account.Infrastructure.Persistence;
 using AccountApi.Authorization;
 using AccountApi.Extensions;
 using AccountApi.Middleware;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
