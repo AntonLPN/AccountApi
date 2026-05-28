@@ -68,7 +68,7 @@ This project requires a Keycloak instance to handle Identity Management. Below i
 We provide a pre-configured export to ensure the environment is ready for development.
 
 Locate the configuration file at `deploy/account-api.json`.
-Import: Navigate to your Keycloak Admin Console -> Realm Settings -> Action -> Partial Export (or Import) and upload the configuration file located at /infrastructure/keycloak/raccount-api.json`.
+Import: Navigate to your Keycloak Admin Console -> Realm Settings -> Action -> Partial Export (or Import) and upload the configuration file.
 
 Credentials: Ensure your AccountApi appsettings.json matches the clientId and clientSecret defined in the imported realm.
 
