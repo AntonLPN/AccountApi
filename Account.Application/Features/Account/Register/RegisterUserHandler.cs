@@ -33,16 +33,16 @@ public class RegisterUserHandler(
                 id: keycloakResult.Value,
                 email: request.Email,
                 passwordHash: cryptographyService.Hash(request.Password));
-            userRepository.CreateUser(user, cancellationToken);
-            var apiKey =  apiKeyRepository.CreateApiKey(user.Id);
-            
+            userRepository.CreateUser(user);
+            var apiKey = apiKeyRepository.CreateApiKey(user.Id);
+
             //TODO implement here DomainEvent to publish UserRegisteredEvent,
             //and handle it in another handler to create user, send welcome email, etc.
             //to avoid coupling between features and keep single responsibility for handlers
-            
+
             await unitOfWork.SaveChangesAsync(cancellationToken);
             await tx.CommitAsync(cancellationToken);
-            
+
             var tokenResponse = await authService.LoginAsync(request.Email, request.Password);
             if (tokenResponse is null)
                 return Result<RegisterUserResult>.Error("Login failed after registration for user");
@@ -56,10 +56,8 @@ public class RegisterUserHandler(
         {
             var safeEmail = MaskedEmail.Create(request.Email);
             logger.LogError(e, "Unhandled error while registering user {Email}", safeEmail);
-            throw;//rethrow to middleware handle exception
+            throw; //rethrow to middleware handle exception
         }
-        
-       
-
     }
+    
 }
