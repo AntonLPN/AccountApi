@@ -1,5 +1,8 @@
 using Account.Domain.Interfaces;
+using Account.Domain.Repositories;
 using Account.Infrastructure.Cryptography;
+using Account.Infrastructure.Persistence;
+using Account.Infrastructure.Repositories;
 using Account.Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,5 +14,9 @@ public static class DependencyInjectionInfrastructure
     {
         services.AddScoped<IAuthService, KeycloakAuthService>();
         services.AddScoped<ICryptography, CryptographService>();
+        //Repository
+        services.AddScoped<IUnitOfWork, UnitOfWorkAdapter>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
     }
 }

@@ -1,26 +1,65 @@
+using Account.Domain.Entities;
 using Account.Domain.Interfaces;
+using Account.Domain.Repositories;
+using Account.Domain.ValueObjects;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
+using Microsoft.Extensions.Logging;
 
 namespace Account.Application.Features.Account.Register;
 
-public class RegisterUserHandler(IAuthService authService)
+public class RegisterUserHandler(
+    ILogger<RegisterUserHandler> logger,
+    IAuthService authService,
+    IUnitOfWork unitOfWork,
+    IUserRepository userRepository,
+    IApiKeyRepository apiKeyRepository,
+    ICryptography cryptographyService)
     : ICommandHandler<RegisterCommand, Result<RegisterUserResult>>
 {
     public async Task<Result<RegisterUserResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
-        var result = await authService.RegisterUserAsync(request.Email, request.Password);
-        if (result is null)
-            return Result<RegisterUserResult>.Error("Registration failed");
-        var tokenResponse = await authService.LoginAsync(request.Email, request.Password);
-        if (tokenResponse is null)
-            return Result<RegisterUserResult>.Error("Login failed after registration");
-        return Result<RegisterUserResult>.Success(new RegisterUserResult
+        var userByEmail = await userRepository.GetUserByEmailAsync(request.Email, cancellationToken);
+        if (userByEmail is not null)
+            return Result<RegisterUserResult>.Conflict("User already exists");
+
+        var keycloakResult = await authService.RegisterUserAsync(request.Email, request.Password);
+        if (!keycloakResult.IsSuccess)
+            return Result<RegisterUserResult>.Error(keycloakResult.Errors.FirstOrDefault() ?? "Registration failed");
+        await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
+        try
         {
-            Token = tokenResponse,
-        });
-        //TODO : Implement RegisterUserHandler logic
-        //TODO implement transaction logic for save user and api key to db
-        throw new NotImplementedException();
+            var user = AppUser.Create(
+                id: keycloakResult.Value,
+                email: request.Email,
+                passwordHash: cryptographyService.Hash(request.Password));
+            userRepository.CreateUser(user, cancellationToken);
+            var apiKey =  apiKeyRepository.CreateApiKey(user.Id);
+            
+            //TODO implement here DomainEvent to publish UserRegisteredEvent,
+            //and handle it in another handler to create user, send welcome email, etc.
+            //to avoid coupling between features and keep single responsibility for handlers
+            
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await tx.CommitAsync(cancellationToken);
+            
+            var tokenResponse = await authService.LoginAsync(request.Email, request.Password);
+            if (tokenResponse is null)
+                return Result<RegisterUserResult>.Error("Login failed after registration for user");
+            return Result<RegisterUserResult>.Success(new RegisterUserResult
+            {
+                ApiKey = apiKey,
+                Token = tokenResponse,
+            });
+        }
+        catch (Exception e)
+        {
+            var safeEmail = MaskedEmail.Create(request.Email);
+            logger.LogError(e, "Unhandled error while registering user {Email}", safeEmail);
+            throw;//rethrow to middleware handle exception
+        }
+        
+       
+
     }
 }

@@ -5,6 +5,7 @@ using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Infrastructure.Configuration;
 using Account.Infrastructure.HttpClients;
+using Ardalis.Result;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -38,10 +39,10 @@ public class KeycloakAuthService : IAuthService
         return await _keycloakHttpClient.LoginAsync(email, password, _options.Value);
     }
 
-    public async Task<string?> RegisterUserAsync(string email, string password)
+    public async Task<Result<string>> RegisterUserAsync(string email, string password)
     {
         if (!IsValidRegisterRequest(email, password))
-            return null;
+            return Result<string>.Error("Invalid credentials for registration");
 
         const string cacheKey = "keycloak_admin_token";
         var adminToken = await _cache.GetStringAsync(cacheKey);
@@ -51,8 +52,7 @@ public class KeycloakAuthService : IAuthService
             adminToken = await _keycloakHttpClient.GetAdminTokenAsync(_options.Value);
             if (string.IsNullOrEmpty(adminToken))
             {
-                _logger.LogError("Failed to obtain admin token");
-                return null;
+                return Result<string>.Error("Failed to obtain admin token");
             }
 
             await _cache.SetStringAsync(
@@ -63,15 +63,17 @@ public class KeycloakAuthService : IAuthService
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(55)
                 });
         }
-
+        
         return await _keycloakHttpClient.RegisterUserAsync(
-            userName: email, 
-            email: email, 
+            userName: email,
+            email: email,
             password: password,
-            adminToken, 
-            _options.Value);
+            adminToken,
+            _options.Value); ;
     }
 
+
+    
     private bool IsValidLoginRequest(string email, string password)
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))

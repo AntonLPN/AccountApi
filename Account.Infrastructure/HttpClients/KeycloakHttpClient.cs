@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Account.Domain.Models;
 using Account.Infrastructure.Configuration;
+using Ardalis.Result;
 using Microsoft.Extensions.Logging;
 
 namespace Account.Infrastructure.HttpClients;
@@ -18,7 +19,7 @@ public class KeycloakHttpClient
         _logger = logger;
     }
 
-    public async Task<string?>  RegisterUserAsync(string userName, string email,
+    public async Task<Result<string>> RegisterUserAsync(string userName, string email,
         string password,
         string adminToken,
         KeycloakAdminOptions options)
@@ -54,23 +55,22 @@ public class KeycloakHttpClient
                 if (!string.IsNullOrEmpty(userId))
                 {
                     _logger.LogInformation($"User {userName} registered successfully with ID: {userId}");
-                    return userId;
+                    return Result<string>.Success(userId);
                 }
 
-                _logger.LogWarning($"User {userName} created but could not extract ID from Location header");
-                return null;
+                return Result<string>.Error("User created but failed to retrieve user ID");
             }
 
             var errorContent = await response.Content.ReadAsStringAsync();
-            _logger.LogWarning($"Failed to register user {userName}: {response.StatusCode} - {errorContent}");
-            return null;
+            return Result<string>.Error($"Failed to register user: {response.StatusCode} - {errorContent}");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error during user registration for {userName}");
-            return null;
+            throw; //throw to middleware handle exception
         }
     }
+
     public async Task<string?> GetAdminTokenAsync(KeycloakAdminOptions options)
     {
         try
@@ -89,11 +89,11 @@ public class KeycloakHttpClient
             {
                 var errorBody = await response.Content.ReadAsStringAsync();
                 var failedUrl = response.RequestMessage?.RequestUri?.ToString();
-    
+
                 _logger.LogError($"--- KEYCLOAK 404 ERROR ---");
                 _logger.LogError($"URL: {failedUrl}");
                 _logger.LogError($"Body: {errorBody}");
-    
+
                 return null;
             }
 
@@ -132,7 +132,7 @@ public class KeycloakHttpClient
                 _logger.LogWarning($"Login failed for user {userName}: {response.StatusCode} - {errorBody}");
                 return null;
             }
-            
+
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<TokenResponse>(json);
         }
@@ -142,28 +142,14 @@ public class KeycloakHttpClient
             return null;
         }
     }
-    
-    
+
+
     private string CombineUrls(string baseUrl, params string[] segments)
     {
-        // Берем базовый URL без слэша на конце
         var parts = new List<string> { baseUrl.TrimEnd('/') };
-    
-        // Очищаем каждый сегмент от слэшей по краям, чтобы не было двойных
         parts.AddRange(segments.Select(s => s.Trim('/')));
-    
-        // Склеиваем всё ровно через один слэш
+        
         return string.Join("/", parts);
     }
     
-    // private string CombineUrls(string baseUrl, params string[] segments)
-    // {
-    //     var uri = new Uri(baseUrl.TrimEnd('/') + '/');
-    //     foreach (var segment in segments)
-    //     {
-    //         uri = new Uri(uri, segment.TrimStart('/'));
-    //     }
-    //
-    //     return uri.ToString();
-    // }
 }
