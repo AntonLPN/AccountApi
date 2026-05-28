@@ -48,7 +48,6 @@ public class KeycloakHttpClient
 
             if (response.StatusCode == System.Net.HttpStatusCode.Created)
             {
-                // http://localhost:8080/admin/realms/account-realm/users/uuid
                 var locationHeader = response.Headers.Location?.ToString();
                 var userId = locationHeader?.Split('/').Last();
 
