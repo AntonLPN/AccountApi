@@ -18,7 +18,7 @@ public class KeycloakHttpClient
         _logger = logger;
     }
 
-    public async Task<string?> RegisterUserAsync(string userName, string email,
+    public async Task<string?>  RegisterUserAsync(string userName, string email,
         string password,
         string adminToken,
         KeycloakAdminOptions options)
@@ -30,6 +30,7 @@ public class KeycloakHttpClient
                 username = userName,
                 email = email,
                 enabled = true,
+                emailVerified = true,
                 credentials = new[]
                 {
                     new { type = "password", value = password, temporary = false }
@@ -81,14 +82,19 @@ public class KeycloakHttpClient
                 new KeyValuePair<string, string>("client_secret", options.ClientSecret),
                 new KeyValuePair<string, string>("grant_type", "client_credentials")
             });
-
-            var response = await _httpClient.PostAsync(
-                CombineUrls(options.BaseUrl, "realms", options.Realm, "protocol/openid-connect/token"),
-                content);
+            var tokenUrl = CombineUrls(options.BaseUrl, "realms", options.Realm, "protocol/openid-connect/token");
+            _logger.LogInformation($"--- Trying to get token from: {tokenUrl} ---");
+            var response = await _httpClient.PostAsync(tokenUrl, content);
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError($"Failed to get admin token: {response.StatusCode}");
+                var errorBody = await response.Content.ReadAsStringAsync();
+                var failedUrl = response.RequestMessage?.RequestUri?.ToString();
+    
+                _logger.LogError($"--- KEYCLOAK 404 ERROR ---");
+                _logger.LogError($"URL: {failedUrl}");
+                _logger.LogError($"Body: {errorBody}");
+    
                 return null;
             }
 
@@ -116,16 +122,18 @@ public class KeycloakHttpClient
                 new KeyValuePair<string, string>("password", password)
             });
 
+            var url = CombineUrls(options.BaseUrl, "realms", options.Realm, "protocol/openid-connect/token");
             var response = await _httpClient.PostAsync(
-                CombineUrls(options.BaseUrl, "realms", options.Realm, "protocol/openid-connect/token"),
+                url,
                 content);
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning($"Login failed for user {userName}: {response.StatusCode}");
+                var errorBody = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning($"Login failed for user {userName}: {response.StatusCode} - {errorBody}");
                 return null;
             }
-
+            
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<TokenResponse>(json);
         }
@@ -136,14 +144,27 @@ public class KeycloakHttpClient
         }
     }
     
+    
     private string CombineUrls(string baseUrl, params string[] segments)
     {
-        var uri = new Uri(baseUrl.TrimEnd('/') + '/');
-        foreach (var segment in segments)
-        {
-            uri = new Uri(uri, segment.TrimStart('/'));
-        }
-
-        return uri.ToString();
+        // Берем базовый URL без слэша на конце
+        var parts = new List<string> { baseUrl.TrimEnd('/') };
+    
+        // Очищаем каждый сегмент от слэшей по краям, чтобы не было двойных
+        parts.AddRange(segments.Select(s => s.Trim('/')));
+    
+        // Склеиваем всё ровно через один слэш
+        return string.Join("/", parts);
     }
+    
+    // private string CombineUrls(string baseUrl, params string[] segments)
+    // {
+    //     var uri = new Uri(baseUrl.TrimEnd('/') + '/');
+    //     foreach (var segment in segments)
+    //     {
+    //         uri = new Uri(uri, segment.TrimStart('/'));
+    //     }
+    //
+    //     return uri.ToString();
+    // }
 }
