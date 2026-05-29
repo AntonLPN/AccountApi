@@ -51,6 +51,24 @@ public class RegisterUserHandlerTests
         Assert.Contains("User already exists", result.Errors);
         
         _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
-
     }
+
+    [Fact]
+    public async Task Handle_WhenAuthService_ReturnError()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+        _userRepository.Setup(x => x.GetUserByEmailAsync(cmd.Email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AppUser?)null);
+        _authService.Setup(x => x.RegisterUserAsync(cmd.Email, cmd.Password))
+            .ReturnsAsync(Result<string>.Error("Registration failed"));
+        var result = await sut.Handle(cmd, CancellationToken.None);
+        //Assets
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.Error, result.Status);
+        Assert.Contains("Registration failed", result.Errors);
+        
+        _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+    
 }
