@@ -49,5 +49,8 @@ public class RegisterUserHandlerTests
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultStatus.Conflict, result.Status);
         Assert.Contains("User already exists", result.Errors);
+        
+        _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+
     }
 }
