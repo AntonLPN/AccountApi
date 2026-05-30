@@ -1,5 +1,6 @@
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
+using Account.Domain.Models;
 using Account.Domain.Repositories;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
@@ -43,7 +44,7 @@ public class RegisterUserHandler(
             await unitOfWork.SaveChangesAsync(cancellationToken);
             await tx.CommitAsync(cancellationToken);
 
-            var tokenResponse = await authService.LoginAsync(request.Email, request.Password);
+            TokenResponse? tokenResponse = await authService.LoginAsync(request.Email, request.Password);
             if (tokenResponse is null)
                 return Result<RegisterUserResult>.Error("Login failed after registration for user");
             return Result<RegisterUserResult>.Success(new RegisterUserResult

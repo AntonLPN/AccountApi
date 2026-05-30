@@ -1,6 +1,7 @@
 using Account.Application.Features.Account.Register;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
+using Account.Domain.Models;
 using Account.Domain.Repositories;
 using Ardalis.Result;
 using Microsoft.Extensions.Logging;
@@ -42,14 +43,16 @@ public class RegisterUserHandlerTests
     {
         var sut = CreateSut();
         var command = CreateCommand();
+        //Arrange
         _userRepository.Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AppUser());
+        //Act
         var result = await sut.Handle(command, CancellationToken.None);
         //Assets
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultStatus.Conflict, result.Status);
         Assert.Contains("User already exists", result.Errors);
-        
+
         _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -58,17 +61,62 @@ public class RegisterUserHandlerTests
     {
         var sut = CreateSut();
         var cmd = CreateCommand();
+        //Arrange
         _userRepository.Setup(x => x.GetUserByEmailAsync(cmd.Email, It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
         _authService.Setup(x => x.RegisterUserAsync(cmd.Email, cmd.Password))
             .ReturnsAsync(Result<string>.Error("Registration failed"));
+        //Act
         var result = await sut.Handle(cmd, CancellationToken.None);
         //Assets
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultStatus.Error, result.Status);
         Assert.Contains("Registration failed", result.Errors);
-        
+
         _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
-    
+
+    [Fact]
+    public async Task Handle_WhenAuthService_ReturnSuccess()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+        //Arrange
+        _userRepository.Setup(x => x.GetUserByEmailAsync(cmd.Email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AppUser?)null);
+        _authService.Setup(x => x.RegisterUserAsync(cmd.Email, cmd.Password))
+            .ReturnsAsync(Result<string>.Success("Registration Successful"));
+        _userRepository.Setup(x => x.CreateUser(It.IsAny<AppUser>()));
+        _apiKeyRepository.Setup(x => x.CreateApiKey(It.IsAny<string>())).Returns("api_key");
+        _authService.Setup(x => x.LoginAsync(cmd.Email, cmd.Password))
+            .ReturnsAsync(new TokenResponse
+            {
+                AccessToken = "access_token",
+                RefreshToken = "refresh_token",
+                TokenType = "token_type",
+                ExpiresIn = 3600,
+                Scope = "scope"
+            });
+        //Act
+        var result = await sut.Handle(cmd, CancellationToken.None);
+        //Assets
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ResultStatus.Ok, result.Status);
+        Assert.NotNull(result.Value);
+        Assert.Equal("api_key", result.Value.ApiKey);
+        Assert.NotNull(result.Value.Token);
+        Assert.Equal("access_token", result.Value.Token?.AccessToken);
+        Assert.Equal("refresh_token", result.Value.Token?.RefreshToken);
+        Assert.Equal("token_type", result.Value.Token?.TokenType);
+        Assert.Equal(3600, result.Value.Token?.ExpiresIn);
+        Assert.Equal("scope", result.Value.Token?.Scope);
+        //Db verify
+        _apiKeyRepository.Verify(x => x.CreateApiKey(It.IsAny<string>()), Times.Once);
+        _userRepository.Verify(x => x.CreateUser(It.IsAny<AppUser>()), Times.Once);
+        _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _tx.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _tx.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
+        
+    }
 }
