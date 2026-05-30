@@ -61,6 +61,7 @@ public class AppDbContext : DbContext
             entity.Property(x => x.EmailConfirmationSent).HasColumnName("EmailConfirmationSent").HasDefaultValue(false);
             entity.Property(x => x.ProfileInitialized).HasColumnName("ProfileInitialized").HasDefaultValue(false);
             entity.Property(x => x.FailureReason).HasMaxLength(255).HasColumnName("FailureReason").IsUnicode();
+            entity.HasIndex(x => x.UserId);
         });
     }
 }
