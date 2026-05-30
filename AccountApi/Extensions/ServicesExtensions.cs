@@ -3,6 +3,8 @@ using Account.Domain.Entities;
 using Account.Infrastructure.Configuration;
 using Account.Infrastructure.Extensions;
 using Account.Infrastructure.Persistence;
+using Account.Infrastructure.Persistence.SagaModels;
+using Account.Infrastructure.Saga.UserRegister;
 using Account.Infrastructure.Services;
 using MassTransit;
 using Microsoft.AspNetCore.Identity;
@@ -67,19 +69,21 @@ public static class ServicesExtensions
     {
         services.AddMassTransit(x =>
         {
+            //Sagas registration 
+            x.AddUserRegistrationSaga();
+            //Set up MassTransit consumers and outbox
+            x.AddConsumers(typeof(AppDbContext)
+                .Assembly); //IConsumer implementations for MassTransit Outbox
+            x.AddEntityFrameworkOutbox<AppDbContext>(o =>
+            {
+                o.UseMySql();
+                o.UseBusOutbox();
+                o.QueryDelay = TimeSpan.FromSeconds(5);
+                o.QueryTimeout = TimeSpan.FromSeconds(30);
+            });
             var useRabbit = configuration.GetValue<bool>("Messaging:UseRabbitMq");
             if (useRabbit)
             {
-                //Set up MassTransit consumers and outbox
-                x.AddConsumers(typeof(AppDbContext)
-                    .Assembly); //IConsumer implementations for MassTransit Outbox
-                x.AddEntityFrameworkOutbox<AppDbContext>(o =>
-                {
-                    o.UseMySql();
-                    o.UseBusOutbox();
-                    o.QueryDelay = TimeSpan.FromSeconds(5);
-                    o.QueryTimeout = TimeSpan.FromSeconds(30);
-                });
                 // Set up RabbitMQ
                 x.UsingRabbitMq((context, cfg) =>
                 {
@@ -127,5 +131,16 @@ public static class ServicesExtensions
         });
 
         return services;
+    }
+
+    private static void AddUserRegistrationSaga(this IRegistrationConfigurator x)
+    {
+        x.AddSagaStateMachine<UserRegistrationSaga, UserRegistrationSagaState, UserRegistrationSagaDefinition>()
+            .EntityFrameworkRepository(r =>
+            {
+                r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
+                r.ExistingDbContext<AppDbContext>();
+                r.UseMySql();
+            });
     }
 }

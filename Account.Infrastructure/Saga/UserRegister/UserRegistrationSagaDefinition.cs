@@ -1,7 +1,7 @@
 using Account.Infrastructure.Persistence.SagaModels;
 using MassTransit;
 
-namespace Account.Infrastructure.Saga;
+namespace Account.Infrastructure.Saga.UserRegister;
 
 public class UserRegistrationSagaDefinition : SagaDefinition<UserRegistrationSagaState>
 {
