@@ -68,6 +68,18 @@ public static class ServicesExtensions
             var useRabbit = configuration.GetValue<bool>("Messaging:UseRabbitMq");
             if (useRabbit)
             {
+                
+                //Set up MassTransit consumers and outbox
+                x.AddConsumers(typeof(AppDbContext)
+                    .Assembly); //AppDbContext IConsumer implementations for MassTransit Outbox
+                x.AddEntityFrameworkOutbox<AppDbContext>(o =>
+                {
+                    o.UseMySql();
+                    o.UseBusOutbox();
+                    o.QueryDelay = TimeSpan.FromSeconds(5);
+                    o.QueryTimeout = TimeSpan.FromSeconds(30);
+                });
+                // Set up RabbitMQ
                 x.UsingRabbitMq((context, cfg) =>
                 {
                     var rabbitConfig = configuration.GetSection("Messaging:RabbitMq").Get<RabbitMqConfig>() ??
