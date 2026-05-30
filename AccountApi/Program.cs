@@ -19,6 +19,7 @@ builder.Host.AddSerilogLogging();
 
 builder.Services.AddMySqlDatabase(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddMassTransitMessaging(builder.Configuration);
 builder.Services.AddLifeTimeServices();
 builder.Services.AddRateLimiter(limiter =>
 {

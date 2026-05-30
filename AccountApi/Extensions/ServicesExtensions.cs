@@ -71,7 +71,7 @@ public static class ServicesExtensions
                 
                 //Set up MassTransit consumers and outbox
                 x.AddConsumers(typeof(AppDbContext)
-                    .Assembly); //AppDbContext IConsumer implementations for MassTransit Outbox
+                    .Assembly); //IConsumer implementations for MassTransit Outbox
                 x.AddEntityFrameworkOutbox<AppDbContext>(o =>
                 {
                     o.UseMySql();
