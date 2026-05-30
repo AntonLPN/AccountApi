@@ -18,5 +18,7 @@ public static class DependencyInjectionInfrastructure
         services.AddScoped<IUnitOfWork, UnitOfWorkAdapter>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
+        //MassTransit 
+        services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();
     }
 }

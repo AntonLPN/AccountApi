@@ -3,6 +3,7 @@ using Account.Domain.Entities;
 using Account.Infrastructure.Configuration;
 using Account.Infrastructure.Extensions;
 using Account.Infrastructure.Persistence;
+using Account.Infrastructure.Services;
 using MassTransit;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -54,7 +55,8 @@ public static class ServicesExtensions
     public static IServiceCollection AddLifeTimeServices(this IServiceCollection services)
     {
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(
-            typeof(RegisterCommand).Assembly
+            typeof(RegisterCommand).Assembly,
+            typeof(MassTransitIntegrationEventPublisher).Assembly // for integration events triggers
         ));
         services.AddInfrastructureServices();
         return services;
@@ -68,7 +70,6 @@ public static class ServicesExtensions
             var useRabbit = configuration.GetValue<bool>("Messaging:UseRabbitMq");
             if (useRabbit)
             {
-                
                 //Set up MassTransit consumers and outbox
                 x.AddConsumers(typeof(AppDbContext)
                     .Assembly); //IConsumer implementations for MassTransit Outbox
