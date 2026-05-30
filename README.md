@@ -58,6 +58,8 @@ src/
 
 ├── Account.Infrastructure/  # DbContext, EF Configurations, Migrations, MassTransit Setup, External Services
 
+└── Account.Contracts/       #For integration events
+
 └── AccountApi/         # Entry Point: Controllers, Middlewares, Configuration, Program.cs
 
 ---
