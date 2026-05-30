@@ -105,11 +105,11 @@ public class RegisterUserHandlerTests
         Assert.NotNull(result.Value);
         Assert.Equal("api_key", result.Value.ApiKey);
         Assert.NotNull(result.Value.Token);
-        Assert.Equal("access_token", result.Value.Token?.AccessToken);
-        Assert.Equal("refresh_token", result.Value.Token?.RefreshToken);
-        Assert.Equal("token_type", result.Value.Token?.TokenType);
-        Assert.Equal(3600, result.Value.Token?.ExpiresIn);
-        Assert.Equal("scope", result.Value.Token?.Scope);
+        Assert.Equal("access_token", result.Value.Token.AccessToken);
+        Assert.Equal("refresh_token", result.Value.Token.RefreshToken);
+        Assert.Equal("token_type", result.Value.Token.TokenType);
+        Assert.Equal(3600, result.Value.Token.ExpiresIn);
+        Assert.Equal("scope", result.Value.Token.Scope);
         //Db verify
         _apiKeyRepository.Verify(x => x.CreateApiKey(It.IsAny<string>()), Times.Once);
         _userRepository.Verify(x => x.CreateUser(It.IsAny<AppUser>()), Times.Once);
