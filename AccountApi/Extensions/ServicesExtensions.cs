@@ -1,7 +1,9 @@
 using Account.Application.Features.Account.Register;
 using Account.Domain.Entities;
+using Account.Infrastructure.Configuration;
 using Account.Infrastructure.Extensions;
 using Account.Infrastructure.Persistence;
+using MassTransit;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -45,7 +47,7 @@ public static class ServicesExtensions
                     ValidIssuer = keycloakSettings["Authority"]
                 };
             });
-        
+
         return services;
     }
 
@@ -55,6 +57,62 @@ public static class ServicesExtensions
             typeof(RegisterCommand).Assembly
         ));
         services.AddInfrastructureServices();
+        return services;
+    }
+
+    public static IServiceCollection AddMassTransitMessaging(this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddMassTransit(x =>
+        {
+            var useRabbit = configuration.GetValue<bool>("Messaging:UseRabbitMq");
+            if (useRabbit)
+            {
+                x.UsingRabbitMq((context, cfg) =>
+                {
+                    var rabbitConfig = configuration.GetSection("Messaging:RabbitMq").Get<RabbitMqConfig>() ??
+                                       throw new InvalidOperationException(
+                                           "RabbitMq configuration is missing or invalid.");
+
+                    // Override host from environment variable if set (for Docker)
+                    var rabbitHost = Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? rabbitConfig.Host;
+
+                    cfg.Host(rabbitHost, rabbitConfig.Port, rabbitConfig.VirtualHost, h =>
+                    {
+                        h.Username(rabbitConfig.Username);
+                        h.Password(rabbitConfig.Password);
+                    });
+                    cfg.UseMessageRetry(r =>
+                    {
+                        r.Handle<TimeoutException>();
+                        r.Handle<HttpRequestException>();
+                        r.Interval(3, TimeSpan.FromSeconds(5));
+                    });
+
+                    cfg.ConfigureEndpoints(context); //important for saga
+                });
+            }
+            else //for debug only if not use RabbitMq
+            {
+                x.UsingInMemory((context, cfg) =>
+                {
+                    cfg.UseMessageRetry(r =>
+                    {
+                        r.Handle<TimeoutException>();
+                        r.Handle<HttpRequestException>();
+                        r.Interval(3, TimeSpan.FromSeconds(5));
+                    });
+
+                    cfg.UseDelayedRedelivery(r => r.Intervals(
+                        TimeSpan.FromMinutes(1),
+                        TimeSpan.FromMinutes(5),
+                        TimeSpan.FromMinutes(15)));
+
+                    cfg.ConfigureEndpoints(context);
+                });
+            }
+        });
+
         return services;
     }
 }
