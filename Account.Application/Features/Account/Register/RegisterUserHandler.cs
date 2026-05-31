@@ -39,16 +39,13 @@ public class RegisterUserHandler(
                 passwordHash: cryptographyService.Hash(request.Password));
             userRepository.CreateUser(user);
             var apiKey = apiKeyRepository.CreateApiKey(user.Id);
-
-            //TODO implement here DomainEvent to publish UserRegisteredEvent,
-            //and handle it in another handler to create user, send welcome email, etc.
-            //to avoid coupling between features and keep single responsibility for handlers
-
+            //Start Saga
             await publishEndpoint.Publish(new UserSagaStartedIntegrationEvent
             {
                 CorrelationId = Guid.NewGuid(),
                 UserId = user.Id,
                 Email = user.Email,
+                ApiKey = apiKey
             }, cancellationToken);
             
             await unitOfWork.SaveChangesAsync(cancellationToken);
