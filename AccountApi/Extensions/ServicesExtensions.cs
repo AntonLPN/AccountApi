@@ -70,7 +70,13 @@ public static class ServicesExtensions
         services.AddMassTransit(x =>
         {
             //Sagas registration 
-            x.AddUserRegistrationSaga();
+            x.AddSagaStateMachine<UserRegistrationSaga, UserRegistrationSagaState, UserRegistrationSagaDefinition>()
+                .EntityFrameworkRepository(r =>
+                {
+                    r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
+                    r.ExistingDbContext<AppDbContext>();
+                    r.UseMySql();
+                });
             //Set up MassTransit consumers and outbox
             x.AddConsumers(typeof(AppDbContext)
                 .Assembly); //IConsumer implementations for MassTransit Outbox

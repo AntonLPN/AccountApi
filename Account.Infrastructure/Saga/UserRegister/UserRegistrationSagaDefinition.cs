@@ -1,3 +1,4 @@
+using Account.Infrastructure.Persistence;
 using Account.Infrastructure.Persistence.SagaModels;
 using MassTransit;
 
@@ -5,6 +6,11 @@ namespace Account.Infrastructure.Saga.UserRegister;
 
 public class UserRegistrationSagaDefinition : SagaDefinition<UserRegistrationSagaState>
 {
+    public UserRegistrationSagaDefinition()
+    {
+        EndpointName = "user-registration-saga";
+    }
+    
     protected override void ConfigureSaga(
         IReceiveEndpointConfigurator endpointConfigurator,
         ISagaConfigurator<UserRegistrationSagaState> sagaConfigurator,
@@ -22,6 +28,6 @@ public class UserRegistrationSagaDefinition : SagaDefinition<UserRegistrationSag
         });
         // 3. Rate Limiting (example: 50 messages per second)
         endpointConfigurator.UseRateLimit(50, TimeSpan.FromSeconds(1));
-        endpointConfigurator.UseInMemoryOutbox(context);
+        endpointConfigurator.UseEntityFrameworkOutbox<AppDbContext>(context);
     }
 }

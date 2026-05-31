@@ -1,3 +1,4 @@
+using Account.Contracts.SagaEvents.UserRegisterSagaEvents;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
@@ -5,6 +6,7 @@ using Account.Domain.Repositories;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
+using MassTransit;
 using Microsoft.Extensions.Logging;
 
 namespace Account.Application.Features.Account.Register;
@@ -15,7 +17,8 @@ public class RegisterUserHandler(
     IUnitOfWork unitOfWork,
     IUserRepository userRepository,
     IApiKeyRepository apiKeyRepository,
-    ICryptography cryptographyService)
+    ICryptography cryptographyService,
+    IPublishEndpoint publishEndpoint)
     : ICommandHandler<RegisterCommand, Result<RegisterUserResult>>
 {
     public async Task<Result<RegisterUserResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -41,6 +44,13 @@ public class RegisterUserHandler(
             //and handle it in another handler to create user, send welcome email, etc.
             //to avoid coupling between features and keep single responsibility for handlers
 
+            await publishEndpoint.Publish(new UserSagaStartedIntegrationEvent
+            {
+                CorrelationId = Guid.NewGuid(),
+                UserId = user.Id,
+                Email = user.Email,
+            }, cancellationToken);
+            
             await unitOfWork.SaveChangesAsync(cancellationToken);
             await tx.CommitAsync(cancellationToken);
 

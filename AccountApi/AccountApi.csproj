@@ -24,4 +24,8 @@
       <ProjectReference Include="..\Account.Infrastructure\Account.Infrastructure.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Logs\errors\" />
+    </ItemGroup>
+
 </Project>

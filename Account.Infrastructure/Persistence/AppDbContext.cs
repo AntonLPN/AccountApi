@@ -1,5 +1,6 @@
 using Account.Domain.Entities;
 using Account.Infrastructure.Persistence.SagaModels;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 namespace Account.Infrastructure.Persistence;
@@ -19,7 +20,11 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(builder);
 
-
+        //MassTransit Outbox
+        builder.AddInboxStateEntity();
+        builder.AddOutboxMessageEntity();
+        builder.AddOutboxStateEntity();
+        
         builder.Entity<AppUser>(entity =>
         {
             entity.HasKey(u => u.Id).HasName("PK_AppUser");
@@ -51,9 +56,9 @@ public class AppDbContext : DbContext
         builder.Entity<UserRegistrationSagaState>(entity =>
         {
             entity.HasKey(s => s.CorrelationId);
-            entity.Property(s => s.CorrelationId).HasMaxLength(255).HasColumnName("CorrelationId").IsUnicode();
-            entity.Property(s => s.CurrentState).HasMaxLength(255).HasColumnName("CurrentState").IsUnicode();
-            entity.Property(x => x.UserId).HasMaxLength(255).HasColumnName("UserId").IsUnicode();
+            entity.Property(s => s.CorrelationId).HasMaxLength(255);
+            entity.Property(s => s.CurrentState).HasMaxLength(64);
+            entity.Property(x => x.UserId).HasMaxLength(255);
             entity.Property(x => x.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode();
             entity.Property(x => x.ApiKey).HasMaxLength(255).HasColumnName("ApiKey").IsUnicode();
             entity.Property(x => x.CreatedAt).HasColumnName("CreatedAt");

@@ -4,6 +4,7 @@ using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Domain.Repositories;
 using Ardalis.Result;
+using MassTransit;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -18,6 +19,7 @@ public class RegisterUserHandlerTests
     private readonly Mock<IApiKeyRepository> _apiKeyRepository = new();
     private readonly Mock<ICryptography> _cryptographyService = new();
     private readonly Mock<IAppDbTransaction> _tx = new();
+    private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
 
     private RegisterUserHandler CreateSut()
     {
@@ -31,7 +33,8 @@ public class RegisterUserHandlerTests
             _unitOfWork.Object,
             _userRepository.Object,
             _apiKeyRepository.Object,
-            _cryptographyService.Object);
+            _cryptographyService.Object,
+            _publishEndpoint.Object);
     }
 
     private static RegisterCommand CreateCommand(string email = "test@mail.com",
