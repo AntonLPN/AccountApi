@@ -49,8 +49,9 @@ public class KeycloakAuthService : IAuthService
 
         if (string.IsNullOrEmpty(adminToken))
         {
-            adminToken = await _keycloakHttpClient.GetAdminTokenAsync(_options.Value);
-            if (string.IsNullOrEmpty(adminToken))
+            var tokenResponse = await _keycloakHttpClient.GetAdminTokenAsync(_options.Value);
+            adminToken = tokenResponse?.AccessToken;
+            if (string.IsNullOrEmpty(adminToken) || tokenResponse is null)
             {
                 return Result<string>.Error("Failed to obtain admin token");
             }
@@ -60,20 +61,20 @@ public class KeycloakAuthService : IAuthService
                 adminToken,
                 new DistributedCacheEntryOptions
                 {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(55)
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(tokenResponse.ExpiresIn - 60)
                 });
         }
-        
+
         return await _keycloakHttpClient.RegisterUserAsync(
             userName: email,
             email: email,
             password: password,
             adminToken,
-            _options.Value); ;
+            _options.Value);
+        ;
     }
 
 
-    
     private bool IsValidLoginRequest(string email, string password)
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))

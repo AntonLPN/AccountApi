@@ -1,9 +1,7 @@
+using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Models;
+
 namespace Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
 
-public class UserSagaStartedIntegrationEvent
+public class UserSagaStartedIntegrationEvent : BaseUserModel
 {
-    public Guid CorrelationId { get; init; }
-    public string UserId { get; init; } = null!;
-    public string Email { get; init; } = null!;
-    public string ApiKey { get; init; } = null!;
 }

@@ -6,11 +6,11 @@ using Microsoft.Extensions.Logging;
 namespace Account.Infrastructure.Consumers;
 
 public class InitializeUserProfileCommandConsumer(
-    ILogger<InitializeUserProfileCommandConsumer> logger) : IConsumer<InitializeUserProfileCommandIntegrationEvent>
+    ILogger<InitializeUserProfileCommandConsumer> logger) : IConsumer<InitializeUserProfileIntegrationEvent>
 {
     //in the future if case of registration is changed add her logic
     //for today its just step without logic
-    public async Task Consume(ConsumeContext<InitializeUserProfileCommandIntegrationEvent> context)
+    public async Task Consume(ConsumeContext<InitializeUserProfileIntegrationEvent> context)
     {
         logger.LogInformation(
             "Starting profile initialization for UserId={UserId}", context.Message.UserId);

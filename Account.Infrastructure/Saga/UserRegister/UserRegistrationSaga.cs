@@ -35,7 +35,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                     context.Saga.ApiKey = context.Message.ApiKey;
                     logger.LogInformation("Saga registration started for UserId={UserId}", context.Message.UserId);
                 })
-                .Publish(context => new SendEmailConfirmationCommandIntegrationEvent
+                .Publish(context => new SendEmailConfirmationIntegrationEvent
                     {
                         CorrelationId = context.Saga.CorrelationId,
                         UserId = context.Message.UserId,
@@ -52,7 +52,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                     context.Saga.Email = context.Saga.Email;
                     context.Saga.UserId = context.Saga.UserId;
                     logger.LogInformation("Email confirmation sent for UserId={UserId}", context.Saga.UserId);
-                }).Publish(context => new InitializeUserProfileCommandIntegrationEvent
+                }).Publish(context => new InitializeUserProfileIntegrationEvent
                 {
                     CorrelationId = context.Saga.CorrelationId,
                     UserId = context.Saga.UserId,

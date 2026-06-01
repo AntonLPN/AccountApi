@@ -71,7 +71,7 @@ public class KeycloakHttpClient
         }
     }
 
-    public async Task<string?> GetAdminTokenAsync(KeycloakAdminOptions options)
+    public async Task<TokenResponse?> GetAdminTokenAsync(KeycloakAdminOptions options)
     {
         try
         {
@@ -99,7 +99,7 @@ public class KeycloakHttpClient
 
             var json = await response.Content.ReadAsStringAsync();
             var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(json);
-            return tokenResponse?.AccessToken;
+            return tokenResponse;
         }
         catch (Exception ex)
         {
