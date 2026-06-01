@@ -1,4 +1,6 @@
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents;
+using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Commands;
+using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 

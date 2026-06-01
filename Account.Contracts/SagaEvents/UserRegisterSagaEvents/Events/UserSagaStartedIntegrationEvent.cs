@@ -1,4 +1,4 @@
-namespace Account.Contracts.SagaEvents.UserRegisterSagaEvents;
+namespace Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
 
 public class UserSagaStartedIntegrationEvent
 {

@@ -49,8 +49,7 @@ public class AppDbContext : DbContext
             entity.HasOne(a => a.AppUser)
                 .WithMany(u => u.ApiKeys)
                 .HasForeignKey(a => a.UserId)
-                .HasConstraintName("FK_AppUser_ApiKeys")
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasConstraintName("FK_AppUser_ApiKeys");
         });
 
         builder.Entity<UserRegistrationSagaState>(entity =>
