@@ -19,6 +19,11 @@ public class AppUser
         string email,
         string passwordHash)
     {
+        if (string.IsNullOrWhiteSpace(id))
+            throw new ArgumentException("User ID cannot be empty", nameof(id));
+        
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("Email cannot be empty", nameof(email));
         var user = new AppUser
         {
             Id = id,

@@ -1,8 +1,6 @@
-using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Models;
+namespace Account.Contracts.SagaEvents.UserRegisterSagaEvents.Models;
 
-namespace Account.Contracts.SagaEvents.UserRegisterSagaEvents.Commands;
-
-public class SendEmailConfirmationCommandIntegrationEvent
+public class BaseUserCommandModel
 {
     public Guid CorrelationId  { get; init; }
     public string UserId  { get; init; } = null!;

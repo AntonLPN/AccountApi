@@ -13,5 +13,5 @@ public class ApiKey
     public DateTime ExpiredAt { get; set; }
 
     public string? UserId { get; set; } 
-    [ForeignKey(nameof(UserId))] public AppUser? AppUser { get; set; } = new();
+    [ForeignKey(nameof(UserId))] public AppUser AppUser { get; set; }
 }
