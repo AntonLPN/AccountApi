@@ -1,6 +1,3 @@
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Infrastructure.Configuration;
@@ -19,6 +16,7 @@ public class KeycloakAuthService : IAuthService
     private readonly IDistributedCache _cache;
     private readonly ILogger<KeycloakAuthService> _logger;
 
+    // ReSharper disable once ConvertToPrimaryConstructor
     public KeycloakAuthService(
         KeycloakHttpClient keycloakHttpClient,
         IOptions<KeycloakAdminOptions> options,
@@ -71,19 +69,15 @@ public class KeycloakAuthService : IAuthService
             password: password,
             adminToken,
             _options.Value);
-        ;
     }
 
 
     private bool IsValidLoginRequest(string email, string password)
     {
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
-        {
-            _logger.LogWarning("Login attempt with empty credentials");
-            return false;
-        }
+        if (!string.IsNullOrWhiteSpace(email) && !string.IsNullOrWhiteSpace(password)) return true;
+        _logger.LogWarning("Login attempt with empty credentials");
+        return false;
 
-        return true;
     }
 
     private bool IsValidRegisterRequest(string email, string password)
@@ -94,12 +88,9 @@ public class KeycloakAuthService : IAuthService
             return false;
         }
 
-        if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
-        {
-            _logger.LogWarning("Registration attempt with weak password");
-            return false;
-        }
+        if (!string.IsNullOrWhiteSpace(password) && password.Length >= 8) return true;
+        _logger.LogWarning("Registration attempt with weak password");
+        return false;
 
-        return true;
     }
 }
