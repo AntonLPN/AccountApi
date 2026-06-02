@@ -55,7 +55,7 @@ public class UserRegistrationSagaTests : IAsyncLifetime
         var sagaHarness = _harness.GetSagaStateMachineHarness<UserRegistrationSaga, UserRegistrationSagaState>();
         var existsId = await sagaHarness.Exists(correlationId, saga => saga.AwaitingEmailConfirmation);
         existsId.Should().NotBeNull("Saga must go to state AwaitingEmailConfirmation");
-        
+
         var instance = sagaHarness.Created
             .Select(x => x.CorrelationId == correlationId, TestContext.Current.CancellationToken)
             .FirstOrDefault();
@@ -90,7 +90,7 @@ public class UserRegistrationSagaTests : IAsyncLifetime
             Email = email,
             ApiKey = "api_key"
         }, cancellationToken: CancellationToken.None);
-        
+
         // Assert
         var sagaHarness = _harness.GetSagaStateMachineHarness<UserRegistrationSaga, UserRegistrationSagaState>();
         var existsId = await sagaHarness.Exists(correlationId, saga => saga.AwaitingProfileInitialization);
@@ -100,6 +100,47 @@ public class UserRegistrationSagaTests : IAsyncLifetime
             .FirstOrDefault();
         instance.Should().NotBeNull();
         instance.Saga.Email.Should().Be(email);
-        
+    }
+
+    [Fact]
+    public async Task RegistrationFailed_ShouldTransitTo_Failde()
+    {
+        var correlationId = Guid.NewGuid();
+        string email = "test@mail.com";
+        string userId = Guid.NewGuid().ToString();
+        const string failureReason = "Registration failed";
+        // Act
+        var sagaHarness = _harness.GetSagaStateMachineHarness<UserRegistrationSaga, UserRegistrationSagaState>();
+        await _harness.Bus.Publish(new UserSagaStartedIntegrationEvent()
+        {
+            CorrelationId = correlationId,
+            UserId = userId,
+            Email = email,
+            ApiKey = "api_key"
+        }, cancellationToken: CancellationToken.None);
+
+        await sagaHarness.Exists(correlationId, saga => saga.AwaitingEmailConfirmation);
+        await _harness.Bus.Publish(new UserRegistrationSagaFailedIntegrationEvent()
+        {
+            CorrelationId = correlationId,
+            UserId = userId,
+            FailureReason = "Registration failed"
+        }, CancellationToken.None);
+
+        //Asserts 
+        // Assert — saga transitioned to RegistrationFailed
+        var existsId = await sagaHarness.Exists(correlationId, saga => saga.RegistrationFailed);
+        existsId.Should().NotBeNull("Saga must transition to RegistrationFailed state");
+
+        var instance = sagaHarness.Sagas
+            .Select(x => x.CorrelationId == correlationId, TestContext.Current.CancellationToken)
+            .FirstOrDefault();
+        instance.Should().NotBeNull();
+        instance.Saga.FailureReason.Should().Be(failureReason);
+
+        (await _harness.Published.Any<UserRegistrationSagaFailedIntegrationEvent>(
+                x => x.Context.Message.CorrelationId == correlationId,
+                TestContext.Current.CancellationToken))
+            .Should().BeTrue("Saga must re-publish UserRegistrationSagaFailedIntegrationEvent");
     }
 }
