@@ -10,13 +10,13 @@ namespace Account.Infrastructure.Saga.UserRegister;
 [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
 public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSagaState>
 {
-    public State AwaitingEmailConfirmation { get; private set; } = null!;
+    public State AwaitingWelcomeEmailSent { get; private set; } = null!;
     public State AwaitingProfileInitialization { get; private set; } = null!;
     public State RegistrationCompleted { get; private set; } = null!;
     public State RegistrationFailed { get; private set; } = null!;
 
     public Event<UserSagaStartedIntegrationEvent> RegistrationStarted { get; private set; } = null!;
-    public Event<EmailConfirmationSentIntegrationEvent> EmailConfirmationSent { get; private set; } = null!;
+    public Event<WelcomeEmailSentIntegrationEvent> WelcomeEmailSent { get; private set; } = null!;
     public Event<UserProfileInitializedIntegrationEvent> ProfileInitialized { get; private set; } = null!;
     public Event<UserRegistrationSagaFailedIntegrationEvent> RegistrationFailedEvent { get; private set; } = null!;
 
@@ -35,7 +35,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                     context.Saga.ApiKey = context.Message.ApiKey;
                     logger.LogInformation("Saga registration started for UserId={UserId}", context.Message.UserId);
                 })
-                .Publish(context => new SendEmailConfirmationIntegrationEvent
+                .Publish(context => new SendWelcomeEmailIntegrationEvent
                     {
                         CorrelationId = context.Saga.CorrelationId,
                         UserId = context.Message.UserId,
@@ -43,9 +43,9 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                         ApiKey = context.Message.ApiKey
                     }
                 )
-                .TransitionTo(AwaitingEmailConfirmation));
-        During(AwaitingEmailConfirmation,
-            When(EmailConfirmationSent).Then(context =>
+                .TransitionTo(AwaitingWelcomeEmailSent));
+        During(AwaitingWelcomeEmailSent,
+            When(WelcomeEmailSent).Then(context =>
                 {
                     context.Saga.EmailConfirmationSent = true;
                     context.Saga.ApiKey = context.Saga.ApiKey;

@@ -53,7 +53,7 @@ public class UserRegistrationSagaTests : IAsyncLifetime
         }, cancellationToken: CancellationToken.None);
         // Assert
         var sagaHarness = _harness.GetSagaStateMachineHarness<UserRegistrationSaga, UserRegistrationSagaState>();
-        var existsId = await sagaHarness.Exists(correlationId, saga => saga.AwaitingEmailConfirmation);
+        var existsId = await sagaHarness.Exists(correlationId, saga => saga.AwaitingWelcomeEmailSent);
         existsId.Should().NotBeNull("Saga must go to state AwaitingEmailConfirmation");
 
         var instance = sagaHarness.Created
@@ -63,7 +63,7 @@ public class UserRegistrationSagaTests : IAsyncLifetime
         instance.Saga.Email.Should().Be(email);
 
         // Check the SendEmailConfirmationCommandIntegrationEvent was published
-        (await _harness.Published.Any<SendEmailConfirmationIntegrationEvent>(TestContext.Current
+        (await _harness.Published.Any<SendWelcomeEmailIntegrationEvent>(TestContext.Current
                 .CancellationToken))
             .Should().BeTrue();
     }
@@ -83,7 +83,7 @@ public class UserRegistrationSagaTests : IAsyncLifetime
             ApiKey = "api_key"
         }, cancellationToken: CancellationToken.None);
 
-        await _harness.Bus.Publish(new EmailConfirmationSentIntegrationEvent()
+        await _harness.Bus.Publish(new WelcomeEmailSentIntegrationEvent()
         {
             CorrelationId = correlationId,
             UserId = userId,
@@ -119,7 +119,7 @@ public class UserRegistrationSagaTests : IAsyncLifetime
             ApiKey = "api_key"
         }, cancellationToken: CancellationToken.None);
 
-        await sagaHarness.Exists(correlationId, saga => saga.AwaitingEmailConfirmation);
+        await sagaHarness.Exists(correlationId, saga => saga.AwaitingWelcomeEmailSent);
         await _harness.Bus.Publish(new UserRegistrationSagaFailedIntegrationEvent()
         {
             CorrelationId = correlationId,

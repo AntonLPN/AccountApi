@@ -2,6 +2,6 @@ using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Models;
 
 namespace Account.Contracts.SagaEvents.UserRegisterSagaEvents.Commands;
 
-public class SendEmailConfirmationIntegrationEvent : BaseUserModel
+public class SendWelcomeEmailIntegrationEvent : BaseUserModel
 {
 }

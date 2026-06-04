@@ -8,9 +8,9 @@ using Microsoft.Extensions.Logging;
 namespace Account.Infrastructure.Consumers;
 
 public class SendEmailConfirmationConsumer(ILogger<SendEmailConfirmationConsumer> logger,IEmail emailService)
-    : IConsumer<SendEmailConfirmationIntegrationEvent>
+    : IConsumer<SendWelcomeEmailIntegrationEvent>
 {
-    public async Task Consume(ConsumeContext<SendEmailConfirmationIntegrationEvent> context)
+    public async Task Consume(ConsumeContext<SendWelcomeEmailIntegrationEvent> context)
     {
         var res = await emailService.SendEmail(context.Message.Email, "WelcomeTemplate.html");
         if (!res)
@@ -26,7 +26,7 @@ public class SendEmailConfirmationConsumer(ILogger<SendEmailConfirmationConsumer
         logger.LogInformation(
             "Consumed SendEmailConfirmationCommandIntegrationEvent: UserId={UserId}, Email={Email}",
             context.Message.UserId, MaskedEmail.Create(context.Message.Email));
-        await context.Publish(new EmailConfirmationSentIntegrationEvent
+        await context.Publish(new WelcomeEmailSentIntegrationEvent
         {
             CorrelationId = context.Message.CorrelationId,
             UserId = context.Message.UserId
