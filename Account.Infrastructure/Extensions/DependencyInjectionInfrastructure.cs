@@ -4,6 +4,7 @@ using Account.Infrastructure.Cryptography;
 using Account.Infrastructure.Persistence;
 using Account.Infrastructure.Repositories;
 using Account.Infrastructure.Services;
+using Account.Infrastructure.Services.Email;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Account.Infrastructure.Extensions;
@@ -14,6 +15,7 @@ public static class DependencyInjectionInfrastructure
     {
         services.AddScoped<IAuthService, KeycloakAuthService>();
         services.AddScoped<ICryptography, CryptographService>();
+        services.AddScoped<IEmail, EmailService>();
         //Repository
         services.AddScoped<IUnitOfWork, UnitOfWorkAdapter>();
         services.AddScoped<IUserRepository, UserRepository>();
