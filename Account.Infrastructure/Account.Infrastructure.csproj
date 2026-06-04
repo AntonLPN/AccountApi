@@ -23,7 +23,10 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Services\Email\Templates\" />
+      <None Remove="Services\Email\Templates\WelcomeTemplate.html" />
+      <EmbeddedResource Include="Services\Email\Templates\WelcomeTemplate.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
     </ItemGroup>
 
 </Project>
