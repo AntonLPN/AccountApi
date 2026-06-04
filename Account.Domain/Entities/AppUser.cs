@@ -12,6 +12,7 @@ public class AppUser
     public string Email { get; set; } = "";
     public bool EmailConfirmed { get; set; }
     public string PasswordHash { get; set; } = "";
+    public DateTime? LastLoginAt { get; set; }
     public ICollection<ApiKey> ApiKeys { get; set; } = [];
     
     public static AppUser Create(

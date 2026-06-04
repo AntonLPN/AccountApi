@@ -1,3 +1,4 @@
+using Account.Application.Features.Account.Login;
 using Account.Application.Features.Account.Register;
 using AccountApi.Models.RequestModels;
 using MediatR;
@@ -25,7 +26,30 @@ public class AuthController(IMediator mediator) : ControllerBase
         var res = await mediator.Send(regCmd);
         if(!res.IsSuccess)
             return BadRequest(res.Errors);
-        
+
+        return Ok(res.Value);
+    }
+
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(LoginUserResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] LoginModelRequest model)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var userAgent = Request.Headers.UserAgent.ToString();
+
+        var loginCmd = new LoginCommand(model.Email, model.Password, ipAddress, userAgent);
+        var res = await mediator.Send(loginCmd);
+
+        if (res.Status == Ardalis.Result.ResultStatus.Unauthorized)
+            return Unauthorized();
+        if (!res.IsSuccess)
+            return BadRequest(res.Errors);
+
         return Ok(res.Value);
     }
 }

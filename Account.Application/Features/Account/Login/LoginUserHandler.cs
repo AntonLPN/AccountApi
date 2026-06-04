@@ -1,0 +1,53 @@
+using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
+using Account.Domain.Interfaces;
+using Account.Domain.Models;
+using Account.Domain.Repositories;
+using Account.Domain.ValueObjects;
+using Ardalis.Result;
+using Ardalis.SharedKernel;
+using MassTransit;
+using Microsoft.Extensions.Logging;
+
+namespace Account.Application.Features.Account.Login;
+
+public class LoginUserHandler(
+    ILogger<LoginUserHandler> logger,
+    IAuthService authService,
+    IUnitOfWork unitOfWork,
+    IUserRepository userRepository,
+    IApiKeyRepository apiKeyRepository,
+    IPublishEndpoint publishEndpoint)
+    : ICommandHandler<LoginCommand, Result<LoginUserResult>>
+{
+    public async Task<Result<LoginUserResult>> Handle(LoginCommand request, CancellationToken cancellationToken)
+    {
+        TokenResponse? tokenResponse = await authService.LoginAsync(request.Email, request.Password);
+        if (tokenResponse is null)
+            return Result<LoginUserResult>.Unauthorized();
+
+        var user = await userRepository.GetUserByEmailAsync(request.Email, cancellationToken);
+        if (user is null)
+            return Result<LoginUserResult>.Unauthorized();
+
+        var apiKey = await apiKeyRepository.GetApiKeyByUserIdAsync(user.Id);
+
+        await publishEndpoint.Publish(new UserLoginSagaStartedIntegrationEvent
+        {
+            CorrelationId = Guid.NewGuid(),
+            UserId = user.Id,
+            Email = user.Email,
+            IpAddress = request.IpAddress,
+            UserAgent = request.UserAgent
+        }, cancellationToken);
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);//need for saga
+
+        logger.LogInformation("User {Email} logged in, login saga started", MaskedEmail.Create(request.Email));
+
+        return Result<LoginUserResult>.Success(new LoginUserResult
+        {
+            ApiKey = apiKey ?? "",
+            Token = tokenResponse
+        });
+    }
+}

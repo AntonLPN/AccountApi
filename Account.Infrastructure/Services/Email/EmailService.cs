@@ -10,7 +10,7 @@ namespace Account.Infrastructure.Services.Email;
 public class EmailService(IConfiguration configuration, ILogger<EmailService> logger) : IEmail
 {
     private readonly EmailConfig _emailConfig =
-        configuration.GetSection("Email").Get<EmailConfig>()
+        configuration.GetSection("Messaging:Email").Get<EmailConfig>()
         ?? throw new InvalidOperationException("Email configuration is missing.");
 
     private void ValidateConfiguration()

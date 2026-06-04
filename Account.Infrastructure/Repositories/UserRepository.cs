@@ -22,4 +22,16 @@ public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
         }
         var entry = dbContext.Add(user);
     }
+
+    public async Task<bool> UpdateLastLoginAsync(string userId, DateTime loggedInAt,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await dbContext.AppUsers.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user is null)
+            return false;
+
+        user.LastLoginAt = loggedInAt;
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 }
