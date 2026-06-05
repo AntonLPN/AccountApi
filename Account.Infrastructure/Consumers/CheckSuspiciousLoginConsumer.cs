@@ -1,5 +1,7 @@
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
+using Account.Domain.Interfaces;
+using Account.Domain.Repositories;
 using Account.Infrastructure.Persistence;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
@@ -9,30 +11,23 @@ namespace Account.Infrastructure.Consumers;
 
 public class CheckSuspiciousLoginConsumer(
     ILogger<CheckSuspiciousLoginConsumer> logger,
-    AppDbContext dbContext)
+    AppDbContext dbContext,
+    ILoginAuditRepository loginAuditRepository)
     : IConsumer<CheckSuspiciousLoginIntegrationEvent>
 {
     public async Task Consume(ConsumeContext<CheckSuspiciousLoginIntegrationEvent> context)
     {
         var message = context.Message;
-
-        // Simple heuristic: a login is considered suspicious if there is no IP/UserAgent,
-        // or if there have been no previous logins from this IP for this user.
-        var isSuspicious = string.IsNullOrWhiteSpace(message.IpAddress)
-                           || string.IsNullOrWhiteSpace(message.UserAgent);
-
-        if (!isSuspicious)
-        {
-            var seenIpBefore = await dbContext.LoginAudits
-                .AsNoTracking()
-                .AnyAsync(a => a.UserId == message.UserId && a.IpAddress == message.IpAddress,
-                    context.CancellationToken);
-
-            isSuspicious = !seenIpBefore;
-        }
+        ArgumentException.ThrowIfNullOrEmpty(message.UserId, nameof(message.UserId));
+        ArgumentException.ThrowIfNullOrEmpty(message.UserAgent, nameof(message.UserAgent));
+        ArgumentException.ThrowIfNullOrEmpty(message.IpAddress, nameof(message.IpAddress));
+        
+        var seenIpBefore =
+            await loginAuditRepository.IsNewDeviceLoginAsync(message.UserId, message.UserAgent,
+                context.CancellationToken);
 
         logger.LogInformation("Suspicious login check for UserId={UserId}: IsSuspicious={IsSuspicious}",
-            message.UserId, isSuspicious);
+            message.UserId, seenIpBefore);
 
         await context.Publish(new SuspiciousLoginCheckedIntegrationEvent
         {
@@ -41,7 +36,7 @@ public class CheckSuspiciousLoginConsumer(
             Email = message.Email,
             IpAddress = message.IpAddress,
             UserAgent = message.UserAgent,
-            IsSuspicious = isSuspicious
+            IsSuspicious = seenIpBefore
         });
     }
 }
