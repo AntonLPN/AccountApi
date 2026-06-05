@@ -6,7 +6,7 @@ using Account.Domain.ValueObjects;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
-namespace Account.Infrastructure.Consumers;
+namespace Account.Infrastructure.Consumers.Login;
 
 public class SendLoginNotificationConsumer(
     ILogger<SendLoginNotificationConsumer> logger,
