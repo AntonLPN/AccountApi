@@ -1,4 +1,3 @@
-using System.Net;
 using Account.Domain.DTOs;
 using Account.Domain.Interfaces;
 using Account.Infrastructure.Configuration;
@@ -6,6 +5,7 @@ using MailKit.Net.Smtp;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MimeKit;
+using Polly;
 
 namespace Account.Infrastructure.Services.Email;
 
@@ -14,6 +14,8 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
     private readonly EmailConfig _emailConfig =
         configuration.GetSection("Messaging:Email").Get<EmailConfig>()
         ?? throw new InvalidOperationException("Email configuration is missing.");
+
+    private readonly IAsyncPolicy<bool> _emailRetryPolicy = PollyPolicies.GetEmailRetryWithCircuitBreaker();
 
     private void ValidateConfiguration()
     {
@@ -37,8 +39,7 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
         msg.Body = bodyBuilder.ToMessageBody();
         try
         {
-            await SendMessageSmtp(msg, cancellationToken);
-            return true;
+            return await SendMessageSmtp(msg, cancellationToken);;
         }
         catch (Exception e)
         {
@@ -50,8 +51,12 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
     public async Task<bool> SendWelcomeEmail(string toEmail, CancellationToken cancellationToken = default)
     {
         var htmlTemplate = GetEmailTemplateAsync("WelcomeTemplate.html");
-        ArgumentException.ThrowIfNullOrEmpty(htmlTemplate, nameof(htmlTemplate));
-        return await SendEmailAsync(toEmail, "Welcome to " + _emailConfig.OwnerName, htmlTemplate, cancellationToken);
+        ArgumentException.ThrowIfNullOrEmpty(htmlTemplate);
+        return await _emailRetryPolicy.ExecuteAsync(async () => await SendEmailAsync(
+            toEmail,
+            "Welcome to " + _emailConfig.OwnerName,
+            htmlTemplate,
+            cancellationToken));
     }
 
     public async Task<bool> SendNewDeviceLoginEmail(SuspiciousDeviceDto suspiciousDeviceDto,
@@ -63,22 +68,32 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
             .Replace("{{IP_ADDRESS}}", suspiciousDeviceDto.IpAddress)
             .Replace("{{DATE_TIME}}", suspiciousDeviceDto.LoginTime.ToString("dd.MM.yyyy, HH:mm 'UTC'"))
             .Replace("{{USER_AGENT}}", suspiciousDeviceDto.UserAgent);
-        ArgumentException.ThrowIfNullOrEmpty(htmlTemplate, nameof(htmlTemplate));
-        return await SendEmailAsync(suspiciousDeviceDto.ToEmail, "New Device Login — " + _emailConfig.OwnerName, body,
-            cancellationToken);
+        ArgumentException.ThrowIfNullOrEmpty(htmlTemplate);
+        return await _emailRetryPolicy.ExecuteAsync(async () => await SendEmailAsync(
+            suspiciousDeviceDto.ToEmail,
+            "New Device Login — " + _emailConfig.OwnerName,
+            body,
+            cancellationToken));
     }
 
     private async Task<bool> SendMessageSmtp(MimeMessage message, CancellationToken cancellationToken = default)
     {
         ValidateConfiguration();
         using var client = new SmtpClient();
-        await client.ConnectAsync(_emailConfig.HostName, _emailConfig.Port,
-            MailKit.Security.SecureSocketOptions.StartTls, cancellationToken);
-        await client.AuthenticateAsync(_emailConfig.Email, _emailConfig.Password, cancellationToken);
-        await client.SendAsync(message, cancellationToken);
-        await client.DisconnectAsync(true, cancellationToken);
-
-        return true;
+        try
+        {
+            await client.ConnectAsync(_emailConfig.HostName!, _emailConfig.Port,
+                MailKit.Security.SecureSocketOptions.StartTls, cancellationToken);
+            await client.AuthenticateAsync(_emailConfig.Email!, _emailConfig.Password!, cancellationToken);
+            await client.SendAsync(message, cancellationToken);
+            await client.DisconnectAsync(true, cancellationToken);
+            return true;
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "SMTP error");
+            throw; // Polly will catch this and handle retries
+        }
     }
 
     private static string GetEmailTemplateAsync(string templateName)

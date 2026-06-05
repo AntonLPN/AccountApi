@@ -17,6 +17,7 @@ public class UserLoginSaga : MassTransitStateMachine<UserLoginSagaState>
     public State LoginCompleted { get; private set; } = null!;
     public State LoginFailed { get; private set; } = null!;
 
+
     public Event<UserLoginSagaStartedIntegrationEvent> LoginStarted { get; private set; } = null!;
     public Event<SuspiciousLoginCheckedIntegrationEvent> SuspiciousLoginChecked { get; private set; } = null!;
     public Event<LoginAuditRecordedIntegrationEvent> LoginAuditRecorded { get; private set; } = null!;
