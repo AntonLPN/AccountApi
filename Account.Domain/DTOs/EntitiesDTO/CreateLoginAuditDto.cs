@@ -1,4 +1,4 @@
-namespace Account.Contracts.DTOs.EntitiesDTO;
+namespace Account.Domain.DTOs.EntitiesDTO;
 
 public class CreateLoginAuditDto
 {

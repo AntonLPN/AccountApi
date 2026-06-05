@@ -1,13 +1,12 @@
-using Account.Contracts.DTOs.EntitiesDTO;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
+using Account.Domain.DTOs.EntitiesDTO;
 using Account.Domain.Entities;
 using Account.Domain.Repositories;
-using Account.Infrastructure.Persistence;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
-namespace Account.Infrastructure.Consumers;
+namespace Account.Infrastructure.Consumers.Login;
 
 public class RecordLoginAuditConsumer(
     ILogger<RecordLoginAuditConsumer> logger,

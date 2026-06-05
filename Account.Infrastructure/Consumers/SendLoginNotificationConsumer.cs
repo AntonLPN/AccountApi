@@ -1,5 +1,6 @@
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
+using Account.Domain.DTOs;
 using Account.Domain.Interfaces;
 using Account.Domain.ValueObjects;
 using MassTransit;
@@ -16,22 +17,32 @@ public class SendLoginNotificationConsumer(
     {
         var message = context.Message;
 
-        var template = message.IsSuspicious ? "SuspiciousLoginTemplate.html" : "LoginNotificationTemplate.html";
-        var sent = await emailService.SendEmail(message.Email, template, context.CancellationToken);
-
-        if (!sent)
+        if (message.IsSuspicious)
         {
-            await context.Publish(new UserLoginSagaFailedIntegrationEvent
+            logger.LogInformation("Sending suspicious login notification for UserId={UserId}, Email={Email}",
+                message.UserId, MaskedEmail.Create(message.Email));
+            var deviceLoginIfoDto = new SuspiciousDeviceDto(
+                message.Email,
+                message.UserAgent ?? "Unknown device",
+                message.IpAddress,
+                DateTime.UtcNow,
+                message.UserAgent ?? "Unknown device"
+            );
+            var sent = await emailService.SendNewDeviceLoginEmail(deviceLoginIfoDto, context.CancellationToken);
+            if (!sent)
             {
-                CorrelationId = message.CorrelationId,
-                UserId = message.UserId,
-                FailureReason = "Failed to send login notification email"
-            });
-            return;
-        }
+                await context.Publish(new UserLoginSagaFailedIntegrationEvent
+                {
+                    CorrelationId = message.CorrelationId,
+                    UserId = message.UserId,
+                    FailureReason = "Failed to send login notification email"
+                });
+                return;
+            }
 
-        logger.LogInformation("Login notification sent for UserId={UserId}, Email={Email}",
-            message.UserId, MaskedEmail.Create(message.Email));
+            logger.LogInformation("Login notification sent for UserId={UserId}, Email={Email}",
+                message.UserId, MaskedEmail.Create(message.Email));
+        }
 
         await context.Publish(new LoginNotificationSentIntegrationEvent
         {

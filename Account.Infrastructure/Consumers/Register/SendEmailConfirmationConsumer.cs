@@ -5,14 +5,14 @@ using Account.Domain.ValueObjects;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
-namespace Account.Infrastructure.Consumers;
+namespace Account.Infrastructure.Consumers.Register;
 
-public class SendEmailConfirmationConsumer(ILogger<SendEmailConfirmationConsumer> logger,IEmail emailService)
+public class SendEmailConfirmationConsumer(ILogger<SendEmailConfirmationConsumer> logger, IEmail emailService)
     : IConsumer<SendWelcomeEmailIntegrationEvent>
 {
     public async Task Consume(ConsumeContext<SendWelcomeEmailIntegrationEvent> context)
     {
-        var res = await emailService.SendEmail(context.Message.Email, "WelcomeTemplate.html");
+        var res = await emailService.SendWelcomeEmail(context.Message.Email, context.CancellationToken);
         if (!res)
         {
             await context.Publish(new UserRegistrationSagaFailedIntegrationEvent
@@ -23,6 +23,7 @@ public class SendEmailConfirmationConsumer(ILogger<SendEmailConfirmationConsumer
             });
             return;
         }
+
         logger.LogInformation(
             "Consumed SendEmailConfirmationCommandIntegrationEvent: UserId={UserId}, Email={Email}",
             context.Message.UserId, MaskedEmail.Create(context.Message.Email));

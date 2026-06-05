@@ -1,13 +1,10 @@
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
-using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
-using Account.Infrastructure.Persistence;
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Account.Infrastructure.Consumers;
+namespace Account.Infrastructure.Consumers.Login;
 
 public class CheckSuspiciousLoginConsumer(
     ILogger<CheckSuspiciousLoginConsumer> logger,

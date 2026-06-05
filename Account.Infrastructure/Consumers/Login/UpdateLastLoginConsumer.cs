@@ -4,7 +4,7 @@ using Account.Domain.Repositories;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
-namespace Account.Infrastructure.Consumers;
+namespace Account.Infrastructure.Consumers.Login;
 
 public class UpdateLastLoginConsumer(
     ILogger<UpdateLastLoginConsumer> logger,
@@ -14,7 +14,7 @@ public class UpdateLastLoginConsumer(
     public async Task Consume(ConsumeContext<UpdateLastLoginIntegrationEvent> context)
     {
         var message = context.Message;
-
+        
         var updated = await userRepository.UpdateLastLoginAsync(message.UserId, DateTime.UtcNow,
             context.CancellationToken);
 

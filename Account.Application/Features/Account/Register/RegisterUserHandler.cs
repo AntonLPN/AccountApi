@@ -1,4 +1,3 @@
-using Account.Contracts.SagaEvents.UserRegisterSagaEvents;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;

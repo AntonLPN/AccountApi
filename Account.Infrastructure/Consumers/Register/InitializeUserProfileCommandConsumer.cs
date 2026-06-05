@@ -3,7 +3,7 @@ using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
-namespace Account.Infrastructure.Consumers;
+namespace Account.Infrastructure.Consumers.Register;
 
 public class InitializeUserProfileCommandConsumer(
     ILogger<InitializeUserProfileCommandConsumer> logger) : IConsumer<InitializeUserProfileIntegrationEvent>

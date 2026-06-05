@@ -11,12 +11,4 @@
       <PackageReference Include="Ardalis.SharedKernel" Version="2.1.1" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="DTOs\" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Account.Contracts\Account.Contracts.csproj" />
-    </ItemGroup>
-
 </Project>

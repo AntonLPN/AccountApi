@@ -1,4 +1,4 @@
-using Account.Contracts.DTOs.EntitiesDTO;
+using Account.Domain.DTOs.EntitiesDTO;
 
 namespace Account.Domain.Entities;
 

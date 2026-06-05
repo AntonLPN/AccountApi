@@ -27,6 +27,10 @@
       <EmbeddedResource Include="Services\Email\Templates\WelcomeTemplate.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
+      <None Remove="Services\Email\Templates\SuspiciousLoginTemplate.html" />
+      <EmbeddedResource Include="Services\Email\Templates\SuspiciousLoginTemplate.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
     </ItemGroup>
 
 </Project>
