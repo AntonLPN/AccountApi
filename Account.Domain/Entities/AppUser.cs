@@ -32,7 +32,7 @@ public class AppUser
             UserName = email,
             PasswordHash = passwordHash
         };
-        //TODO implement here DomainEvent
+        //implement here DomainEvent
         return user;
     }
 }

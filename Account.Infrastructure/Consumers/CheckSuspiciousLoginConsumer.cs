@@ -11,7 +11,6 @@ namespace Account.Infrastructure.Consumers;
 
 public class CheckSuspiciousLoginConsumer(
     ILogger<CheckSuspiciousLoginConsumer> logger,
-    AppDbContext dbContext,
     ILoginAuditRepository loginAuditRepository)
     : IConsumer<CheckSuspiciousLoginIntegrationEvent>
 {
@@ -22,12 +21,12 @@ public class CheckSuspiciousLoginConsumer(
         ArgumentException.ThrowIfNullOrEmpty(message.UserAgent, nameof(message.UserAgent));
         ArgumentException.ThrowIfNullOrEmpty(message.IpAddress, nameof(message.IpAddress));
         
-        var seenIpBefore =
+        var seenDeviceBefore =
             await loginAuditRepository.IsNewDeviceLoginAsync(message.UserId, message.UserAgent,
                 context.CancellationToken);
 
         logger.LogInformation("Suspicious login check for UserId={UserId}: IsSuspicious={IsSuspicious}",
-            message.UserId, seenIpBefore);
+            message.UserId, seenDeviceBefore);
 
         await context.Publish(new SuspiciousLoginCheckedIntegrationEvent
         {
@@ -36,7 +35,7 @@ public class CheckSuspiciousLoginConsumer(
             Email = message.Email,
             IpAddress = message.IpAddress,
             UserAgent = message.UserAgent,
-            IsSuspicious = seenIpBefore
+            IsSuspicious = !seenDeviceBefore
         });
     }
 }

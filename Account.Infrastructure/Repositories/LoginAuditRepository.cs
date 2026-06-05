@@ -1,3 +1,4 @@
+using Account.Domain.Entities;
 using Account.Domain.Repositories;
 using Account.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -10,8 +11,8 @@ public class LoginAuditRepository(AppDbContext dbContext, ILogger<LoginAuditRepo
     public Task<bool> IsNewDeviceLoginAsync(string userId, string userAgent,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(userId, nameof(userId));
-        ArgumentException.ThrowIfNullOrWhiteSpace(userAgent, nameof(userAgent));
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+        ArgumentException.ThrowIfNullOrEmpty(userAgent);
         try
         {
             return dbContext.LoginAudits
@@ -24,5 +25,11 @@ public class LoginAuditRepository(AppDbContext dbContext, ILogger<LoginAuditRepo
             logger.LogError(e, "Failed to check for new device login for UserId={UserId}", userId);
             throw;
         }
+    }
+
+    public void AddLogin(LoginAudit loginAudit, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(loginAudit.UserId, nameof(loginAudit));
+        dbContext.LoginAudits.Add(loginAudit);
     }
 }

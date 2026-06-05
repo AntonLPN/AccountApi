@@ -1,6 +1,8 @@
+using Account.Contracts.DTOs.EntitiesDTO;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
 using Account.Domain.Entities;
+using Account.Domain.Repositories;
 using Account.Infrastructure.Persistence;
 using MassTransit;
 using Microsoft.Extensions.Logging;
@@ -9,7 +11,8 @@ namespace Account.Infrastructure.Consumers;
 
 public class RecordLoginAuditConsumer(
     ILogger<RecordLoginAuditConsumer> logger,
-    AppDbContext dbContext)
+    ILoginAuditRepository loginAuditRepository,
+    IUnitOfWork unitOfWork)
     : IConsumer<RecordLoginAuditIntegrationEvent>
 {
     public async Task Consume(ConsumeContext<RecordLoginAuditIntegrationEvent> context)
@@ -17,16 +20,18 @@ public class RecordLoginAuditConsumer(
         var message = context.Message;
         try
         {
-            dbContext.LoginAudits.Add(new LoginAudit
+            var loginAuditDto = new CreateLoginAuditDto
             {
                 UserId = message.UserId,
                 Email = message.Email,
                 IpAddress = message.IpAddress,
                 UserAgent = message.UserAgent,
-                IsSuspicious = message.IsSuspicious,
+                IsSuspicious = message.IsSuspicious, 
                 LoggedInAt = DateTime.UtcNow
-            });
-            await dbContext.SaveChangesAsync(context.CancellationToken);
+            };
+            var loginAudit = LoginAudit.Create(loginAuditDto);
+            loginAuditRepository.AddLogin(loginAudit, context.CancellationToken);
+            await unitOfWork.SaveChangesAsync(context.CancellationToken);
         }
         catch (Exception e)
         {

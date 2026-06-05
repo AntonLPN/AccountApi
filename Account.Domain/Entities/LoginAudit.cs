@@ -1,3 +1,5 @@
+using Account.Contracts.DTOs.EntitiesDTO;
+
 namespace Account.Domain.Entities;
 
 public class LoginAudit
@@ -9,4 +11,20 @@ public class LoginAudit
     public string? UserAgent { get; set; }
     public bool IsSuspicious { get; set; }
     public DateTime LoggedInAt { get; set; }
+
+    public static LoginAudit Create(CreateLoginAuditDto dto)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(dto.UserId, nameof(dto.UserId));
+        ArgumentException.ThrowIfNullOrWhiteSpace(dto.Email, nameof(dto.Email));
+        return new LoginAudit
+        {
+            UserId = dto.UserId,
+            Email = dto.Email,
+            IpAddress = dto.IpAddress,
+            UserAgent = dto.UserAgent,
+            IsSuspicious = dto.IsSuspicious,
+            LoggedInAt = dto.LoggedInAt
+        };
+        
+    }
 }

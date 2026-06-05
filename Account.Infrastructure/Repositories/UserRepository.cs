@@ -15,13 +15,10 @@ public sealed class UserRepository(AppDbContext dbContext, ILogger<UserRepositor
 
     public void CreateUser(AppUser user)
     {
-        ArgumentNullException.ThrowIfNull(user.Email);
-        ArgumentNullException.ThrowIfNull(user.PasswordHash);
-        if (string.IsNullOrEmpty(user.Id))
-        {
-            throw new InvalidOperationException("You try create user whit empty ID!");
-        }
-
+        ArgumentException.ThrowIfNullOrEmpty(user.Email,nameof(user.Email));
+        ArgumentException.ThrowIfNullOrEmpty(user.PasswordHash, nameof(user.PasswordHash));
+        ArgumentException.ThrowIfNullOrEmpty(user.Id, nameof(user.Id));
+        
         var entry = dbContext.Add(user);
     }
 
