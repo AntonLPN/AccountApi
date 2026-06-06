@@ -1,0 +1,164 @@
+services:
+  # ---------------------------------------------------------------------------
+  # Keycloak + its own Postgres. Realm "account-api" is imported on first start
+  # from deploy/keycloak/realm-export.json (client, audience mapper and the
+  # service-account roles needed by GetAdminTokenAsync are configured there).
+  # ---------------------------------------------------------------------------
+  keycloak-db:
+    image: postgres:16-alpine
+    container_name: keycloak-db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+      - keycloak-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - account-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: keycloak
+    command: start-dev --import-realm
+    environment:
+      # Master-realm admin console: http://localhost:8080  (admin / admin)
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./deploy/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    networks:
+      - account-net
+
+  # ---------------------------------------------------------------------------
+  # Redis (distributed cache — see commented AddStackExchangeRedisCache in Program.cs)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: account-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - account-net
+
+  # ---------------------------------------------------------------------------
+  # RabbitMQ (matches Messaging:RabbitMq in appsettings — guest/guest, vhost "/")
+  # Management UI: http://localhost:15672
+  # ---------------------------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: account-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: "/"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - account-net
+
+  # ---------------------------------------------------------------------------
+  # MySQL for the app DB (DbConfig:ConnectionString). Not requested explicitly,
+  # but the API needs it to run — remove this block if you host MySQL elsewhere.
+  # ---------------------------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: account-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: AccountDb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - account-net
+
+  # ---------------------------------------------------------------------------
+  # The Account API itself (built from ./Dockerfile). Host-specific addresses
+  # from appsettings.json are overridden here to point at the other containers.
+  # Swagger: http://localhost:5001/swagger
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: account-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:8080"
+      # App database
+      DbConfig__ConnectionString: "server=mysql;port=3306;user=root;password=123456;database=AccountDb;"
+      # JWT validation — must match the issuer of tokens minted via Keycloak below
+      Authentication__Schemes__Bearer__Authority: "http://keycloak:8080/realms/account-api"
+      Authentication__Schemes__Bearer__MetadataAddress: "http://keycloak:8080/realms/account-api/.well-known/openid-configuration"
+      Authentication__Schemes__Bearer__ValidAudience: "account-api"
+      # Keycloak admin client (service account) used for register/login/logout
+      KeycloakAdminClient__BaseUrl: "http://keycloak:8080/"
+      KeycloakAdminClient__Realm: "account-api"
+      KeycloakAdminClient__ClientId: "account-api"
+      KeycloakAdminClient__ClientSecret: "l3OVF0TX1w9VME5rFrlqlDayfCUMt8ZL"
+      # Messaging
+      Messaging__UseRabbitMq: "true"
+      Messaging__RabbitMq__Host: "rabbitmq"
+      RABBITMQ_HOST: "rabbitmq"
+      # Redis (used once AddStackExchangeRedisCache is enabled in Program.cs)
+      ConnectionStrings__Redis: "redis:6379"
+    ports:
+      - "5001:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - account-net
+
+networks:
+  account-net:
+    driver: bridge
+
+volumes:
+  keycloak-db-data:
+  redis-data:
+  rabbitmq-data:
+  mysql-data:
