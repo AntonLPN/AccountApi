@@ -1,5 +1,4 @@
 using Account.Application.Features.Account.Register;
-using Account.Domain.Entities;
 using Account.Infrastructure.Configuration;
 using Account.Infrastructure.Extensions;
 using Account.Infrastructure.Persistence;
@@ -9,7 +8,6 @@ using Account.Infrastructure.Saga.UserLogout;
 using Account.Infrastructure.Saga.UserRegister;
 using Account.Infrastructure.Services;
 using MassTransit;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -51,9 +49,6 @@ public static class ServicesExtensions
                     ValidateIssuer = true,
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
-                    // ValidAudience = keycloakSettings["ValidAudience"],
-                    // ValidateIssuer = true,
-                    // ValidIssuer = keycloakSettings["Authority"]
                 };
             });
 
@@ -158,15 +153,5 @@ public static class ServicesExtensions
 
         return services;
     }
-
-    private static void AddUserRegistrationSaga(this IRegistrationConfigurator x)
-    {
-        x.AddSagaStateMachine<UserRegistrationSaga, UserRegistrationSagaState, UserRegistrationSagaDefinition>()
-            .EntityFrameworkRepository(r =>
-            {
-                r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
-                r.ExistingDbContext<AppDbContext>();
-                r.UseMySql();
-            });
-    }
+    
 }
