@@ -1,4 +1,5 @@
 using Account.Application.Features.Account.Login;
+using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
@@ -114,4 +115,140 @@ public class LoginUserHandlerTests
         _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task Handle_WhenLoginSucceeds_ReturnsSuccessWithTokenAndApiKey()
+    {
+        // Arrange
+        var sut = CreateSut();
+        var command = CreateCommand();
+        var user = CreateUser();
+        var tokenResponse = CreateTokenResponse();
+        const string apiKey = "api-key-123";
+
+        _authService
+            .Setup(x => x.LoginAsync(command.Email, command.Password))
+            .ReturnsAsync(tokenResponse);
+
+        _userRepository
+            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _apiKeyRepository
+            .Setup(x => x.GetApiKeyByUserIdAsync(user.Id))
+            .ReturnsAsync(apiKey);
+
+        // Act
+        var result = await sut.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ResultStatus.Ok, result.Status);
+        Assert.Equal(apiKey, result.Value.ApiKey);
+        Assert.Same(tokenResponse, result.Value.Token);
+    }
+
+    [Fact]
+    public async Task Handle_WhenApiKeyIsNull_ReturnsSuccessWithEmptyApiKey()
+    {
+        // Arrange
+        var sut = CreateSut();
+        var command = CreateCommand();
+        var user = CreateUser();
+
+        _authService
+            .Setup(x => x.LoginAsync(command.Email, command.Password))
+            .ReturnsAsync(CreateTokenResponse());
+
+        _userRepository
+            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _apiKeyRepository
+            .Setup(x => x.GetApiKeyByUserIdAsync(user.Id))
+            .ReturnsAsync((string?)null);
+
+        // Act
+        var result = await sut.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal("", result.Value.ApiKey);
+    }
+
+    [Fact]
+    public async Task Handle_WhenLoginSucceeds_PublishesSagaStartedEventWithUserDetails()
+    {
+        // Arrange
+        var sut = CreateSut();
+        var command = CreateCommand();
+        var user = CreateUser();
+
+        _authService
+            .Setup(x => x.LoginAsync(command.Email, command.Password))
+            .ReturnsAsync(CreateTokenResponse());
+
+        _userRepository
+            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        // Act
+        await sut.Handle(command, CancellationToken.None);
+
+        // Assert
+        _publishEndpoint.Verify(x => x.Publish(
+            It.Is<UserLoginSagaStartedIntegrationEvent>(e =>
+                e.CorrelationId != Guid.Empty &&
+                e.UserId == user.Id &&
+                e.Email == user.Email &&
+                e.IpAddress == command.IpAddress &&
+                e.UserAgent == command.UserAgent),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenLoginSucceeds_SavesChangesForSaga()
+    {
+        // Arrange
+        var sut = CreateSut();
+        var command = CreateCommand();
+
+        _authService
+            .Setup(x => x.LoginAsync(command.Email, command.Password))
+            .ReturnsAsync(CreateTokenResponse());
+
+        _userRepository
+            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateUser());
+
+        // Act
+        await sut.Handle(command, CancellationToken.None);
+
+        // Assert
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_PropagatesCancellationToken()
+    {
+        // Arrange
+        var sut = CreateSut();
+        var command = CreateCommand();
+        using var cts = new CancellationTokenSource();
+
+        _authService
+            .Setup(x => x.LoginAsync(command.Email, command.Password))
+            .ReturnsAsync(CreateTokenResponse());
+
+        _userRepository
+            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateUser());
+
+        // Act
+        await sut.Handle(command, cts.Token);
+
+        // Assert
+        _userRepository.Verify(x => x.GetUserByEmailAsync(command.Email, cts.Token), Times.Once);
+        _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserLoginSagaStartedIntegrationEvent>(), cts.Token), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(cts.Token), Times.Once);
+    }
 }
