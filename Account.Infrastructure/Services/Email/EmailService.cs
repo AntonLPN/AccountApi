@@ -39,7 +39,7 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
         msg.Body = bodyBuilder.ToMessageBody();
         try
         {
-            return await SendMessageSmtp(msg, cancellationToken);;
+            return await SendMessageSmtp(msg, cancellationToken);
         }
         catch (Exception e)
         {

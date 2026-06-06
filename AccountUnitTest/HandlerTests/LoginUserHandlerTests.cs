@@ -1,0 +1,117 @@
+using Account.Application.Features.Account.Login;
+using Account.Domain.Entities;
+using Account.Domain.Interfaces;
+using Account.Domain.Models;
+using Account.Domain.Repositories;
+using Ardalis.Result;
+using MassTransit;
+using Microsoft.Extensions.Logging;
+using Moq;
+
+namespace AccountUnitTest.HandlerTests;
+
+public class LoginUserHandlerTests
+{
+    private readonly Mock<ILogger<LoginUserHandler>> _logger = new();
+    private readonly Mock<IAuthService> _authService = new();
+    private readonly Mock<IUnitOfWork> _unitOfWork = new();
+    private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<IApiKeyRepository> _apiKeyRepository = new();
+    private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
+
+    private LoginUserHandler CreateSut()
+    {
+        return new LoginUserHandler(
+            _logger.Object,
+            _authService.Object,
+            _unitOfWork.Object,
+            _userRepository.Object,
+            _apiKeyRepository.Object,
+            _publishEndpoint.Object);
+    }
+
+    private static LoginCommand CreateCommand(
+        string email = "test@mail.com",
+        string password = "123Avc_!@#$%^&*()_+",
+        string? ipAddress = "192.168.1.1",
+        string? userAgent = "Mozilla/5.0")
+        => new(email, password, ipAddress, userAgent);
+
+    private static AppUser CreateUser(string id = "user123", string email = "test@mail.com")
+    {
+        return new AppUser
+        {
+            Id = id,
+            Email = email,
+            UserName = email,
+            PasswordHash = "hash",
+            EmailConfirmed = true
+        };
+    }
+
+    private static TokenResponse CreateTokenResponse(
+        string accessToken = "access_token",
+        string refreshToken = "refresh_token",
+        string tokenType = "Bearer",
+        int expiresIn = 3600,
+        string scope = "scope")
+    {
+        return new TokenResponse
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            TokenType = tokenType,
+            ExpiresIn = expiresIn,
+            Scope = scope
+        };
+    }
+
+    [Fact]
+    public async Task Handle_WhenAuthServiceReturnsNull_ReturnsUnauthorized()
+    {
+        // Arrange
+        var sut = CreateSut();
+        var command = CreateCommand();
+        
+        _authService
+            .Setup(x => x.LoginAsync(command.Email, command.Password))
+            .ReturnsAsync((TokenResponse?)null);
+
+        // Act
+        var result = await sut.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.Unauthorized, result.Status);
+        _userRepository.Verify(x => x.GetUserByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _publishEndpoint.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserNotFound_ReturnsUnauthorized()
+    {
+        // Arrange
+        var sut = CreateSut();
+        var command = CreateCommand();
+        var tokenResponse = CreateTokenResponse();
+
+        _authService
+            .Setup(x => x.LoginAsync(command.Email, command.Password))
+            .ReturnsAsync(tokenResponse);
+
+        _userRepository
+            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AppUser?)null);
+
+        // Act
+        var result = await sut.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.Unauthorized, result.Status);
+        _apiKeyRepository.Verify(x => x.GetApiKeyByUserIdAsync(It.IsAny<string>()), Times.Never);
+        _publishEndpoint.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+}
