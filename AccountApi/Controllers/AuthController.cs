@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Account.Application.Features.Account.Login;
 using Account.Application.Features.Account.Logout;
 using Account.Application.Features.Account.Register;
@@ -8,13 +9,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AccountApi.Controllers;
 
-[AllowAnonymous]
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
 public class AuthController(IMediator mediator) : ControllerBase
 {
-    
+    [AllowAnonymous]
     [HttpPost("register")]
     [ProducesResponseType(typeof(RegisterUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -25,12 +25,13 @@ public class AuthController(IMediator mediator) : ControllerBase
 
         var regCmd = new RegisterCommand(model.Email, model.Password);
         var res = await mediator.Send(regCmd);
-        if(!res.IsSuccess)
+        if (!res.IsSuccess)
             return BadRequest(res.Errors);
 
         return Ok(res.Value);
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -54,6 +55,8 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
+
+    [Authorize]
     [HttpPost("logout")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -62,11 +65,13 @@ public class AuthController(IMediator mediator) : ControllerBase
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
-
+        var emailClaim = User.FindFirst(ClaimTypes.Email)?.Value;
+        if (string.IsNullOrWhiteSpace(emailClaim))
+            return BadRequest("User not found");
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers.UserAgent.ToString();
 
-        var logoutCmd = new LogoutCommand(model.Email, model.RefreshToken, ipAddress, userAgent);
+        var logoutCmd = new LogoutCommand(emailClaim, model.RefreshToken, ipAddress, userAgent);
         var res = await mediator.Send(logoutCmd);
 
         if (res.Status == Ardalis.Result.ResultStatus.Unauthorized)

@@ -49,7 +49,11 @@ public static class ServicesExtensions
                     ValidateAudience = true,
                     ValidAudience = keycloakSettings["ValidAudience"],
                     ValidateIssuer = true,
-                    ValidIssuer = keycloakSettings["Authority"]
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero
+                    // ValidAudience = keycloakSettings["ValidAudience"],
+                    // ValidateIssuer = true,
+                    // ValidIssuer = keycloakSettings["Authority"]
                 };
             });
 
