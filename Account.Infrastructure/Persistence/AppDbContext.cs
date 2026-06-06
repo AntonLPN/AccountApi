@@ -10,8 +10,10 @@ public class AppDbContext : DbContext
     public DbSet<AppUser> AppUsers { get; set; } = null!;
     public DbSet<ApiKey> ApiKeys { get; set; } = null!;
     public DbSet<LoginAudit> LoginAudits { get; set; } = null!;
+    public DbSet<LogoutAudit> LogoutAudits { get; set; } = null!;
     public DbSet<UserRegistrationSagaState> UserRegistrationSagaStates { get; set; } = null!;
     public DbSet<UserLoginSagaState> UserLoginSagaStates { get; set; } = null!;
+    public DbSet<UserLogoutSagaState> UserLogoutSagaStates { get; set; } = null!;
 
     // ReSharper disable once ConvertToPrimaryConstructor
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
@@ -38,6 +40,7 @@ public class AppDbContext : DbContext
                 .IsRequired();
             entity.Property(e => e.EmailConfirmed).HasColumnName("EmailConfirmed").HasDefaultValue(false);
             entity.Property(e => e.LastLoginAt).HasColumnName("LastLoginAt");
+            entity.Property(e => e.LastLogoutAt).HasColumnName("LastLogoutAt");
 
             entity.HasIndex(u => u.Email).IsUnique();
         });
@@ -101,6 +104,35 @@ public class AppDbContext : DbContext
             entity.Property(a => a.UserAgent).HasMaxLength(512).HasColumnName("UserAgent").IsUnicode();
             entity.Property(a => a.IsSuspicious).HasColumnName("IsSuspicious");
             entity.Property(a => a.LoggedInAt).HasColumnName("LoggedInAt");
+            entity.HasIndex(a => a.UserId);
+        });
+
+        builder.Entity<UserLogoutSagaState>(entity =>
+        {
+            entity.HasKey(s => s.CorrelationId);
+            entity.Property(s => s.CorrelationId).HasMaxLength(255);
+            entity.Property(s => s.CurrentState).HasMaxLength(64);
+            entity.Property(x => x.UserId).HasMaxLength(255);
+            entity.Property(x => x.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode();
+            entity.Property(x => x.IpAddress).HasMaxLength(64).HasColumnName("IpAddress").IsUnicode();
+            entity.Property(x => x.UserAgent).HasMaxLength(512).HasColumnName("UserAgent").IsUnicode();
+            entity.Property(x => x.AuditRecorded).HasColumnName("AuditRecorded").HasDefaultValue(false);
+            entity.Property(x => x.LastLogoutUpdated).HasColumnName("LastLogoutUpdated").HasDefaultValue(false);
+            entity.Property(x => x.NotificationSent).HasColumnName("NotificationSent").HasDefaultValue(false);
+            entity.Property(x => x.FailureReason).HasMaxLength(255).HasColumnName("FailureReason").IsUnicode();
+            entity.Property(x => x.CreatedAt).HasColumnName("CreatedAt");
+            entity.Property(x => x.UpdatedAt).HasColumnName("UpdatedAt");
+            entity.HasIndex(x => x.UserId);
+        });
+
+        builder.Entity<LogoutAudit>(entity =>
+        {
+            entity.HasKey(a => a.Id).HasName("PK_LogoutAudit");
+            entity.Property(a => a.UserId).HasMaxLength(255).HasColumnName("UserId").IsUnicode();
+            entity.Property(a => a.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode();
+            entity.Property(a => a.IpAddress).HasMaxLength(64).HasColumnName("IpAddress").IsUnicode();
+            entity.Property(a => a.UserAgent).HasMaxLength(512).HasColumnName("UserAgent").IsUnicode();
+            entity.Property(a => a.LoggedOutAt).HasColumnName("LoggedOutAt");
             entity.HasIndex(a => a.UserId);
         });
     }

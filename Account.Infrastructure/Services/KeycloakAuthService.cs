@@ -37,6 +37,17 @@ public class KeycloakAuthService : IAuthService
         return await _keycloakHttpClient.LoginAsync(email, password, _options.Value);
     }
 
+    public async Task<bool> LogoutAsync(string refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            _logger.LogWarning("Logout attempt with empty refresh token");
+            return false;
+        }
+
+        return await _keycloakHttpClient.LogoutAsync(refreshToken, _options.Value);
+    }
+
     public async Task<Result<string>> RegisterUserAsync(string email, string password)
     {
         if (!IsValidRegisterRequest(email, password))

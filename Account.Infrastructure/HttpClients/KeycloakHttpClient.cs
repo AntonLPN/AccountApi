@@ -144,6 +144,35 @@ public class KeycloakHttpClient
     }
 
 
+    public async Task<bool> LogoutAsync(string refreshToken, KeycloakAdminOptions options)
+    {
+        try
+        {
+            var content = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("client_id", options.ClientId),
+                new KeyValuePair<string, string>("client_secret", options.ClientSecret),
+                new KeyValuePair<string, string>("refresh_token", refreshToken)
+            });
+
+            var url = CombineUrls(options.BaseUrl, "realms", options.Realm, "protocol/openid-connect/logout");
+            var response = await _httpClient.PostAsync(url, content);
+
+            if (response.IsSuccessStatusCode)
+                return true;
+
+            var errorBody = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Logout failed: {StatusCode} - {Body}", response.StatusCode, errorBody);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during logout");
+            return false;
+        }
+    }
+
+
     private string CombineUrls(string baseUrl, params string[] segments)
     {
         var parts = new List<string> { baseUrl.TrimEnd('/') };

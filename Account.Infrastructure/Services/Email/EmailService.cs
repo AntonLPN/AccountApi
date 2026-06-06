@@ -76,6 +76,22 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
             cancellationToken));
     }
 
+    public async Task<bool> SendLogoutNotificationEmail(LogoutNotificationDto logoutNotificationDto,
+        CancellationToken cancellationToken = default)
+    {
+        var htmlTemplate = GetEmailTemplateAsync("LogoutTemplate.html");
+        var body = htmlTemplate
+            .Replace("{{IP_ADDRESS}}", logoutNotificationDto.IpAddress)
+            .Replace("{{DATE_TIME}}", logoutNotificationDto.LogoutTime.ToString("dd.MM.yyyy, HH:mm 'UTC'"))
+            .Replace("{{USER_AGENT}}", logoutNotificationDto.UserAgent);
+        ArgumentException.ThrowIfNullOrEmpty(htmlTemplate);
+        return await _emailRetryPolicy.ExecuteAsync(async () => await SendEmailAsync(
+            logoutNotificationDto.ToEmail,
+            "You have been logged out — " + _emailConfig.OwnerName,
+            body,
+            cancellationToken));
+    }
+
     private async Task<bool> SendMessageSmtp(MimeMessage message, CancellationToken cancellationToken = default)
     {
         ValidateConfiguration();

@@ -8,4 +8,7 @@ public interface IEmail
 
     Task<bool> SendNewDeviceLoginEmail(SuspiciousDeviceDto suspiciousDeviceDto,
         CancellationToken cancellationToken = default);
+
+    Task<bool> SendLogoutNotificationEmail(LogoutNotificationDto logoutNotificationDto,
+        CancellationToken cancellationToken = default);
 }

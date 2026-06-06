@@ -41,5 +41,25 @@ public sealed class UserRepository(AppDbContext dbContext, ILogger<UserRepositor
             throw;
         }
     }
-    
+
+    public async Task<bool> UpdateLastLogoutAsync(string userId, DateTime loggedOutAt,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var user = await dbContext.AppUsers.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+            if (user is null)
+                return false;
+
+            user.LastLogoutAt = loggedOutAt;
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to update last logout for UserId={UserId}", userId);
+            throw;
+        }
+    }
+
 }

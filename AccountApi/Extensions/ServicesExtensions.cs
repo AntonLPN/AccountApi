@@ -5,6 +5,7 @@ using Account.Infrastructure.Extensions;
 using Account.Infrastructure.Persistence;
 using Account.Infrastructure.Persistence.SagaModels;
 using Account.Infrastructure.Saga.UserLogin;
+using Account.Infrastructure.Saga.UserLogout;
 using Account.Infrastructure.Saga.UserRegister;
 using Account.Infrastructure.Services;
 using MassTransit;
@@ -79,6 +80,13 @@ public static class ServicesExtensions
                     r.UseMySql();
                 });
             x.AddSagaStateMachine<UserLoginSaga, UserLoginSagaState, UserLoginSagaDefinition>()
+                .EntityFrameworkRepository(r =>
+                {
+                    r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
+                    r.ExistingDbContext<AppDbContext>();
+                    r.UseMySql();
+                });
+            x.AddSagaStateMachine<UserLogoutSaga, UserLogoutSagaState, UserLogoutSagaDefinition>()
                 .EntityFrameworkRepository(r =>
                 {
                     r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
