@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Account.Infrastructure.Consumers.Register;
 
-public class SendEmailConfirmationConsumer(ILogger<SendEmailConfirmationConsumer> logger, IEmail emailService)
+public class SendWelcomeEmailConsumer(ILogger<SendWelcomeEmailConsumer> logger, IEmail emailService)
     : IConsumer<SendWelcomeEmailIntegrationEvent>
 {
     public async Task Consume(ConsumeContext<SendWelcomeEmailIntegrationEvent> context)
@@ -25,7 +25,7 @@ public class SendEmailConfirmationConsumer(ILogger<SendEmailConfirmationConsumer
         }
 
         logger.LogInformation(
-            "Consumed SendEmailConfirmationCommandIntegrationEvent: UserId={UserId}, Email={Email}",
+            "Consumed SendWelcomeEmailIntegrationEvent: UserId={UserId}, Email={Email}",
             context.Message.UserId, MaskedEmail.Create(context.Message.Email));
         await context.Publish(new WelcomeEmailSentIntegrationEvent
         {
