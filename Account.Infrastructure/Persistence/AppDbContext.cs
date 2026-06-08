@@ -28,7 +28,7 @@ public class AppDbContext : DbContext
         builder.AddInboxStateEntity();
         builder.AddOutboxMessageEntity();
         builder.AddOutboxStateEntity();
-        
+
         builder.Entity<AppUser>(entity =>
         {
             entity.Property(e => e.Id).IsRequired()
@@ -41,6 +41,9 @@ public class AppDbContext : DbContext
             entity.Property(e => e.EmailConfirmed).HasColumnName("EmailConfirmed").HasDefaultValue(false);
             entity.Property(e => e.LastLoginAt).HasColumnName("LastLoginAt");
             entity.Property(e => e.LastLogoutAt).HasColumnName("LastLogoutAt");
+            entity.Property(e => e.ReferralCode).HasMaxLength(255).HasColumnName("ReferralCode").IsUnicode()
+                .IsRequired();
+            entity.Property(e => e.ReferrerId).HasMaxLength(255).HasColumnName("ReferrerId").IsUnicode();
 
             entity.HasIndex(u => u.Email).IsUnique();
         });

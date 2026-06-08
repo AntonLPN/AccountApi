@@ -36,8 +36,10 @@ public class RegisterUserHandler(
             var user = AppUser.Create(
                 id: keycloakResult.Value,
                 email: request.Email,
-                passwordHash: cryptographyService.Hash(request.Password));
-            userRepository.CreateUser(user);
+                passwordHash: cryptographyService.Hash(request.Password),
+                request.ReferrerId);
+            
+            userRepository.AddUser(user);
             var apiKey = apiKeyRepository.CreateApiKey(user.Id);
             //Start Saga
             await publishEndpoint.Publish(new UserSagaStartedIntegrationEvent

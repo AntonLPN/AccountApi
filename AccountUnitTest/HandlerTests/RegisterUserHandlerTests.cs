@@ -39,7 +39,7 @@ public class RegisterUserHandlerTests
 
     private static RegisterCommand CreateCommand(string email = "test@mail.com",
         string password = "123Avc_!@#$%^&*()_+")
-        => new(email, password);
+        => new(email, password,"referrerId");
 
     [Fact]
     public async Task Handle_WhenEmailExists_ReturnsConflict()
@@ -89,7 +89,7 @@ public class RegisterUserHandlerTests
             .ReturnsAsync((AppUser?)null);
         _authService.Setup(x => x.RegisterUserAsync(cmd.Email, cmd.Password))
             .ReturnsAsync(Result<string>.Success("Registration Successful"));
-        _userRepository.Setup(x => x.CreateUser(It.IsAny<AppUser>()));
+        _userRepository.Setup(x => x.AddUser(It.IsAny<AppUser>()));
         _apiKeyRepository.Setup(x => x.CreateApiKey(It.IsAny<string>())).Returns("api_key");
         _authService.Setup(x => x.LoginAsync(cmd.Email, cmd.Password))
             .ReturnsAsync(new TokenResponse
@@ -115,7 +115,7 @@ public class RegisterUserHandlerTests
         Assert.Equal("scope", result.Value.Token.Scope);
         //Db verify
         _apiKeyRepository.Verify(x => x.CreateApiKey(It.IsAny<string>()), Times.Once);
-        _userRepository.Verify(x => x.CreateUser(It.IsAny<AppUser>()), Times.Once);
+        _userRepository.Verify(x => x.AddUser(It.IsAny<AppUser>()), Times.Once);
         _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
         _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _tx.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);

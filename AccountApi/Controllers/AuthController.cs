@@ -23,7 +23,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var regCmd = new RegisterCommand(model.Email, model.Password);
+        var regCmd = new RegisterCommand(model.Email, model.Password,model.ReferrerId);
         var res = await mediator.Send(regCmd);
         if (!res.IsSuccess)
             return BadRequest(res.Errors);

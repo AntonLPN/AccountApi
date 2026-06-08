@@ -13,7 +13,7 @@ public sealed class UserRepository(AppDbContext dbContext, ILogger<UserRepositor
         return dbContext.AppUsers.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
     }
 
-    public void CreateUser(AppUser user)
+    public void AddUser(AppUser user)
     {
         ArgumentException.ThrowIfNullOrEmpty(user.Email,nameof(user.Email));
         ArgumentException.ThrowIfNullOrEmpty(user.PasswordHash, nameof(user.PasswordHash));

@@ -16,4 +16,8 @@ public sealed class RegisterModelRequest
         ErrorMessage = "Password must contain at least one uppercase letter, one number, and one special character.")]
     [JsonPropertyName("password")]
     public string Password { get; set; } = "";
+
+    [JsonPropertyName("referrerId")]
+    [Required(ErrorMessage = "ReferrerId is required")]
+    public string ReferrerId { get; set; } = "";
 }
