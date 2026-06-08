@@ -44,7 +44,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                         ApiKey = context.Message.ApiKey
                     }
                 )
-                .Publish(context => new UserRegisteredIntegrationEvent()
+                .Publish(context => new UserRegisteredIntegrationEvent()//use this event to send values to another microservice
                 {
                     CorrelationId = context.Saga.CorrelationId,
                     UserId = context.Saga.UserId,

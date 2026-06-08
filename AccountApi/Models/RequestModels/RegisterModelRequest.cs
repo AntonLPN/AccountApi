@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace AccountApi.Models.RequestModels;
 
@@ -19,5 +20,7 @@ public sealed class RegisterModelRequest
 
     [JsonPropertyName("referrerId")]
     [Required(ErrorMessage = "ReferrerId is required")]
+    [SwaggerSchema(
+        "Can be empty. If the user was referred by someone, then this field should contain the referral code of that person.")]
     public string ReferrerId { get; set; } = "";
 }
