@@ -62,13 +62,15 @@ public sealed class UserRepository(AppDbContext dbContext, ILogger<UserRepositor
         }
     }
 
-    public async Task<AppUser?> FindByReferralCodeAsync(string referralCode, CancellationToken cancellationToken = default)
+    public async Task<AppUser?> FindByReferralCodeAsync(string referralCode,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(referralCode))
             return null;
         try
         {
-            return await dbContext.AppUsers.FirstOrDefaultAsync(u => u.ReferralCode == referralCode, cancellationToken);
+            return await dbContext.AppUsers.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.ReferralCode == referralCode, cancellationToken);
         }
         catch (Exception e)
         {

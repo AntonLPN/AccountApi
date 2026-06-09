@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Account.Application.Features.Account.Login;
 using Account.Application.Features.Account.Logout;
 using Account.Application.Features.Account.Register;
+using AccountApi.Helpers;
 using AccountApi.Models.RequestModels;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -23,11 +24,12 @@ public class AuthController(IMediator mediator) : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var regCmd = new RegisterCommand(model.Email, model.Password,model.ReferralCode);
+        var regCmd = new RegisterCommand(model.Email, model.Password, model.ReferralCode);
         var res = await mediator.Send(regCmd);
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
-
+        
+        SetRefreshTokenCookie(res.Value.Token.RefreshToken);
         return Ok(res.Value);
     }
 
@@ -52,6 +54,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
 
+        SetRefreshTokenCookie(res.Value.Token.RefreshToken);
         return Ok(res.Value);
     }
 
@@ -80,5 +83,13 @@ public class AuthController(IMediator mediator) : ControllerBase
             return BadRequest(res.Errors);
 
         return Ok();
+    }
+
+    private void SetRefreshTokenCookie(string? refreshToken)
+    {
+        if (string.IsNullOrEmpty(refreshToken))
+            return;
+
+        Response.Cookies.Append("refreshToken", refreshToken, WebSettings.GetCookieOptions());
     }
 }
