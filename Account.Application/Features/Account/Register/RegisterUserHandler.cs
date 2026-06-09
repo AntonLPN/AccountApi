@@ -33,12 +33,13 @@ public class RegisterUserHandler(
         await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
+            var whoInvited = await userRepository.FindByReferralCodeAsync(request.ReferrerCode, cancellationToken);
             var user = AppUser.Create(
                 id: keycloakResult.Value,
                 email: request.Email,
                 passwordHash: cryptographyService.Hash(request.Password),
-                request.ReferrerId);
-            
+                referrerId: whoInvited?.Id);
+
             userRepository.AddUser(user);
             var apiKey = apiKeyRepository.CreateApiKey(user.Id);
             //Start Saga
@@ -49,7 +50,7 @@ public class RegisterUserHandler(
                 Email = user.Email,
                 ApiKey = apiKey
             }, cancellationToken);
-            
+
             await unitOfWork.SaveChangesAsync(cancellationToken);
             await tx.CommitAsync(cancellationToken);
 
@@ -69,5 +70,4 @@ public class RegisterUserHandler(
             throw; //rethrow to middleware handle exception
         }
     }
-    
 }

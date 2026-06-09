@@ -16,5 +16,7 @@ public interface IUserRepository
     /// Updates the LastLogoutAt timestamp for the given user. Returns false if the user was not found.
     /// </summary>
     Task<bool> UpdateLastLogoutAsync(string userId, DateTime loggedOutAt, CancellationToken cancellationToken = default);
+    
+    Task<AppUser?> FindByReferralCodeAsync(string referralCode, CancellationToken cancellationToken = default);
 
 }

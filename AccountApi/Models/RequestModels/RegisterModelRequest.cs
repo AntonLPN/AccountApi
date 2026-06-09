@@ -18,9 +18,9 @@ public sealed class RegisterModelRequest
     [JsonPropertyName("password")]
     public string Password { get; set; } = "";
 
-    [JsonPropertyName("referrerId")]
-    [Required(ErrorMessage = "ReferrerId is required")]
+    [JsonPropertyName("referralCode")]
+    [Required(ErrorMessage = "ReferralCode is required")]
     [SwaggerSchema(
         "Can be empty. If the user was referred by someone, then this field should contain the referral code of that person.")]
-    public string ReferrerId { get; set; } = "";
+    public string ReferralCode { get; set; } = "";
 }

@@ -15,11 +15,11 @@ public sealed class UserRepository(AppDbContext dbContext, ILogger<UserRepositor
 
     public void AddUser(AppUser user)
     {
-        ArgumentException.ThrowIfNullOrEmpty(user.Email,nameof(user.Email));
+        ArgumentException.ThrowIfNullOrEmpty(user.Email, nameof(user.Email));
         ArgumentException.ThrowIfNullOrEmpty(user.PasswordHash, nameof(user.PasswordHash));
         ArgumentException.ThrowIfNullOrEmpty(user.Id, nameof(user.Id));
-        
-        var entry = dbContext.Add(user);
+
+        dbContext.Add(user);
     }
 
     public async Task<bool> UpdateLastLoginAsync(string userId, DateTime loggedInAt,
@@ -62,4 +62,18 @@ public sealed class UserRepository(AppDbContext dbContext, ILogger<UserRepositor
         }
     }
 
+    public async Task<AppUser?> FindByReferralCodeAsync(string referralCode, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(referralCode))
+            return null;
+        try
+        {
+            return await dbContext.AppUsers.FirstOrDefaultAsync(u => u.ReferralCode == referralCode, cancellationToken);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to find user by referral code={ReferralCode}", referralCode);
+            throw;
+        }
+    }
 }
