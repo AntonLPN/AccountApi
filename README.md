@@ -65,14 +65,38 @@ src/
 ---
 
                                        🚀 Quick Start & Infrastructure Setup
-This project requires a Keycloak instance to handle Identity Management. Below is the recommended setup to get the system running in minutes.
-1. Keycloak Configuration
-We provide a pre-configured export to ensure the environment is ready for development.
+🚀 Quick Start & Infrastructure Setup
+This project uses Docker Compose to orchestrate all necessary infrastructure services, including Keycloak, RabbitMQ, Redis, and MySQL. The environment is pre-configured so you don't need to manually import realms or set up databases.
 
-Locate the configuration file at `deploy/account-api.json`.
-Import: Navigate to your Keycloak Admin Console -> Realm Settings -> Action -> Partial Export (or Import) and upload the configuration file.
+Prerequisites
+Docker Desktop (or Docker Engine + Compose plugin) installed and running.
 
-Credentials: Ensure your AccountApi appsettings.json matches the clientId and clientSecret defined in the imported realm.
+Getting Started
+Start the Infrastructure
+From the project root directory, run the following command to spin up all services:
+
+docker-compose up -d
+
+   *This command will automatically:*
+   *   Initialize the **MySQL** database.
+   *   Start **RabbitMQ** with management console.
+   *   Import the pre-configured **Keycloak** realm (`account-api`) from `deploy/keycloak/realm-export.json`.
+   *   Start the **Redis** cache.
+   *   Build and start the **Account API** container.
+
+2. **Accessing Services**
+   Once all containers are healthy, you can access the following:
+   * **Account API Swagger:** [http://localhost:5001/swagger](http://localhost:5001/swagger)
+   * **Keycloak Admin Console:** [http://localhost:8080](http://localhost:8080) (login: `admin` / `admin`)
+   * **RabbitMQ Management:** [http://localhost:15672](http://localhost:15672) (login: `guest` / `guest`)
+
+3. **Development Tips**
+   * If you need to rebuild the API after code changes:
+     ```bash
+     docker-compose up -d --build api
+   * To stop and wipe all infrastructure (including database data):
+   ```bash
+   docker-compose down -v
 
 ## 📄 License & Commercial Usage
 
