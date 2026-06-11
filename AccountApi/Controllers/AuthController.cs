@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Account.Application.Features.Account.GoogleRegister;
 using Account.Application.Features.Account.Login;
 using Account.Application.Features.Account.Logout;
 using Account.Application.Features.Account.Register;
@@ -28,7 +29,25 @@ public class AuthController(IMediator mediator) : ControllerBase
         var res = await mediator.Send(regCmd);
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
-        
+
+        SetRefreshTokenCookie(res.Value.Token.RefreshToken);
+        return Ok(res.Value);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("google-register")]
+    [ProducesResponseType(typeof(RegisterUserResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GoogleRegister([FromBody] GoogleRegisterRequest model)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var regCmd = new GoogleRegisterCommand(model.Token, model.ReferralCode);
+        var res = await mediator.Send(regCmd);
+        if (!res.IsSuccess)
+            return BadRequest(res.Errors);
+
         SetRefreshTokenCookie(res.Value.Token.RefreshToken);
         return Ok(res.Value);
     }

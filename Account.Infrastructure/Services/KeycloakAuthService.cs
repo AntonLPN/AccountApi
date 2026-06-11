@@ -29,6 +29,14 @@ public class KeycloakAuthService : IAuthService
         _logger = logger;
     }
 
+    public async Task<TokenResponse?> GoogleRegisterAsync(string googleToken)
+    {
+        if (!string.IsNullOrWhiteSpace(googleToken))
+            return await _keycloakHttpClient.ExchangeGoogleTokenAsync(googleToken, _options.Value);
+        _logger.LogWarning("Google registration attempt with empty token");
+        return null;
+    }
+
     public async Task<TokenResponse?> LoginAsync(string email, string password)
     {
         if (!IsValidLoginRequest(email, password))

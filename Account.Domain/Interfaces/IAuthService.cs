@@ -12,6 +12,8 @@ public interface IAuthService
     /// <param name="password"></param>
     /// <returns>id user</returns>
     Task<Result<string>> RegisterUserAsync(string email, string password);
+
+    Task<TokenResponse?> GoogleRegisterAsync(string googleToken);
     Task<TokenResponse?> LoginAsync(string email, string password);
     Task<TokenResponse?> RefreshTokenAsync(string refreshToken);
 

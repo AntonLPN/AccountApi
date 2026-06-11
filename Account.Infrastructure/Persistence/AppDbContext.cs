@@ -44,6 +44,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.ReferralCode).HasMaxLength(255).HasColumnName("ReferralCode").IsUnicode()
                 .IsRequired();
             entity.Property(e => e.ReferrerId).HasMaxLength(255).HasColumnName("ReferrerId").IsUnicode();
+            entity.Property(e=>e.ProviderName).HasMaxLength(60).HasColumnName("ProviderName").IsUnicode();
 
             entity.HasIndex(u => u.Email).IsUnique();
         });

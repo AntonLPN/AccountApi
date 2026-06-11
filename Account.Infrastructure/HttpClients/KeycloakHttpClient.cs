@@ -169,7 +169,7 @@ public class KeycloakHttpClient
             throw; //throw to middleware handle exception
         }
     }
-    
+
 
     public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken, KeycloakAdminOptions options)
     {
@@ -183,7 +183,7 @@ public class KeycloakHttpClient
             ]);
 
             var tokenUrl = CombineUrls(options.BaseUrl, "realms", options.Realm, "protocol/openid-connect/token");
-        
+
             _logger.LogInformation("Trying to refresh token: {TokenUrl} ", tokenUrl);
             var response = await _httpClient.PostAsync(tokenUrl, content);
 
@@ -208,12 +208,47 @@ public class KeycloakHttpClient
         }
     }
 
+    public async Task<TokenResponse?> ExchangeGoogleTokenAsync(string googleToken, KeycloakAdminOptions options)
+    {
+        try
+        {
+            var content = new FormUrlEncodedContent([
+                new KeyValuePair<string, string>("client_id", options.ClientId),
+                new KeyValuePair<string, string>("client_secret", options.ClientSecret),
+                new KeyValuePair<string, string>("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange"),
+                new KeyValuePair<string, string>("subject_token", googleToken),
+                new KeyValuePair<string, string>("subject_issuer", "google"),
+                new KeyValuePair<string, string>("subject_token_type", "urn:ietf:params:oauth:token-type:jwt")
+            ]);
+
+            var tokenUrl = CombineUrls(options.BaseUrl, "realms", options.Realm, "protocol/openid-connect/token");
+
+            _logger.LogInformation("Trying to exchange Google token at: {TokenUrl}", tokenUrl);
+            var response = await _httpClient.PostAsync(tokenUrl, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Token Exchange failed: {ResponseStatusCode} - {ErrorBody}", response.StatusCode,
+                    errorBody);
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<TokenResponse>(json);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during Google Token Exchange");
+            throw;
+        }
+    }
+
     private string CombineUrls(string baseUrl, params string[] segments)
     {
         var parts = new List<string> { baseUrl.TrimEnd('/') };
         parts.AddRange(segments.Select(s => s.Trim('/')));
-        
+
         return string.Join("/", parts);
     }
-    
 }
