@@ -13,6 +13,7 @@ public interface IAuthService
     /// <returns>id user</returns>
     Task<Result<string>> RegisterUserAsync(string email, string password);
     Task<TokenResponse?> LoginAsync(string email, string password);
+    Task<TokenResponse?> RefreshTokenAsync(string refreshToken);
 
     /// <summary>
     /// Logs the user out of Keycloak by revoking the provided refresh token / session.

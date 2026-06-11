@@ -37,6 +37,13 @@ public class KeycloakAuthService : IAuthService
         return await _keycloakHttpClient.LoginAsync(email, password, _options.Value);
     }
 
+    public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return null;
+        return await _keycloakHttpClient.RefreshTokenAsync(refreshToken, _options.Value);
+    }
+
     public async Task<bool> LogoutAsync(string refreshToken)
     {
         if (string.IsNullOrWhiteSpace(refreshToken))
@@ -88,7 +95,6 @@ public class KeycloakAuthService : IAuthService
         if (!string.IsNullOrWhiteSpace(email) && !string.IsNullOrWhiteSpace(password)) return true;
         _logger.LogWarning("Login attempt with empty credentials");
         return false;
-
     }
 
     private bool IsValidRegisterRequest(string email, string password)
@@ -102,6 +108,5 @@ public class KeycloakAuthService : IAuthService
         if (!string.IsNullOrWhiteSpace(password) && password.Length >= 8) return true;
         _logger.LogWarning("Registration attempt with weak password");
         return false;
-
     }
 }
