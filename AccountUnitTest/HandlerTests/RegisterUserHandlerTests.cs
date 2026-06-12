@@ -67,7 +67,7 @@ public class RegisterUserHandlerTests
         //Arrange
         _userRepository.Setup(x => x.GetUserByEmailAsync(cmd.Email, It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
-        _authService.Setup(x => x.RegisterUserAsync(cmd.Email, cmd.Password))
+        _authService.Setup(x => x.RegisterUserAsync(cmd.Email, cmd.Password,true))
             .ReturnsAsync(Result<string>.Error("Registration failed"));
         //Act
         var result = await sut.Handle(cmd, CancellationToken.None);
@@ -87,7 +87,7 @@ public class RegisterUserHandlerTests
         //Arrange
         _userRepository.Setup(x => x.GetUserByEmailAsync(cmd.Email, It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
-        _authService.Setup(x => x.RegisterUserAsync(cmd.Email, cmd.Password))
+        _authService.Setup(x => x.RegisterUserAsync(cmd.Email, cmd.Password,true))
             .ReturnsAsync(Result<string>.Success("Registration Successful"));
         _userRepository.Setup(x => x.AddUser(It.IsAny<AppUser>()));
         _apiKeyRepository.Setup(x => x.CreateApiKey(It.IsAny<string>())).Returns("api_key");
