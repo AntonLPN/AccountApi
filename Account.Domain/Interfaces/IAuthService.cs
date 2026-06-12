@@ -1,3 +1,4 @@
+using Account.Domain.DTOs;
 using Account.Domain.Models;
 using Ardalis.Result;
 
@@ -10,12 +11,14 @@ public interface IAuthService
     /// </summary>
     /// <param name="email"></param>
     /// <param name="password"></param>
+    /// <param name="useCredentials"></param>
     /// <returns>id user</returns>
-    Task<Result<string>> RegisterUserAsync(string email, string password);
+    Task<Result<string>> RegisterUserAsync(string email, string password,bool useCredentials = true);
 
-    Task<TokenResponse?> GoogleRegisterAsync(string googleToken);
     Task<TokenResponse?> LoginAsync(string email, string password);
     Task<TokenResponse?> RefreshTokenAsync(string refreshToken);
+    Task<GooglePayloadDto> GoogleValidateAsync(string googleToken);
+
 
     /// <summary>
     /// Logs the user out of Keycloak by revoking the provided refresh token / session.

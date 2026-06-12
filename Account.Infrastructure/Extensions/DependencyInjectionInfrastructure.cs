@@ -13,7 +13,7 @@ public static class DependencyInjectionInfrastructure
 {
     public static void AddInfrastructureServices(this IServiceCollection services)
     {
-        services.AddScoped<IAuthService, KeycloakAuthService>();
+        services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICryptography, CryptographService>();
         services.AddScoped<IEmail, EmailService>();
         //Repository

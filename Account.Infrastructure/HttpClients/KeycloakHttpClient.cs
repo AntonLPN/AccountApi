@@ -23,21 +23,36 @@ public class KeycloakHttpClient
     public async Task<Result<string>> RegisterUserAsync(string userName, string email,
         string password,
         string adminToken,
-        KeycloakAdminOptions options)
+        KeycloakAdminOptions options,bool useCredentials = true)
     {
         try
         {
-            var newUser = new
+            object newUser;
+            if (useCredentials)
             {
-                username = userName,
-                email,
-                enabled = true,
-                emailVerified = true,
-                credentials = new[]
+                 newUser = new
                 {
-                    new { type = "password", value = password, temporary = false }
-                }
-            };
+                    username = userName,
+                    email,
+                    enabled = true,
+                    emailVerified = true,
+                    credentials = new[]
+                    {
+                        new { type = "password", value = password, temporary = false }
+                    }
+                };
+            }
+            else
+            {
+                newUser = new
+                {
+                    username = userName,
+                    email,
+                    enabled = true,
+                    emailVerified = true
+                };
+            }
+         
 
             var requestMessage = new HttpRequestMessage(HttpMethod.Post,
                 CombineUrls(options.BaseUrl, "admin/realms", options.Realm, "users"))
@@ -128,7 +143,7 @@ public class KeycloakHttpClient
             if (!response.IsSuccessStatusCode)
             {
                 var errorBody = await response.Content.ReadAsStringAsync();
-                _logger.LogWarning($"Login failed for user {userName}: {response.StatusCode} - {errorBody}");
+                _logger.LogWarning("Login failed for user : {ResponseStatusCode} - {ErrorBody}", response.StatusCode, errorBody);
                 return null;
             }
 
@@ -208,6 +223,35 @@ public class KeycloakHttpClient
         }
     }
 
+    // public async Task<TokenResponse?> ExchangeGoogleTokenAsync(string googleToken, KeycloakAdminOptions options)
+    // {
+    //     // 1. Получаем токен администратора (Client Credentials)
+    //     var adminToken = await GetAdminTokenAsync(options);
+    //
+    //     // 2. ВАШ БЭКЕНД: Валидируете googleToken здесь (получаете email пользователя)
+    //     var userEmail = await ValidateAndGetEmailFromGoogleAsync(googleToken);
+    //
+    //     // 3. Находим пользователя в Keycloak по email
+    //     var userId = await GetUserIdByEmailAsync(userEmail, adminToken, options);
+    //
+    //     // 4. Выполняем Impersonation (это дает нам токен пользователя)
+    //     var impersonationUrl = $"{options.BaseUrl}/admin/realms/{options.Realm}/users/{userId}/impersonation";
+    //
+    //     using var request = new HttpRequestMessage(HttpMethod.Post, impersonationUrl);
+    //     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+    //
+    //     var response = await _httpClient.SendAsync(request);
+    //
+    //     if (!response.IsSuccessStatusCode)
+    //     {
+    //         _logger.LogError("Impersonation failed: {Error}", await response.Content.ReadAsStringAsync());
+    //         return null;
+    //     }
+    //
+    //     var json = await response.Content.ReadAsStringAsync();
+    //     return JsonSerializer.Deserialize<TokenResponse>(json);
+    // }
+    
     public async Task<TokenResponse?> ExchangeGoogleTokenAsync(string googleToken, KeycloakAdminOptions options)
     {
         try

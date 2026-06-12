@@ -1,7 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
+using Account.Application.Features.Account.Register;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
+using Account.Domain.Models;
 using Account.Domain.Repositories;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
@@ -24,26 +26,23 @@ public class GoogleRegisterHandler(
     {
         try
         {
-            var email = GetEmailWithoutValidation(request.GoogleToken);
+            var googlePayload = await authService.GoogleValidateAsync(request.GoogleToken);
+            var email = googlePayload.Email;
             ArgumentException.ThrowIfNullOrEmpty(email);
+            
             var userByEmail = await userRepository.GetUserByEmailAsync(email, cancellationToken);
             if (userByEmail is not null)
                 return Result<GoogleRegisterResult>.Conflict("User already exists");
-            var keycloakResult = await authService.GoogleRegisterAsync(request.GoogleToken);
-            if (keycloakResult is null)
+            
+            var keycloakResult = await authService.RegisterUserAsync(request.GoogleToken,"",false);
+            if (!keycloakResult.IsSuccess)
                 return Result<GoogleRegisterResult>.Error("Google registration failed");
 
-            var handler = new JwtSecurityTokenHandler();
-            var jwtToken = handler.ReadJwtToken(keycloakResult.AccessToken);
-            var keycloakUserId = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
-            if (string.IsNullOrEmpty(keycloakUserId))
-                return Result<GoogleRegisterResult>.Error("Failed to extract user ID from Keycloak token");
-            
             var whoInvited = await userRepository.FindByReferralCodeAsync(request.ReferrerCode, cancellationToken);
             //Save to DB
             await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
             var user = AppUser.Create(
-                id: keycloakUserId,
+                id: keycloakResult.Value,
                 email: email,
                 passwordHash: "",
                 referrerId: whoInvited?.Id,
@@ -62,10 +61,13 @@ public class GoogleRegisterHandler(
             }, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             await tx.CommitAsync(cancellationToken);
+            TokenResponse? tokenResponse = await authService.LoginAsync(email, "");
+            if (tokenResponse is null)
+                return Result<GoogleRegisterResult>.Error("Login failed after registration for user");
             return Result<GoogleRegisterResult>.Success(new GoogleRegisterResult
             {
                 ApiKey = apiKey,
-                Token = keycloakResult,
+                Token = tokenResponse,
             });
         }
         catch (Exception e)
