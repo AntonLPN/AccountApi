@@ -13,13 +13,13 @@ public interface IAuthService
     /// <param name="password"></param>
     /// <param name="useCredentials"></param>
     /// <returns>id user</returns>
-    Task<Result<string>> RegisterUserAsync(string email, string password,bool useCredentials = true);
-
+    Task<Result<string>> RegisterUserAsync(string email, string? password,bool useCredentials = true);
+    Task<string?> GetUserIdByEmailAsync(string  email);
+    Task<TokenResponse?> LoginByEmailWithoutPasswordAsync(string email);
     Task<TokenResponse?> LoginAsync(string email, string password);
     Task<TokenResponse?> RefreshTokenAsync(string refreshToken);
     Task<GooglePayloadDto> GoogleValidateAsync(string googleToken);
-
-
+    
     /// <summary>
     /// Logs the user out of Keycloak by revoking the provided refresh token / session.
     /// </summary>

@@ -74,6 +74,18 @@ public class AuthService : IAuthService
         return null;
     }
 
+    public Task<string?> GetUserIdByEmailAsync(string email)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(email);
+        return _keycloakHttpClient.GetUserIdByEmailAsync(email, _keyCloakOptions.Value);
+    }
+
+    public Task<TokenResponse?> LoginByEmailWithoutPasswordAsync(string email)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(email);
+        return _keycloakHttpClient.LoginByEmailWithoutPasswordAsync(email, _keyCloakOptions.Value);
+    }
+
     public async Task<TokenResponse?> LoginAsync(string email, string password)
     {
         if (!IsValidLoginRequest(email, password))
@@ -128,10 +140,10 @@ public class AuthService : IAuthService
         return await _keycloakHttpClient.LogoutAsync(refreshToken, _keyCloakOptions.Value);
     }
 
-    public async Task<Result<string>> RegisterUserAsync(string email, string password, bool useCredentials = true)
+    public async Task<Result<string>> RegisterUserAsync(string email, string? password, bool useCredentials = true)
     {
-        if (!IsValidRegisterRequest(email, password))
-            return Result<string>.Error("Invalid credentials for registration");
+        // if (!IsValidRegisterRequest(email, password))
+        //     return Result<string>.Error("Invalid credentials for registration");
 
         const string cacheKey = "keycloak_admin_token";
         var adminToken = await _cache.GetStringAsync(cacheKey);

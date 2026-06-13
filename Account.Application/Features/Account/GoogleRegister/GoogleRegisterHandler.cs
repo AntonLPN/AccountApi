@@ -1,9 +1,7 @@
-using System.IdentityModel.Tokens.Jwt;
-using Account.Application.Features.Account.Register;
+using System.Data.Common;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
-using Account.Domain.Models;
 using Account.Domain.Repositories;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
@@ -18,7 +16,8 @@ public class GoogleRegisterHandler(
     IAuthService authService,
     IUnitOfWork unitOfWork,
     IApiKeyRepository apiKeyRepository,
-    IPublishEndpoint publishEndpoint)
+    IPublishEndpoint publishEndpoint,
+    ICryptography cryptographyService)
     : ICommandHandler<GoogleRegisterCommand, Result<GoogleRegisterResult>>
 {
     public async Task<Result<GoogleRegisterResult>> Handle(GoogleRegisterCommand request,
@@ -29,22 +28,25 @@ public class GoogleRegisterHandler(
             var googlePayload = await authService.GoogleValidateAsync(request.GoogleToken);
             var email = googlePayload.Email;
             ArgumentException.ThrowIfNullOrEmpty(email);
-            
-            var userByEmail = await userRepository.GetUserByEmailAsync(email, cancellationToken);
-            if (userByEmail is not null)
+            var userId = await authService.GetUserIdByEmailAsync(email);
+            if (userId is not null)
                 return Result<GoogleRegisterResult>.Conflict("User already exists");
-            
-            var keycloakResult = await authService.RegisterUserAsync(request.GoogleToken,"",false);
-            if (!keycloakResult.IsSuccess)
-                return Result<GoogleRegisterResult>.Error("Google registration failed");
+
+            var registerResult = await authService.RegisterUserAsync(email, "", false);
+            userId = registerResult.Value;
+
+            var userToken = await authService.LoginByEmailWithoutPasswordAsync(email);
+            ArgumentNullException.ThrowIfNull(userToken);
+
 
             var whoInvited = await userRepository.FindByReferralCodeAsync(request.ReferrerCode, cancellationToken);
             //Save to DB
             await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
             var user = AppUser.Create(
-                id: keycloakResult.Value,
+                id: userId,
                 email: email,
-                passwordHash: "",
+                passwordHash: cryptographyService.Hash(Guid.NewGuid()
+                    .ToString()), // Generate a random password hash since it's not used for Google accounts
                 referrerId: whoInvited?.Id,
                 emailConfirmed: true,
                 providerName: "Google");
@@ -61,34 +63,25 @@ public class GoogleRegisterHandler(
             }, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             await tx.CommitAsync(cancellationToken);
-            TokenResponse? tokenResponse = await authService.LoginAsync(email, "");
-            if (tokenResponse is null)
-                return Result<GoogleRegisterResult>.Error("Login failed after registration for user");
+
             return Result<GoogleRegisterResult>.Success(new GoogleRegisterResult
             {
                 ApiKey = apiKey,
-                Token = tokenResponse,
+                Token = userToken,
             });
+        }
+        catch (DbException e)
+        {
+            //TODO implement delete user if transaction fails
+            logger.LogError(e, "Database error occurred while handling GoogleRegisterCommand");
+            throw;
         }
         catch (Exception e)
         {
+           
             logger.LogError(e, "Error occurred while handling GoogleRegisterCommand");
             throw;
         }
-
     }
 
-    private string? GetEmailWithoutValidation(string googleToken)
-    {
-        var handler = new JwtSecurityTokenHandler();
-        if (!handler.CanReadToken(googleToken))
-        {
-            return null;
-        }
-
-        var jwtToken = handler.ReadJwtToken(googleToken);
-        var emailClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "email");
-
-        return emailClaim?.Value;
-    }
 }

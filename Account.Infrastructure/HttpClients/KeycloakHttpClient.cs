@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Account.Domain.Models;
+using Account.Domain.ValueObjects;
 using Account.Infrastructure.Configuration;
 using Ardalis.Result;
 using Microsoft.Extensions.Logging;
@@ -21,16 +22,16 @@ public class KeycloakHttpClient
     }
 
     public async Task<Result<string>> RegisterUserAsync(string userName, string email,
-        string password,
+        string? password,
         string adminToken,
-        KeycloakAdminOptions options,bool useCredentials = true)
+        KeycloakAdminOptions options, bool useCredentials = true)
     {
         try
         {
             object newUser;
             if (useCredentials)
             {
-                 newUser = new
+                newUser = new
                 {
                     username = userName,
                     email,
@@ -52,7 +53,7 @@ public class KeycloakHttpClient
                     emailVerified = true
                 };
             }
-         
+
 
             var requestMessage = new HttpRequestMessage(HttpMethod.Post,
                 CombineUrls(options.BaseUrl, "admin/realms", options.Realm, "users"))
@@ -143,7 +144,8 @@ public class KeycloakHttpClient
             if (!response.IsSuccessStatusCode)
             {
                 var errorBody = await response.Content.ReadAsStringAsync();
-                _logger.LogWarning("Login failed for user : {ResponseStatusCode} - {ErrorBody}", response.StatusCode, errorBody);
+                _logger.LogWarning("Login failed for user : {ResponseStatusCode} - {ErrorBody}", response.StatusCode,
+                    errorBody);
                 return null;
             }
 
@@ -223,58 +225,99 @@ public class KeycloakHttpClient
         }
     }
 
-    // public async Task<TokenResponse?> ExchangeGoogleTokenAsync(string googleToken, KeycloakAdminOptions options)
-    // {
-    //     // 1. Получаем токен администратора (Client Credentials)
-    //     var adminToken = await GetAdminTokenAsync(options);
-    //
-    //     // 2. ВАШ БЭКЕНД: Валидируете googleToken здесь (получаете email пользователя)
-    //     var userEmail = await ValidateAndGetEmailFromGoogleAsync(googleToken);
-    //
-    //     // 3. Находим пользователя в Keycloak по email
-    //     var userId = await GetUserIdByEmailAsync(userEmail, adminToken, options);
-    //
-    //     // 4. Выполняем Impersonation (это дает нам токен пользователя)
-    //     var impersonationUrl = $"{options.BaseUrl}/admin/realms/{options.Realm}/users/{userId}/impersonation";
-    //
-    //     using var request = new HttpRequestMessage(HttpMethod.Post, impersonationUrl);
-    //     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
-    //
-    //     var response = await _httpClient.SendAsync(request);
-    //
-    //     if (!response.IsSuccessStatusCode)
-    //     {
-    //         _logger.LogError("Impersonation failed: {Error}", await response.Content.ReadAsStringAsync());
-    //         return null;
-    //     }
-    //
-    //     var json = await response.Content.ReadAsStringAsync();
-    //     return JsonSerializer.Deserialize<TokenResponse>(json);
-    // }
-    
-    public async Task<TokenResponse?> ExchangeGoogleTokenAsync(string googleToken, KeycloakAdminOptions options)
+    public async Task<string?> GetUserIdByEmailAsync(string email, KeycloakAdminOptions options)
+    {
+        var adminToken = await GetAdminTokenAsync(options);
+        var url = CombineUrls(options.BaseUrl, "admin/realms", options.Realm, "users") + $"?email={email}&exact=true";
+
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken?.AccessToken);
+
+        var response = await _httpClient.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            _logger.LogError("GetUserIdByEmailAsync failed: {Error}", error);
+            return null;
+        }
+
+        var json = await response.Content.ReadAsStringAsync();
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+
+        if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0)
+        {
+            var firstUser = root[0];
+            if (firstUser.TryGetProperty("id", out var idElement))
+            {
+                return idElement.GetString();
+            }
+        }
+
+        return null;
+    }
+
+    public async Task<TokenResponse?> ImpersonateUserAsync(string userId,
+        KeycloakAdminOptions options)
+    {
+        var adminToken = await GetAdminTokenAsync(options);
+        // Important: in Keycloak 26+ in client must be on "Impersonation" in settings
+        var url = CombineUrls(options.BaseUrl, "admin/realms", options.Realm, "users", userId, "impersonation");
+
+        var request = new HttpRequestMessage(HttpMethod.Post, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken?.AccessToken);
+
+        var response = await _httpClient.SendAsync(request);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            _logger.LogError("Impersonation failed: {Error}", error);
+            return null;
+        }
+
+        var json = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<TokenResponse>(json);
+    }
+
+    public async Task<TokenResponse?> LoginByEmailWithoutPasswordAsync(string email, KeycloakAdminOptions options)
     {
         try
         {
+            var userId = await GetUserIdByEmailAsync(email, options);
+            if (string.IsNullOrEmpty(userId))
+            {
+                _logger.LogWarning("LoginByEmailWithoutPassword: user not found for email {Email}",
+                    MaskedEmail.Create(email));
+                return null;
+            }
+
+            var adminToken = await GetAdminTokenAsync(options);
+            if (adminToken is null or { AccessToken: null })
+            {
+                _logger.LogError("LoginByEmailWithoutPassword: failed to get admin token");
+                return null;
+            }
+
             var content = new FormUrlEncodedContent([
                 new KeyValuePair<string, string>("client_id", options.ClientId),
                 new KeyValuePair<string, string>("client_secret", options.ClientSecret),
                 new KeyValuePair<string, string>("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange"),
-                new KeyValuePair<string, string>("subject_token", googleToken),
-                new KeyValuePair<string, string>("subject_issuer", "google"),
-                new KeyValuePair<string, string>("subject_token_type", "urn:ietf:params:oauth:token-type:jwt")
+                new KeyValuePair<string, string>("requested_subject", userId),
+                new KeyValuePair<string, string>("subject_token", adminToken.AccessToken),
+                new KeyValuePair<string, string>("subject_token_type", "urn:ietf:params:oauth:token-type:access_token")
             ]);
 
             var tokenUrl = CombineUrls(options.BaseUrl, "realms", options.Realm, "protocol/openid-connect/token");
 
-            _logger.LogInformation("Trying to exchange Google token at: {TokenUrl}", tokenUrl);
+            _logger.LogInformation("LoginByEmailWithoutPassword: exchanging token for userId {UserId}", userId);
             var response = await _httpClient.PostAsync(tokenUrl, content);
 
             if (!response.IsSuccessStatusCode)
             {
                 var errorBody = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Token Exchange failed: {ResponseStatusCode} - {ErrorBody}", response.StatusCode,
-                    errorBody);
+                _logger.LogError("LoginByEmailWithoutPassword: token exchange failed {StatusCode} - {Body}",
+                    response.StatusCode, errorBody);
                 return null;
             }
 
@@ -283,9 +326,53 @@ public class KeycloakHttpClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during Google Token Exchange");
+            _logger.LogError(ex, "Error during passwordless login for email {Email}", email);
             throw;
         }
+    }
+
+    private async Task<Result> DeleteUserAsync(string userId, string adminToken, KeycloakAdminOptions options)
+    {
+        try
+        {
+            var requestMessage = new HttpRequestMessage(HttpMethod.Delete,
+                CombineUrls(options.BaseUrl, "admin/realms", options.Realm, "users", userId))
+            {
+                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", adminToken) }
+            };
+
+            var response = await _httpClient.SendAsync(requestMessage);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("User {UserId} deleted successfully", userId);
+                return Result.Success();
+            }
+
+            var errorContent = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Failed to delete user {UserId}: {StatusCode} - {Error}",
+                userId, response.StatusCode, errorContent);
+
+            return Result.Error($"Failed to delete user: {response.StatusCode} - {errorContent}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during user deletion for {UserId}", userId);
+            throw;
+        }
+    }
+
+    public async Task<Result> DeleteUserByEmailAsync(string email, KeycloakAdminOptions options)
+    {
+        var adminToken = await GetAdminTokenAsync(options);
+        if (adminToken is null or { AccessToken: null })
+            return Result.Error("Failed to obtain admin token");
+
+        var userId = await GetUserIdByEmailAsync(email, options);
+        if (string.IsNullOrEmpty(userId))
+            return Result.Error($"User with email {email} not found");
+
+        return await DeleteUserAsync(userId, adminToken.AccessToken, options);
     }
 
     private string CombineUrls(string baseUrl, params string[] segments)

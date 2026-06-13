@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
@@ -62,6 +63,12 @@ public class RegisterUserHandler(
                 ApiKey = apiKey,
                 Token = tokenResponse,
             });
+        }
+        catch (DbException e)
+        {
+            //TODO implement delete user if transaction fails
+            logger.LogError(e, "Database error occurred while handling GoogleRegisterCommand");
+            throw;
         }
         catch (Exception e)
         {

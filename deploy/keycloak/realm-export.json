@@ -123,7 +123,8 @@
       "serviceAccountClientId": "account-api",
       "clientRoles": {
         "realm-management": [
-          "realm-admin"
+          "realm-admin",
+          "impersonation"
         ]
       }
     },
