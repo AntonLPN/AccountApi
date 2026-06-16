@@ -256,30 +256,7 @@ public class KeycloakHttpClient
 
         return null;
     }
-
-    public async Task<TokenResponse?> ImpersonateUserAsync(string userId,
-        KeycloakAdminOptions options)
-    {
-        var adminToken = await GetAdminTokenAsync(options);
-        // Important: in Keycloak 26+ in client must be on "Impersonation" in settings
-        var url = CombineUrls(options.BaseUrl, "admin/realms", options.Realm, "users", userId, "impersonation");
-
-        var request = new HttpRequestMessage(HttpMethod.Post, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken?.AccessToken);
-
-        var response = await _httpClient.SendAsync(request);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            var error = await response.Content.ReadAsStringAsync();
-            _logger.LogError("Impersonation failed: {Error}", error);
-            return null;
-        }
-
-        var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<TokenResponse>(json);
-    }
-
+    
     public async Task<TokenResponse?> LoginByEmailWithoutPasswordAsync(string email, KeycloakAdminOptions options)
     {
         try
