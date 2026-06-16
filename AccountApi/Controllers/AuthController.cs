@@ -1,8 +1,9 @@
 using System.Security.Claims;
-using Account.Application.Features.Account.GoogleRegister;
 using Account.Application.Features.Account.Login;
 using Account.Application.Features.Account.Logout;
+using Account.Application.Features.Account.ProvidersRegister;
 using Account.Application.Features.Account.Register;
+using Account.Domain.Enums;
 using AccountApi.Helpers;
 using AccountApi.Models.RequestModels;
 using MediatR;
@@ -43,7 +44,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var regCmd = new GoogleRegisterCommand(model.Token, model.ReferralCode);
+        var regCmd = new ProviderRegisterCommand(model.Token, model.ReferralCode,AuthProviders.Google);
         var res = await mediator.Send(regCmd);
         if (!res.IsSuccess)
             return BadRequest(res.Errors);

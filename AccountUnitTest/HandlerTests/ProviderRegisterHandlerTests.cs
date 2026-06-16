@@ -1,7 +1,8 @@
-using Account.Application.Features.Account.GoogleRegister;
+using Account.Application.Features.Account.ProvidersRegister;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
 using Account.Domain.DTOs;
 using Account.Domain.Entities;
+using Account.Domain.Enums;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Domain.Repositories;
@@ -12,9 +13,9 @@ using Moq;
 
 namespace AccountUnitTest.HandlerTests;
 
-public class GoogleRegisterHandlerTests
+public class ProviderRegisterHandlerTests
 {
-    private readonly Mock<ILogger<GoogleRegisterHandler>> _logger = new();
+    private readonly Mock<ILogger<ProviderRegisterHandler>> _logger = new();
     private readonly Mock<IAuthService> _authService = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IUserRepository> _userRepository = new();
@@ -22,13 +23,13 @@ public class GoogleRegisterHandlerTests
     private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
     private readonly Mock<IAppDbTransaction> _tx = new();
 
-    private GoogleRegisterHandler CreateSut()
+    private ProviderRegisterHandler CreateSut()
     {
         _unitOfWork
             .Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(_tx.Object);
 
-        return new GoogleRegisterHandler(
+        return new ProviderRegisterHandler(
             _logger.Object,
             _userRepository.Object,
             _authService.Object,
@@ -37,8 +38,8 @@ public class GoogleRegisterHandlerTests
             _publishEndpoint.Object);
     }
 
-    private static GoogleRegisterCommand CreateCommand(string token = "google_token", string referrerCode = "REF123")
-        => new(token, referrerCode);
+    private static ProviderRegisterCommand CreateCommand(string token = "google_token", string referrerCode = "REF123")
+        => new(token, referrerCode,AuthProviders.Google);
 
     private void SetupGoogleValidate(string email = "test@gmail.com")
         => _authService

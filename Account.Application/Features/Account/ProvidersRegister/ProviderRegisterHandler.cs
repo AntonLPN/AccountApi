@@ -10,27 +10,26 @@ using Ardalis.SharedKernel;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
-namespace Account.Application.Features.Account.GoogleRegister;
+namespace Account.Application.Features.Account.ProvidersRegister;
 
-public class GoogleRegisterHandler(
-    ILogger<GoogleRegisterHandler> logger,
+public class ProviderRegisterHandler(
+    ILogger<ProviderRegisterHandler> logger,
     IUserRepository userRepository,
     IAuthService authService,
     IUnitOfWork unitOfWork,
     IApiKeyRepository apiKeyRepository,
     IPublishEndpoint publishEndpoint)
-    : ICommandHandler<GoogleRegisterCommand, Result<GoogleRegisterResult>>
+    : ICommandHandler<ProviderRegisterCommand, Result<ProviderRegisterResult>>
 {
-    public async Task<Result<GoogleRegisterResult>> Handle(GoogleRegisterCommand request,
+    public async Task<Result<ProviderRegisterResult>> Handle(ProviderRegisterCommand request,
         CancellationToken cancellationToken)
     {
-        var googlePayload = await authService.GoogleValidateAsync(request.GoogleToken);
-        var email = googlePayload.Email;
+        string? email = await GetEmailAsync(request.Provider, request.GoogleToken);
         ArgumentException.ThrowIfNullOrEmpty(email);
         try
         {
             if (await userRepository.GetUserByEmailAsync(email, cancellationToken) is not null)
-                return Result<GoogleRegisterResult>.Conflict("User already exists");
+                return Result<ProviderRegisterResult>.Conflict("User already exists");
 
             var registerResult = await authService.RegisterUserAsync(email, "", false);
             string userId = registerResult.Value;
@@ -57,7 +56,7 @@ public class GoogleRegisterHandler(
             await unitOfWork.SaveChangesAsync(cancellationToken);
             await tx.CommitAsync(cancellationToken);
 
-            return Result<GoogleRegisterResult>.Success(new GoogleRegisterResult
+            return Result<ProviderRegisterResult>.Success(new ProviderRegisterResult
             {
                 ApiKey = apiKey,
                 Token = userToken,
@@ -82,5 +81,21 @@ public class GoogleRegisterHandler(
             logger.LogError(e, "Error occurred while handling GoogleRegisterCommand");
             throw;
         }
+    }
+
+    private async Task<string?> GetEmailAsync(AuthProviders provider, string token)
+    {
+        switch (provider)
+        {
+            case AuthProviders.Google:
+                var googlePayload = await authService.GoogleValidateAsync(token);
+                return googlePayload.Email;
+            case AuthProviders.Apple:
+                //TODO waiting for apple implementation
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+        return null;
     }
 }
