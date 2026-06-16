@@ -1,6 +1,7 @@
 using System.Data.Common;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
 using Account.Domain.Entities;
+using Account.Domain.Enums;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Domain.Repositories;
@@ -28,18 +29,17 @@ public class RegisterUserHandler(
         if (userByEmail is not null)
             return Result<RegisterUserResult>.Conflict("User already exists");
 
-        var keycloakResult = await authService.RegisterUserAsync(request.Email, request.Password);
-        if (!keycloakResult.IsSuccess)
-            return Result<RegisterUserResult>.Error(keycloakResult.Errors.FirstOrDefault() ?? "Registration failed");
+        var keycloakIdUser = await authService.RegisterUserAsync(request.Email, request.Password);
+        if (!keycloakIdUser.IsSuccess)
+            return Result<RegisterUserResult>.Error(keycloakIdUser.Errors.FirstOrDefault() ?? "Registration failed");
+        
         await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
             var whoInvited = await userRepository.FindByReferralCodeAsync(request.ReferrerCode, cancellationToken);
-            var user = AppUser.Create(
-                id: keycloakResult.Value,
-                email: request.Email,
-                passwordHash: cryptographyService.Hash(request.Password),
-                referrerId: whoInvited?.Id);
+            var passwordHash = cryptographyService.Hash(request.Password);
+            var user = AppUser.Create(new AppUserCreateParams(keycloakIdUser.Value, request.Email, passwordHash,
+                whoInvited?.Id, false, nameof(AuthProviders.LocalProvider)));
 
             userRepository.AddUser(user);
             var apiKey = apiKeyRepository.CreateApiKey(user.Id);
@@ -66,12 +66,20 @@ public class RegisterUserHandler(
         }
         catch (DbException e)
         {
-            //TODO implement delete user if transaction fails
             logger.LogError(e, "Database error occurred while handling GoogleRegisterCommand");
             throw;
         }
         catch (Exception e)
         {
+            try
+            {
+                await authService.DeleteUserByEmailAsync(request.Email);
+            }
+            catch (Exception cleanupEx)
+            {
+                logger.LogWarning(cleanupEx, "Failed to rollback external user creation");
+            }
+
             var safeEmail = MaskedEmail.Create(request.Email);
             logger.LogError(e, "Unhandled error while registering user {Email}", safeEmail);
             throw; //rethrow to middleware handle exception

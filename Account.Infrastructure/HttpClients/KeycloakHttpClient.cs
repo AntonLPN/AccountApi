@@ -358,7 +358,7 @@ public class KeycloakHttpClient
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during user deletion for {UserId}", userId);
-            throw;
+            return Result.Error("An error occurred while trying to delete the user");
         }
     }
 

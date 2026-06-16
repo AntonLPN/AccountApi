@@ -26,7 +26,6 @@ public class CryptographService(IOptions<CryptoOptions> options) : ICryptography
     public bool VerifyHash(string input, string hash)
         => Hash(input) == hash;
 
-    // This temporary solution for registration with Google etc. when don't have a user password.
     public string Encrypt(string plainText)
     {
         var key = Convert.FromBase64String(options.Value.Key);
@@ -55,7 +54,7 @@ public class CryptographService(IOptions<CryptoOptions> options) : ICryptography
 
         return Convert.ToBase64String(result);
     }
-    // This temporary solution for registration with Google etc. when don't have a user password.
+    
     public string Decrypt(string encryptedText)
     {
         var key = Convert.FromBase64String(options.Value.Key);

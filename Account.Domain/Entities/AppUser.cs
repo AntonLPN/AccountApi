@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
+using Account.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Account.Domain.Entities;
@@ -25,29 +26,23 @@ public class AppUser
 
     public ICollection<ApiKey> ApiKeys { get; set; } = [];
 
-    public static AppUser Create(
-        string id,
-        string email,
-        string passwordHash,
-        string? referrerId,
-        bool emailConfirmed = false,
-        string? providerName = "my-corporate-ad")
+    public static AppUser Create(AppUserCreateParams createParams)
     {
-        if (string.IsNullOrWhiteSpace(id))
-            throw new ArgumentException("User ID cannot be empty", nameof(id));
+        if (string.IsNullOrWhiteSpace(createParams.Id))
+            throw new ArgumentException("User ID cannot be empty", nameof(createParams.Id));
 
-        if (string.IsNullOrWhiteSpace(email))
-            throw new ArgumentException("Email cannot be empty", nameof(email));
+        if (string.IsNullOrWhiteSpace(createParams.Email))
+            throw new ArgumentException("Email cannot be empty", nameof(createParams.Email));
         var user = new AppUser
         {
-            Id = id,
-            Email = email,
-            UserName = email,
-            PasswordHash = passwordHash,
+            Id = createParams.Id,
+            Email = createParams.Email,
+            UserName = createParams.Email, // Set UserName to Email by default
+            PasswordHash = createParams.PasswordHash ,
             ReferralCode = GenerateReadableCode(6),
-            ReferrerId = referrerId,
-            ProviderName = providerName,
-            EmailConfirmed = emailConfirmed
+            ReferrerId = createParams.ReferrerId,
+            ProviderName = createParams.ProviderName,
+            EmailConfirmed = createParams.EmailConfirmed
         };
         return user;
     }
@@ -66,3 +61,4 @@ public class AppUser
         return new string(result);
     }
 }
+

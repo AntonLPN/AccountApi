@@ -129,6 +129,12 @@ public class AuthService : IAuthService
         }
     }
 
+    public Task<Result> DeleteUserByEmailAsync(string email)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(email);
+        return _keycloakHttpClient.DeleteUserByEmailAsync(email, _keyCloakOptions.Value);
+    }
+
     public async Task<bool> LogoutAsync(string refreshToken)
     {
         if (string.IsNullOrWhiteSpace(refreshToken))
