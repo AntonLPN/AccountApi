@@ -23,6 +23,7 @@ public class RegisterUserHandler(
     IPublishEndpoint publishEndpoint)
     : ICommandHandler<RegisterCommand, Result<RegisterUserResult>>
 {
+    //TODO implement logic for save user device in db as trusted 
     public async Task<Result<RegisterUserResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         var userByEmail = await userRepository.GetUserByEmailAsync(request.Email, cancellationToken);

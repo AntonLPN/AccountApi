@@ -15,7 +15,7 @@ public interface IAuthService
     /// <returns>id user</returns>
     Task<Result<string>> RegisterUserAsync(string email, string? password,bool useCredentials = true);
     Task<string?> GetUserIdByEmailAsync(string  email);
-    Task<TokenResponse?> LoginByEmailWithoutPasswordAsync(string email);
+    Task<TokenResponse?> LoginAsync(string email);
     Task<TokenResponse?> LoginAsync(string email, string password);
     Task<TokenResponse?> RefreshTokenAsync(string refreshToken);
     Task<GooglePayloadDto> GoogleValidateAsync(string googleToken);

@@ -80,10 +80,10 @@ public class AuthService : IAuthService
         return _keycloakHttpClient.GetUserIdByEmailAsync(email, _keyCloakOptions.Value);
     }
 
-    public Task<TokenResponse?> LoginByEmailWithoutPasswordAsync(string email)
+    public Task<TokenResponse?> LoginAsync(string email)
     {
         ArgumentException.ThrowIfNullOrEmpty(email);
-        return _keycloakHttpClient.LoginByEmailWithoutPasswordAsync(email, _keyCloakOptions.Value);
+        return _keycloakHttpClient.LoginAsync(email, _keyCloakOptions.Value);
     }
 
     public async Task<TokenResponse?> LoginAsync(string email, string password)

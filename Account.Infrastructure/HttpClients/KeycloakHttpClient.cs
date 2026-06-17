@@ -257,7 +257,7 @@ public class KeycloakHttpClient
         return null;
     }
     
-    public async Task<TokenResponse?> LoginByEmailWithoutPasswordAsync(string email, KeycloakAdminOptions options)
+    public async Task<TokenResponse?> LoginAsync(string email, KeycloakAdminOptions options)
     {
         try
         {

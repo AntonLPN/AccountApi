@@ -2,6 +2,6 @@ using Account.Application.Features.Account.Models;
 
 namespace Account.Application.Features.Account.Login;
 
-public class LoginUserResult : AuthResponse
+public class LoginUserResult : BaseAuthResponse
 {
 }

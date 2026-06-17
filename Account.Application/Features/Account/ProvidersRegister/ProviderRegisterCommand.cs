@@ -4,5 +4,5 @@ using Ardalis.SharedKernel;
 
 namespace Account.Application.Features.Account.ProvidersRegister;
 
-public record ProviderRegisterCommand(string GoogleToken, string ReferrerCode, AuthProviders Provider)
+public record ProviderRegisterCommand(string ProviderToken, string ReferrerCode, AuthProviders Provider)
     : ICommand<Result<ProviderRegisterResult>>;

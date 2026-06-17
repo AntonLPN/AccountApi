@@ -1,6 +1,6 @@
 using Account.Application.Features.Account.ProvidersRegister;
+using Account.Application.Interfaces;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
-using Account.Domain.DTOs;
 using Account.Domain.Entities;
 using Account.Domain.Enums;
 using Account.Domain.Interfaces;
@@ -22,6 +22,7 @@ public class ProviderRegisterHandlerTests
     private readonly Mock<IApiKeyRepository> _apiKeyRepository = new();
     private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
     private readonly Mock<IAppDbTransaction> _tx = new();
+    private readonly Mock<IProviderValidator> _providerValidator = new();
 
     private ProviderRegisterHandler CreateSut()
     {
@@ -35,23 +36,24 @@ public class ProviderRegisterHandlerTests
             _authService.Object,
             _unitOfWork.Object,
             _apiKeyRepository.Object,
-            _publishEndpoint.Object);
+            _publishEndpoint.Object,
+            _providerValidator.Object);
     }
 
     private static ProviderRegisterCommand CreateCommand(string token = "google_token", string referrerCode = "REF123")
         => new(token, referrerCode,AuthProviders.Google);
 
-    private void SetupGoogleValidate(string email = "test@gmail.com")
-        => _authService
-            .Setup(x => x.GoogleValidateAsync(It.IsAny<string>()))
-            .ReturnsAsync(new GooglePayloadDto { Email = email });
+    private void SetupProviderValidate(string email = "test@gmail.com")
+        => _providerValidator
+            .Setup(x => x.ValidateProviderTokenAndGetEmailAsync(It.IsAny<AuthProviders>(), It.IsAny<string>()))
+            .ReturnsAsync(email);
 
     [Fact]
     public async Task Handle_WhenUserAlreadyExists_ReturnsConflict()
     {
         var sut = CreateSut();
         var cmd = CreateCommand();
-        SetupGoogleValidate();
+        SetupProviderValidate();
 
         _userRepository
             .Setup(x => x.GetUserByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -84,7 +86,7 @@ public class ProviderRegisterHandlerTests
             Scope = "openid"
         };
 
-        SetupGoogleValidate(email);
+        SetupProviderValidate(email);
         _userRepository
             .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
@@ -92,7 +94,7 @@ public class ProviderRegisterHandlerTests
             .Setup(x => x.RegisterUserAsync(email, "", false))
             .ReturnsAsync(Result<string>.Success(userId));
         _authService
-            .Setup(x => x.LoginByEmailWithoutPasswordAsync(email))
+            .Setup(x => x.LoginAsync(email))
             .ReturnsAsync(token);
         _userRepository
             .Setup(x => x.FindByReferralCodeAsync(cmd.ReferrerCode, It.IsAny<CancellationToken>()))
@@ -123,7 +125,7 @@ public class ProviderRegisterHandlerTests
         var cmd = CreateCommand();
         const string email = "test@gmail.com";
 
-        SetupGoogleValidate(email);
+        SetupProviderValidate(email);
         _userRepository
             .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
@@ -148,7 +150,7 @@ public class ProviderRegisterHandlerTests
         const string email = "test@gmail.com";
         var referrer = AppUser.Create(new AppUserCreateParams("ref-user-id", "referrer@mail.com", null, null));
 
-        SetupGoogleValidate(email);
+        SetupProviderValidate(email);
         _userRepository
             .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
@@ -156,7 +158,7 @@ public class ProviderRegisterHandlerTests
             .Setup(x => x.RegisterUserAsync(email, "", false))
             .ReturnsAsync(Result<string>.Success("new-user-id"));
         _authService
-            .Setup(x => x.LoginByEmailWithoutPasswordAsync(email))
+            .Setup(x => x.LoginAsync(email))
             .ReturnsAsync(new TokenResponse { AccessToken = "token" });
         _userRepository
             .Setup(x => x.FindByReferralCodeAsync("VALID_REF", It.IsAny<CancellationToken>()))

@@ -1,3 +1,4 @@
+using Account.Application.Interfaces;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
 using Account.Infrastructure.Cryptography;
@@ -16,6 +17,7 @@ public static class DependencyInjectionInfrastructure
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICryptography, CryptographService>();
         services.AddScoped<IEmail, EmailService>();
+        services.AddScoped<IProviderValidator, ProviderValidator>();
         //Repository
         services.AddScoped<IUnitOfWork, UnitOfWorkAdapter>();
         services.AddScoped<IUserRepository, UserRepository>();

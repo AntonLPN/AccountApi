@@ -21,33 +21,42 @@ public class LoginUserHandler(
 {
     public async Task<Result<LoginUserResult>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        TokenResponse? tokenResponse = await authService.LoginAsync(request.Email, request.Password);
-        if (tokenResponse is null)
-            return Result<LoginUserResult>.Unauthorized();
-
-        var user = await userRepository.GetUserByEmailAsync(request.Email, cancellationToken);
-        if (user is null)
-            return Result<LoginUserResult>.Unauthorized();
-
-        var apiKey = await apiKeyRepository.GetApiKeyByUserIdAsync(user.Id);
-
-        await publishEndpoint.Publish(new UserLoginSagaStartedIntegrationEvent
+        try
         {
-            CorrelationId = Guid.NewGuid(),
-            UserId = user.Id,
-            Email = user.Email,
-            IpAddress = request.IpAddress,
-            UserAgent = request.UserAgent
-        }, cancellationToken);
+            TokenResponse? tokenResponse = await authService.LoginAsync(request.Email, request.Password);
+            if (tokenResponse is null)
+                return Result<LoginUserResult>.Unauthorized();
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);//need for saga
+            var user = await userRepository.GetUserByEmailAsync(request.Email, cancellationToken);
+            if (user is null)
+                return Result<LoginUserResult>.Unauthorized();
 
-        logger.LogInformation("User {Email} logged in, login saga started", MaskedEmail.Create(request.Email));
+            var apiKey = await apiKeyRepository.GetApiKeyByUserIdAsync(user.Id);
 
-        return Result<LoginUserResult>.Success(new LoginUserResult
+            await publishEndpoint.Publish(new UserLoginSagaStartedIntegrationEvent
+            {
+                CorrelationId = Guid.NewGuid(),
+                UserId = user.Id,
+                Email = user.Email,
+                IpAddress = request.IpAddress,
+                UserAgent = request.UserAgent
+            }, cancellationToken);
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);//need for saga
+
+            logger.LogInformation("User {Email} logged in, login saga started", MaskedEmail.Create(request.Email));
+
+            return Result<LoginUserResult>.Success(new LoginUserResult
+            {
+                ApiKey = apiKey ?? "",
+                Token = tokenResponse
+            });
+        }
+        catch (Exception e)
         {
-            ApiKey = apiKey ?? "",
-            Token = tokenResponse
-        });
+            logger.LogError(e, "Error occurred while handling LoginCommand for email {Email}", MaskedEmail.Create(request.Email));
+            throw;
+        }
+
     }
 }

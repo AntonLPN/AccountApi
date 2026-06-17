@@ -1,4 +1,5 @@
 using System.Data.Common;
+using Account.Application.Interfaces;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
 using Account.Domain.Entities;
 using Account.Domain.Enums;
@@ -18,13 +19,16 @@ public class ProviderRegisterHandler(
     IAuthService authService,
     IUnitOfWork unitOfWork,
     IApiKeyRepository apiKeyRepository,
-    IPublishEndpoint publishEndpoint)
+    IPublishEndpoint publishEndpoint,
+    IProviderValidator providerValidator)
     : ICommandHandler<ProviderRegisterCommand, Result<ProviderRegisterResult>>
 {
+    //TODO implement logic for save user device in db as trusted
     public async Task<Result<ProviderRegisterResult>> Handle(ProviderRegisterCommand request,
         CancellationToken cancellationToken)
     {
-        string? email = await GetEmailAsync(request.Provider, request.GoogleToken);
+        string? email =
+            await providerValidator.ValidateProviderTokenAndGetEmailAsync(request.Provider, request.ProviderToken);
         ArgumentException.ThrowIfNullOrEmpty(email);
         try
         {
@@ -34,7 +38,7 @@ public class ProviderRegisterHandler(
             var registerResult = await authService.RegisterUserAsync(email, "", false);
             string userId = registerResult.Value;
 
-            var userToken = await authService.LoginByEmailWithoutPasswordAsync(email);
+            var userToken = await authService.LoginAsync(email);
             ArgumentNullException.ThrowIfNull(userToken);
 
             var whoInvited = await userRepository.FindByReferralCodeAsync(request.ReferrerCode, cancellationToken);
@@ -81,21 +85,5 @@ public class ProviderRegisterHandler(
             logger.LogError(e, "Error occurred while handling GoogleRegisterCommand");
             throw;
         }
-    }
-
-    private async Task<string?> GetEmailAsync(AuthProviders provider, string token)
-    {
-        switch (provider)
-        {
-            case AuthProviders.Google:
-                var googlePayload = await authService.GoogleValidateAsync(token);
-                return googlePayload.Email;
-            case AuthProviders.Apple:
-                //TODO waiting for apple implementation
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-        return null;
     }
 }
