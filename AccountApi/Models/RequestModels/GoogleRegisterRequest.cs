@@ -16,4 +16,5 @@ public class GoogleRegisterRequest
     )]
     [JsonPropertyName("referralCode")]
     public string ReferralCode { get; set; } = "";
+    
 }

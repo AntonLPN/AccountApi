@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Account.Application.Features.Account.Login;
 using Account.Application.Features.Account.Logout;
+using Account.Application.Features.Account.ProviderLogin;
 using Account.Application.Features.Account.ProvidersRegister;
 using Account.Application.Features.Account.Register;
 using Account.Domain.Enums;
@@ -37,7 +38,7 @@ public class AuthController(IMediator mediator) : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("google-register")]
-    [ProducesResponseType(typeof(RegisterUserResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProviderRegisterResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GoogleRegister([FromBody] GoogleRegisterRequest model)
     {
@@ -78,6 +79,30 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
+    [AllowAnonymous]
+    [HttpPost("google-login")]
+    [ProducesResponseType(typeof(ProviderLoginResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] GoogleLoginModelRequest model)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var userAgent = Request.Headers.UserAgent.ToString();
+        
+        var loginCmd = new ProviderLoginCommand(model.Token,AuthProviders.Google, ipAddress, userAgent);
+        var res = await mediator.Send(loginCmd);
+
+        if (res.Status == Ardalis.Result.ResultStatus.Unauthorized)
+            return Unauthorized();
+        if (!res.IsSuccess)
+            return BadRequest(res.Errors);
+
+        SetRefreshTokenCookie(res.Value.Token.RefreshToken);
+        return Ok(res.Value);
+    }
 
     [Authorize]
     [HttpPost("logout")]
