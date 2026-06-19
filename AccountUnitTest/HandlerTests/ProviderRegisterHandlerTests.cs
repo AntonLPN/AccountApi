@@ -23,6 +23,7 @@ public class ProviderRegisterHandlerTests
     private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
     private readonly Mock<IAppDbTransaction> _tx = new();
     private readonly Mock<IProviderValidator> _providerValidator = new();
+    private readonly Mock<ILoginAuditRepository> _loginAuditRepository = new();
 
     private ProviderRegisterHandler CreateSut()
     {
@@ -37,11 +38,12 @@ public class ProviderRegisterHandlerTests
             _unitOfWork.Object,
             _apiKeyRepository.Object,
             _publishEndpoint.Object,
-            _providerValidator.Object);
+            _providerValidator.Object,
+            _loginAuditRepository.Object);
     }
 
     private static ProviderRegisterCommand CreateCommand(string token = "google_token", string referrerCode = "REF123")
-        => new(token, referrerCode,AuthProviders.Google);
+        => new(token, referrerCode,AuthProviders.Google, "127.0.0.1", "userAgent");
 
     private void SetupProviderValidate(string email = "test@gmail.com")
         => _providerValidator
@@ -67,6 +69,7 @@ public class ProviderRegisterHandlerTests
 
         _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
         _authService.Verify(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
+        _loginAuditRepository.Verify(x => x.AddLogin(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -102,6 +105,7 @@ public class ProviderRegisterHandlerTests
         _apiKeyRepository
             .Setup(x => x.CreateApiKey(It.IsAny<string>()))
             .Returns(apiKey);
+        _loginAuditRepository.Setup(x => x.AddLogin(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()));
 
         var result = await sut.Handle(cmd, CancellationToken.None);
 
@@ -116,6 +120,11 @@ public class ProviderRegisterHandlerTests
         _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserSagaStartedIntegrationEvent>(), It.IsAny<CancellationToken>()), Times.Once);
         _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _tx.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _loginAuditRepository.Verify(x => x.AddLogin(It.Is<LoginAudit>(a =>
+            a.UserId == userId &&
+            a.Email == email &&
+            a.IpAddress == cmd.IpAddress &&
+            a.UserAgent == cmd.UserAgent), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -140,6 +149,7 @@ public class ProviderRegisterHandlerTests
 
         _authService.Verify(x => x.DeleteUserByEmailAsync(email), Times.Once);
         _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _loginAuditRepository.Verify(x => x.AddLogin(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -166,11 +176,17 @@ public class ProviderRegisterHandlerTests
         _apiKeyRepository
             .Setup(x => x.CreateApiKey(It.IsAny<string>()))
             .Returns("api-key");
+        _loginAuditRepository.Setup(x => x.AddLogin(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()));
 
         var result = await sut.Handle(cmd, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         _userRepository.Verify(x => x.FindByReferralCodeAsync("VALID_REF", It.IsAny<CancellationToken>()), Times.Once);
         _userRepository.Verify(x => x.AddUser(It.Is<AppUser>(u => u.ReferrerId == referrer.Id)), Times.Once);
+        _loginAuditRepository.Verify(x => x.AddLogin(It.Is<LoginAudit>(a =>
+            a.UserId == "new-user-id" &&
+            a.Email == email &&
+            a.IpAddress == cmd.IpAddress &&
+            a.UserAgent == cmd.UserAgent), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

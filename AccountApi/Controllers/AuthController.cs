@@ -49,8 +49,9 @@ public class AuthController(IMediator mediator) : ControllerBase
             return BadRequest(ModelState);
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers.UserAgent.ToString();
-        
-        var regCmd = new ProviderRegisterCommand(model.Token, model.ReferralCode, AuthProviders.Google);
+
+        var regCmd = new ProviderRegisterCommand(model.Token, model.ReferralCode, AuthProviders.Google, ipAddress,
+            userAgent);
         var res = await mediator.Send(regCmd);
         if (!res.IsSuccess)
             return BadRequest(res.Errors);

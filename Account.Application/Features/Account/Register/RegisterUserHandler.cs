@@ -25,7 +25,6 @@ public class RegisterUserHandler(
     ILoginAuditRepository  loginAuditRepository)
     : ICommandHandler<RegisterCommand, Result<RegisterUserResult>>
 {
-    //TODO implement logic for save user device in db as trusted 
     public async Task<Result<RegisterUserResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         var userByEmail = await userRepository.GetUserByEmailAsync(request.Email, cancellationToken);
@@ -46,6 +45,7 @@ public class RegisterUserHandler(
 
             userRepository.AddUser(user);
             var apiKey = apiKeyRepository.CreateApiKey(user.Id);
+            //this is currently ned create here, because whe need to be sure the user exists in DB
             var loginAuditDto = new CreateLoginAuditDto
             {
                 UserId = user.Id,

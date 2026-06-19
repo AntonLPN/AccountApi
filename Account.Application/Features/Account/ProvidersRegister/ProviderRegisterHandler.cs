@@ -1,6 +1,7 @@
 using System.Data.Common;
 using Account.Application.Interfaces;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
+using Account.Domain.DTOs.EntitiesDTO;
 using Account.Domain.Entities;
 using Account.Domain.Enums;
 using Account.Domain.Interfaces;
@@ -20,7 +21,8 @@ public class ProviderRegisterHandler(
     IUnitOfWork unitOfWork,
     IApiKeyRepository apiKeyRepository,
     IPublishEndpoint publishEndpoint,
-    IProviderValidator providerValidator)
+    IProviderValidator providerValidator,
+    ILoginAuditRepository loginAuditRepository)
     : ICommandHandler<ProviderRegisterCommand, Result<ProviderRegisterResult>>
 {
     //TODO implement logic for save user device in db as trusted
@@ -46,9 +48,20 @@ public class ProviderRegisterHandler(
             await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
             var user = AppUser.Create(new AppUserCreateParams(userId, email, null, whoInvited?.Id, true,
                 nameof(AuthProviders.Google)));
-
             userRepository.AddUser(user);
             var apiKey = apiKeyRepository.CreateApiKey(user.Id);
+            
+            var loginAudit = LoginAudit.Create(new CreateLoginAuditDto
+            {
+                UserId = user.Id,
+                Email = email,
+                IpAddress = request.IpAddress,
+                UserAgent = request.UserAgent,
+                IsSuspicious = false, 
+                LoggedInAt = DateTime.UtcNow
+            });
+            loginAuditRepository.AddLogin(loginAudit, cancellationToken);
+            
             //Start Saga
             await publishEndpoint.Publish(new UserSagaStartedIntegrationEvent
             {
