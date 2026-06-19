@@ -1,3 +1,4 @@
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 namespace Account.Contracts.Events.External;
 
 public class UserSyncBatchEvent

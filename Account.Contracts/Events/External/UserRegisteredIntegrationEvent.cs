@@ -1,7 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Account.Contracts.Events.External;
 
 //This event needs it for sending to external system in microservice architecture,
 //for example, secondary api
+[SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
 public class UserRegisteredIntegrationEvent
 {
     public Guid CorrelationId { get; set; }

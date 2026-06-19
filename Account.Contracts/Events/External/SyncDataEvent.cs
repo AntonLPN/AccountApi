@@ -6,5 +6,5 @@ namespace Account.Contracts.Events.External;
 public class SyncDataEvent
 {
     public int BatchSize { get; set; } = 100;
-    public int Offset { get; set; } = 0;
+    public int Offset { get; set; }//0
 }

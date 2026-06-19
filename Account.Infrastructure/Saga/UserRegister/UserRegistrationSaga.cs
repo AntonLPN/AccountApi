@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace Account.Infrastructure.Saga.UserRegister;
 
 [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+// ReSharper disable once ClassNeverInstantiated.Global
 public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSagaState>
 {
     public State AwaitingWelcomeEmailSent { get; private set; } = null!;
@@ -47,16 +48,17 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                         ApiKey = context.Message.ApiKey
                     }
                 )
-                .Publish(context => new UserRegisteredIntegrationEvent()//use this event to send values to another microservice
-                {
-                    CorrelationId = context.Saga.CorrelationId,
-                    UserId = context.Saga.UserId,
-                    Email = context.Saga.Email,
-                    ApiKey = context.Saga.ApiKey,
-                    ReferralCode = context.Message.ReferralCode,
-                    IsActive = context.Message.IsActive,
-                    EmailConfirmed = context.Message.EmailConfirmed
-                })
+                .Publish(context =>
+                    new UserRegisteredIntegrationEvent() //use this event to send values to another microservice
+                    {
+                        CorrelationId = context.Saga.CorrelationId,
+                        UserId = context.Saga.UserId,
+                        Email = context.Saga.Email,
+                        ApiKey = context.Saga.ApiKey,
+                        ReferralCode = context.Message.ReferralCode,
+                        IsActive = context.Message.IsActive,
+                        EmailConfirmed = context.Message.EmailConfirmed
+                    })
                 .TransitionTo(AwaitingWelcomeEmailSent));
         During(AwaitingWelcomeEmailSent,
             When(WelcomeEmailSent).Then(context =>
