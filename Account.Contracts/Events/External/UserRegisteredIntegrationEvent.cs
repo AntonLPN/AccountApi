@@ -8,5 +8,7 @@ public class UserRegisteredIntegrationEvent
     public string? UserId { get; init; }
     public string? Email { get; init; }
     public string? ApiKey { get; init; }
-    public string? ReferralId { get; set; }
+    public string? ReferralCode { get; set; }
+    public bool IsActive { get; set; }
+    public bool EmailConfirmed { get; set; }
 }

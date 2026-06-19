@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Account.Contracts.Events.External;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
 using Account.Infrastructure.Persistence.SagaModels;
@@ -33,6 +34,9 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                     context.Saga.UserId = context.Message.UserId;
                     context.Saga.Email = context.Message.Email;
                     context.Saga.ApiKey = context.Message.ApiKey;
+                    context.Message.ReferralCode = context.Message.ReferralCode;
+                    context.Message.IsActive = context.Message.IsActive;
+                    context.Message.EmailConfirmed = context.Message.EmailConfirmed;
                     logger.LogInformation("Saga registration started for UserId={UserId}", context.Message.UserId);
                 })
                 .Publish(context => new SendWelcomeEmailIntegrationEvent
@@ -43,13 +47,16 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                         ApiKey = context.Message.ApiKey
                     }
                 )
-                // .Publish(context => new UserRegisteredIntegrationEvent()//use this event to send values to another microservice
-                // {
-                //     CorrelationId = context.Saga.CorrelationId,
-                //     UserId = context.Saga.UserId,
-                //     Email = context.Saga.Email,
-                //     ApiKey = context.Saga.ApiKey
-                // })
+                .Publish(context => new UserRegisteredIntegrationEvent()//use this event to send values to another microservice
+                {
+                    CorrelationId = context.Saga.CorrelationId,
+                    UserId = context.Saga.UserId,
+                    Email = context.Saga.Email,
+                    ApiKey = context.Saga.ApiKey,
+                    ReferralCode = context.Message.ReferralCode,
+                    IsActive = context.Message.IsActive,
+                    EmailConfirmed = context.Message.EmailConfirmed
+                })
                 .TransitionTo(AwaitingWelcomeEmailSent));
         During(AwaitingWelcomeEmailSent,
             When(WelcomeEmailSent).Then(context =>

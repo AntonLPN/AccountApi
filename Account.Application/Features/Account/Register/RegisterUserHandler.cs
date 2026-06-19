@@ -64,7 +64,10 @@ public class RegisterUserHandler(
                 CorrelationId = Guid.NewGuid(),
                 UserId = user.Id,
                 Email = user.Email,
-                ApiKey = apiKey
+                ApiKey = apiKey,
+                IsActive = true,
+                ReferralCode = user.ReferralCode,
+                EmailConfirmed = user.EmailConfirmed
             }, cancellationToken);
 
             await unitOfWork.SaveChangesAsync(cancellationToken);
