@@ -20,6 +20,7 @@ public class RegisterUserHandlerTests
     private readonly Mock<ICryptography> _cryptographyService = new();
     private readonly Mock<IAppDbTransaction> _tx = new();
     private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
+    private readonly Mock<ILoginAuditRepository> _loginAuditRepository = new();
 
     private RegisterUserHandler CreateSut()
     {
@@ -34,12 +35,13 @@ public class RegisterUserHandlerTests
             _userRepository.Object,
             _apiKeyRepository.Object,
             _cryptographyService.Object,
-            _publishEndpoint.Object);
+            _publishEndpoint.Object,
+            _loginAuditRepository.Object);
     }
 
     private static RegisterCommand CreateCommand(string email = "test@mail.com",
         string password = "123Avc_!@#$%^&*()_+")
-        => new(email, password,"referrerId");
+        => new(email, password,"referrerId","127.0.0.1","userAgent");
 
     [Fact]
     public async Task Handle_WhenEmailExists_ReturnsConflict()
@@ -57,6 +59,7 @@ public class RegisterUserHandlerTests
         Assert.Contains("User already exists", result.Errors);
 
         _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _loginAuditRepository.Verify(x => x.AddLogin(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -77,6 +80,7 @@ public class RegisterUserHandlerTests
         Assert.Contains("Registration failed", result.Errors);
 
         _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _loginAuditRepository.Verify(x => x.AddLogin(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -100,6 +104,8 @@ public class RegisterUserHandlerTests
                 ExpiresIn = 3600,
                 Scope = "scope"
             });
+        _loginAuditRepository.Setup(x => x.AddLogin(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()));
+        
         //Act
         var result = await sut.Handle(cmd, CancellationToken.None);
         //Assets
@@ -120,6 +126,10 @@ public class RegisterUserHandlerTests
         _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _tx.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _tx.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
-        
+        _loginAuditRepository.Verify(x => x.AddLogin(It.Is<LoginAudit>(a =>
+            a.UserId == "Registration Successful" &&
+            a.Email == cmd.Email &&
+            a.IpAddress == cmd.IpAddress &&
+            a.UserAgent == cmd.UserAgent), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

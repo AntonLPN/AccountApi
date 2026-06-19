@@ -1,5 +1,6 @@
 using System.Data.Common;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
+using Account.Domain.DTOs.EntitiesDTO;
 using Account.Domain.Entities;
 using Account.Domain.Enums;
 using Account.Domain.Interfaces;
@@ -20,7 +21,8 @@ public class RegisterUserHandler(
     IUserRepository userRepository,
     IApiKeyRepository apiKeyRepository,
     ICryptography cryptographyService,
-    IPublishEndpoint publishEndpoint)
+    IPublishEndpoint publishEndpoint,
+    ILoginAuditRepository  loginAuditRepository)
     : ICommandHandler<RegisterCommand, Result<RegisterUserResult>>
 {
     //TODO implement logic for save user device in db as trusted 
@@ -44,6 +46,18 @@ public class RegisterUserHandler(
 
             userRepository.AddUser(user);
             var apiKey = apiKeyRepository.CreateApiKey(user.Id);
+            var loginAuditDto = new CreateLoginAuditDto
+            {
+                UserId = user.Id,
+                Email = request.Email,
+                IpAddress = request.IpAddress,
+                UserAgent = request.UserAgent,
+                IsSuspicious = false, 
+                LoggedInAt = DateTime.UtcNow
+            };
+            var loginAudit = LoginAudit.Create(loginAuditDto);
+            loginAuditRepository.AddLogin(loginAudit, cancellationToken);
+            
             //Start Saga
             await publishEndpoint.Publish(new UserSagaStartedIntegrationEvent
             {
