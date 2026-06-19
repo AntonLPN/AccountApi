@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using Account.Contracts.Events.RegisterEvents;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
 using Account.Infrastructure.Persistence.SagaModels;
@@ -44,13 +43,13 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                         ApiKey = context.Message.ApiKey
                     }
                 )
-                .Publish(context => new UserRegisteredIntegrationEvent()//use this event to send values to another microservice
-                {
-                    CorrelationId = context.Saga.CorrelationId,
-                    UserId = context.Saga.UserId,
-                    Email = context.Saga.Email,
-                    ApiKey = context.Saga.ApiKey
-                })
+                // .Publish(context => new UserRegisteredIntegrationEvent()//use this event to send values to another microservice
+                // {
+                //     CorrelationId = context.Saga.CorrelationId,
+                //     UserId = context.Saga.UserId,
+                //     Email = context.Saga.Email,
+                //     ApiKey = context.Saga.ApiKey
+                // })
                 .TransitionTo(AwaitingWelcomeEmailSent));
         During(AwaitingWelcomeEmailSent,
             When(WelcomeEmailSent).Then(context =>

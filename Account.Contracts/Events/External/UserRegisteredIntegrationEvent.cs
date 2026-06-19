@@ -1,4 +1,4 @@
-namespace Account.Contracts.Events.RegisterEvents;
+namespace Account.Contracts.Events.External;
 
 //This event needs it for sending to external system in microservice architecture,
 //for example, secondary api
