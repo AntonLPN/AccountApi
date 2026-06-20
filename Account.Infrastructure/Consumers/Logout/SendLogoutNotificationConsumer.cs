@@ -2,6 +2,7 @@ using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Events;
 using Account.Domain.DTOs;
 using Account.Domain.Interfaces;
+using Account.Domain.Models;
 using Account.Domain.ValueObjects;
 using MassTransit;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,7 @@ public class SendLogoutNotificationConsumer(
         logger.LogInformation("Sending logout notification for UserId={UserId}, Email={Email}",
             message.UserId, MaskedEmail.Create(message.Email));
 
-        var logoutNotificationDto = new LogoutNotificationDto(
+        var logoutNotificationDto = new LogoutNotification(
             message.Email,
             message.IpAddress,
             DateTime.UtcNow,

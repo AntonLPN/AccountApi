@@ -1,6 +1,6 @@
 using System.Data.Common;
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
-using Account.Domain.DTOs.EntitiesDTO;
+using Account.Domain.DTOs;
 using Account.Domain.Entities;
 using Account.Domain.Enums;
 using Account.Domain.Interfaces;
@@ -9,6 +9,7 @@ using Account.Domain.Repositories;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
+using AutoMapper;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 

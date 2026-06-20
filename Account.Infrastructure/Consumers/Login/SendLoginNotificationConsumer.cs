@@ -1,7 +1,7 @@
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
-using Account.Domain.DTOs;
 using Account.Domain.Interfaces;
+using Account.Domain.Models;
 using Account.Domain.ValueObjects;
 using MassTransit;
 using Microsoft.Extensions.Logging;
@@ -21,14 +21,14 @@ public class SendLoginNotificationConsumer(
         {
             logger.LogInformation("Sending suspicious login notification for UserId={UserId}, Email={Email}",
                 message.UserId, MaskedEmail.Create(message.Email));
-            var deviceLoginIfoDto = new SuspiciousDeviceDto(
+            var deviceLoginIfo = new SuspiciousDevice(
                 message.Email,
                 message.UserAgent ?? "Unknown device",
                 message.IpAddress,
                 DateTime.UtcNow,
                 message.UserAgent ?? "Unknown device"
             );
-            var sent = await emailService.SendNewDeviceLoginEmail(deviceLoginIfoDto, context.CancellationToken);
+            var sent = await emailService.SendNewDeviceLoginEmail(deviceLoginIfo, context.CancellationToken);
             if (!sent)
             {
                 await context.Publish(new UserLoginSagaFailedIntegrationEvent

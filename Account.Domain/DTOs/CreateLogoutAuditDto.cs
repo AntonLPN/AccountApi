@@ -1,11 +1,10 @@
-namespace Account.Domain.DTOs.EntitiesDTO;
+namespace Account.Domain.DTOs;
 
-public class CreateLoginAuditDto
+public class CreateLogoutAuditDto
 {
     public string UserId { get; set; } = "";
     public string Email { get; set; } = "";
     public string? IpAddress { get; set; }
     public string? UserAgent { get; set; }
-    public bool IsSuspicious { get; set; }
-    public DateTime LoggedInAt { get; set; }
+    public DateTime LoggedOutAt { get; set; }
 }

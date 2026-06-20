@@ -1,4 +1,5 @@
 using Account.Application.Features.Account.Register;
+using Account.Domain.Extensions;
 using Account.Infrastructure.Configuration;
 using Account.Infrastructure.Extensions;
 using Account.Infrastructure.Persistence;
@@ -62,6 +63,8 @@ public static class ServicesExtensions
             typeof(MassTransitIntegrationEventPublisher).Assembly // for integration events triggers
         ));
         services.AddInfrastructureServices();
+        services.AddDomainServices();
+        
         return services;
     }
 
@@ -153,5 +156,4 @@ public static class ServicesExtensions
 
         return services;
     }
-    
 }

@@ -35,7 +35,6 @@ builder.Services.AddRateLimiter(limiter =>
 builder.Services.Configure<KeycloakAdminOptions>(builder.Configuration.GetSection("KeycloakAdminClient"));
 builder.Services.Configure<GoogleOptions>(builder.Configuration.GetSection("Google"));
 builder.Services.Configure<CryptoOptions>(builder.Configuration.GetSection("Crypto"));
-
 builder.Services.AddHttpClient<KeycloakHttpClient>()
     .AddStandardResilienceHandler(options =>
     {

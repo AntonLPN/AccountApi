@@ -1,6 +1,6 @@
-namespace Account.Domain.DTOs;
+namespace Account.Domain.Models;
 
-public record SuspiciousDeviceDto(
+public record SuspiciousDevice(
     string ToEmail,
     string DeviceName,
     string? IpAddress,

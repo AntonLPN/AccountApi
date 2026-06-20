@@ -1,4 +1,4 @@
-namespace Account.Infrastructure;
+namespace Account.Infrastructure.Configuration;
 
 public class GoogleOptions
 {

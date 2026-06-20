@@ -1,6 +1,6 @@
-namespace Account.Domain.DTOs;
+namespace Account.Domain.Models;
 
-public record LogoutNotificationDto(
+public record LogoutNotification(
     string ToEmail,
     string? IpAddress,
     DateTime LogoutTime,

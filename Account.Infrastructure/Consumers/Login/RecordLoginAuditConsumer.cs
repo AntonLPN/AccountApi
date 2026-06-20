@@ -1,6 +1,6 @@
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
-using Account.Domain.DTOs.EntitiesDTO;
+using Account.Domain.DTOs;
 using Account.Domain.Entities;
 using Account.Domain.Repositories;
 using MassTransit;

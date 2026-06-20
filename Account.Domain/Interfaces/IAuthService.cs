@@ -18,7 +18,7 @@ public interface IAuthService
     Task<TokenResponse?> LoginAsync(string email);
     Task<TokenResponse?> LoginAsync(string email, string password);
     Task<TokenResponse?> RefreshTokenAsync(string refreshToken);
-    Task<GooglePayloadDto> GoogleValidateAsync(string googleToken);
+    Task<GooglePayload> GoogleValidateAsync(string googleToken);
     Task<Result> DeleteUserByEmailAsync(string email);
     /// <summary>
     /// Logs the user out of Keycloak by revoking the provided refresh token / session.

@@ -101,7 +101,7 @@ public class AuthService : IAuthService
         return await _keycloakHttpClient.RefreshTokenAsync(refreshToken, _keyCloakOptions.Value);
     }
 
-    public async Task<GooglePayloadDto> GoogleValidateAsync(string googleToken)
+    public async Task<GooglePayload> GoogleValidateAsync(string googleToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(googleToken);
         var settings = new GoogleJsonWebSignature.ValidationSettings
@@ -117,7 +117,7 @@ public class AuthService : IAuthService
                 googleToken,
                 settings);
 
-            return new GooglePayloadDto()
+            return new GooglePayload()
             {
                 Email = payload.Email,
             };
