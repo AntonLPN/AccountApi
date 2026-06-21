@@ -135,6 +135,10 @@ public class AuthController(IMediator mediator) : ControllerBase
 
         return Ok();
     }
+    //TODO : Add forgot password
+    //TODO : Add reset password
+    //TODO : Add change password
+    
 
     private void SetRefreshTokenCookie(string? refreshToken)
     {

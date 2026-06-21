@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using Account.Application.Features.Account.Register;
 using Account.Domain.Extensions;
 using Account.Infrastructure.Configuration;
@@ -8,9 +9,11 @@ using Account.Infrastructure.Saga.UserLogin;
 using Account.Infrastructure.Saga.UserLogout;
 using Account.Infrastructure.Saga.UserRegister;
 using Account.Infrastructure.Services;
+using AccountApi.Authorization;
 using MassTransit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
 
 namespace AccountApi.Extensions;
@@ -34,27 +37,51 @@ public static class ServicesExtensions
         return services;
     }
 
-    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services,
+    public static void AddJwtAuthentication(this IServiceCollection services,
         IConfiguration configuration)
     {
         services.AddAuthentication("Bearer")
             .AddJwtBearer("Bearer", options =>
             {
+                
                 var keycloakSettings = configuration.GetSection("Authentication:Schemes:Bearer");
                 options.Authority = keycloakSettings["Authority"];
                 options.Audience = keycloakSettings["ValidAudience"];
                 options.RequireHttpsMetadata = false;
-                options.TokenValidationParameters = new TokenValidationParameters
+                options.MapInboundClaims = false;
+#if  DEBUG
+                options.Events = new JwtBearerEvents
                 {
-                    ValidateAudience = true,
-                    ValidAudience = keycloakSettings["ValidAudience"],
-                    ValidateIssuer = true,
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
-                };
+                    OnTokenValidated = ctx =>
+                    {
+                        var acr = ctx.Principal?.FindFirst("acr")?.Value;
+                        Console.WriteLine($"✅ Token OK, acr={acr}");
+                        return Task.CompletedTask;
+                    },
+                    OnAuthenticationFailed = ctx =>
+                    {
+                        Console.WriteLine($"❌ Auth FAILED: {ctx.Exception.Message}");
+                        return Task.CompletedTask;
+                    },
+                    OnForbidden = ctx =>
+                    {
+                        var claims = string.Join(", ", ctx.HttpContext.User.Claims.Select(c => $"{c.Type}={c.Value}"));
+                        Console.WriteLine($"🚫 Forbidden, claims: {claims}");
+                        return Task.CompletedTask;
+                    }
+                };          
+#endif
+             
             });
-
-        return services;
+        services.AddAuthorizationBuilder()
+            .AddPolicy(AuthPolicies.PreAuthOnly, new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .RequireClaim("acr", "1", "2")
+                .Build())
+            .AddPolicy(AuthPolicies.MfaRequired, new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .RequireClaim("acr", "2")
+                .Build());
     }
 
     public static IServiceCollection AddLifeTimeServices(this IServiceCollection services)

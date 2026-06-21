@@ -50,7 +50,7 @@ builder.Services.AddHttpClient<KeycloakHttpClient>()
 
 // For debug
 builder.Services.AddDistributedMemoryCache();
-builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
