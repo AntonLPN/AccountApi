@@ -1,4 +1,3 @@
-using Account.Domain.DTOs;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Infrastructure.Configuration;
@@ -18,7 +17,6 @@ public class AuthService : IAuthService
     private readonly IDistributedCache _cache;
     private readonly ILogger<AuthService> _logger;
     private readonly IOptions<GoogleOptions> _googleOptions;
-    private readonly ICryptography _cryptographyService;
 
     // ReSharper disable once ConvertToPrimaryConstructor
     public AuthService(
@@ -34,7 +32,6 @@ public class AuthService : IAuthService
         _cache = cache;
         _logger = logger;
         _googleOptions = googleOptions;
-        _cryptographyService = cryptographyService;
     }
 
     public async Task<string?> GoogleRegisterAsync(string email)
@@ -85,7 +82,8 @@ public class AuthService : IAuthService
         ArgumentException.ThrowIfNullOrEmpty(email);
         return _keycloakHttpClient.LoginAsync(email, _keyCloakOptions.Value);
     }
-
+    
+ 
     public async Task<TokenResponse?> LoginAsync(string email, string password)
     {
         if (!IsValidLoginRequest(email, password))

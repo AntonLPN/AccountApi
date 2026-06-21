@@ -5,7 +5,7 @@ namespace Account.Application.Features.Account.Models;
 
 public class BaseAuthResponse
 {
-    [JsonPropertyName("apiKey")] public string ApiKey { get; set; } = "";
-    public TokenResponse Token { get; set; } = new();
+    [JsonPropertyName("apiKey")] public string? ApiKey { get; set; } 
+    public TokenResponse? Token { get; set; }
 
 }

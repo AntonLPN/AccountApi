@@ -7,6 +7,7 @@ using Ardalis.Result;
 using Ardalis.SharedKernel;
 using MassTransit;
 using Microsoft.Extensions.Logging;
+using OtpNet;
 
 namespace Account.Application.Features.Account.Login;
 
@@ -30,6 +31,23 @@ public class LoginUserHandler(
             var user = await userRepository.GetUserByEmailAsync(request.Email, cancellationToken);
             if (user is null)
                 return Result<LoginUserResult>.Unauthorized();
+
+            if (user.IsTwoFactorEnabled)
+            {
+                //TODO implement mfa
+                var secretKey = Convert.FromBase64String(user.EncryptedTwoFactorSecret);
+                var totp = new Totp(secretKey, step: 300, mode: OtpHashMode.Sha1, totpSize: 6);
+                var otpCode = totp.ComputeTotp();
+                
+                
+                
+                throw new  NotImplementedException();
+                return Result<LoginUserResult>.Success(new LoginUserResult()
+                {
+                    IsMfaRequired = true,
+                    MfaStateToken = "IMPLEMENT TOKEN LOGIC HERE"
+                });
+            }           
 
             var apiKey = await apiKeyRepository.GetApiKeyByUserIdAsync(user.Id);
 

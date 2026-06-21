@@ -76,12 +76,11 @@ public class AuthController(IMediator mediator) : ControllerBase
         var loginCmd = new LoginCommand(model.Email, model.Password, ipAddress, userAgent);
         var res = await mediator.Send(loginCmd);
 
-        if (res.Status == Ardalis.Result.ResultStatus.Unauthorized)
-            return Unauthorized();
         if (!res.IsSuccess)
-            return BadRequest(res.Errors);
-
-        SetRefreshTokenCookie(res.Value.Token.RefreshToken);
+            return Unauthorized();
+        
+        if (!res.Value.IsMfaRequired)
+            SetRefreshTokenCookie(res.Value?.Token?.RefreshToken);
         return Ok(res.Value);
     }
 
@@ -138,7 +137,7 @@ public class AuthController(IMediator mediator) : ControllerBase
     //TODO : Add forgot password
     //TODO : Add reset password
     //TODO : Add change password
-    
+
 
     private void SetRefreshTokenCookie(string? refreshToken)
     {

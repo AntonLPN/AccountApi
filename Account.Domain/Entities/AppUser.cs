@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 using Account.Domain.Models;
 using Microsoft.EntityFrameworkCore;
+using OtpNet;
 
 namespace Account.Domain.Entities;
 
@@ -12,10 +13,10 @@ public class AppUser
     public string Email { get; set; } = "";
     public bool EmailConfirmed { get; set; }
     public bool IsTwoFactorEnabled { get; set; }
-    public string? EncryptedTwoFactorSecret { get; set; }
+    public string EncryptedTwoFactorSecret { get; set; }
     public string? PasswordHash { get; set; } = "";
-    
-    public string? ProviderName { get; set; } = "my-corporate-ad";//Google, Aple, etc.
+
+    public string? ProviderName { get; set; } = "my-corporate-ad"; //Google, Aple, etc.
     public DateTime? LastLoginAt { get; set; }
     public DateTime? LastLogoutAt { get; set; }
 
@@ -40,11 +41,12 @@ public class AppUser
             Id = createParams.Id,
             Email = createParams.Email,
             UserName = createParams.Email, // Set UserName to Email by default
-            PasswordHash = createParams.PasswordHash ,
-            ReferralCode = GenerateReadableCode(6),
+            PasswordHash = createParams.PasswordHash,
+            ReferralCode = GenerateReadableCode(),
             ReferrerId = createParams.ReferrerId,
             ProviderName = createParams.ProviderName,
-            EmailConfirmed = createParams.EmailConfirmed
+            EmailConfirmed = createParams.EmailConfirmed,
+            EncryptedTwoFactorSecret = Convert.ToBase64String(KeyGeneration.GenerateRandomKey(20))
         };
         return user;
     }
@@ -63,4 +65,3 @@ public class AppUser
         return new string(result);
     }
 }
-
