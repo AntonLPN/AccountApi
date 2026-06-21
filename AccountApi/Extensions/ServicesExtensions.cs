@@ -11,6 +11,7 @@ using Account.Infrastructure.Services;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
 
 namespace AccountApi.Extensions;
 
@@ -64,7 +65,7 @@ public static class ServicesExtensions
         ));
         services.AddInfrastructureServices();
         services.AddDomainServices();
-        
+
         return services;
     }
 
@@ -155,5 +156,39 @@ public static class ServicesExtensions
         });
 
         return services;
+    }
+
+    public static void AddRedis(this IServiceCollection services, IConfiguration configuration)
+    {
+        //if user docker compose, redis will be in localhost
+        //use this to connect to redis in docker compose
+        //var redis = ConnectionMultiplexer.Connect($"{cfg.Host}:{cfg.Port}");
+        // var db = redis.GetDatabase();
+        //builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
+        
+        //if user run app without docker compose, for example, https://upstash.com/
+        var redisSection = configuration.GetSection("Redis");
+        ArgumentNullException.ThrowIfNull(redisSection);
+        var redisOptions = new ConfigurationOptions
+        {
+            EndPoints =
+            {
+                {
+                    redisSection["Host"] ?? throw new InvalidOperationException("Redis config error"),
+                    int.Parse(redisSection["Port"] ?? "6379")
+                }
+            },
+            User = redisSection["User"],
+            Password = redisSection["Password"],
+            Ssl = bool.Parse(redisSection["Ssl"] ?? "false"),
+            AbortOnConnectFail = false,
+            ConnectTimeout = 5000
+        };
+
+        var redis = ConnectionMultiplexer.Connect(redisOptions);
+        if (!redis.IsConnected)
+            throw new Exception("Failed to connect to Redis");
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+            ConnectionMultiplexer.Connect(redisOptions));
     }
 }

@@ -1,4 +1,3 @@
-using Account.Infrastructure;
 using Account.Infrastructure.Configuration;
 using Account.Infrastructure.HttpClients;
 using Account.Infrastructure.Persistence;
@@ -21,7 +20,10 @@ builder.Host.AddSerilogLogging();
 builder.Services.AddMySqlDatabase(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddMassTransitMessaging(builder.Configuration);
+builder.Services.AddRedis(builder.Configuration);
 builder.Services.AddLifeTimeServices();
+
+
 builder.Services.AddRateLimiter(limiter =>
 {
     limiter.AddFixedWindowLimiter("fixed", options =>

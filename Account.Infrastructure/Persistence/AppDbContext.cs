@@ -36,15 +36,17 @@ public class AppDbContext : DbContext
             entity.HasKey(u => u.Id).HasName("PK_AppUser");
             entity.Property(e => e.UserName).HasMaxLength(255).HasColumnName("UserName").IsUnicode();
             entity.Property(e => e.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode().IsRequired();
-            entity.Property(e => e.PasswordHash).HasMaxLength(255).HasColumnName("PasswordHash").IsUnicode()
+            entity.Property(e => e.PasswordHash).HasColumnName("PasswordHash").IsUnicode()
                 .IsRequired();
             entity.Property(e => e.EmailConfirmed).HasColumnName("EmailConfirmed").HasDefaultValue(false);
-            entity.Property(e => e.LastLoginAt).HasColumnName("LastLoginAt");
-            entity.Property(e => e.LastLogoutAt).HasColumnName("LastLogoutAt");
+            entity.Property(e => e.IsTwoFactorEnabled).HasColumnName("IsTwoFactorEnabled").HasDefaultValue(false);
+            entity.Property(e => e.EncryptedTwoFactorSecret).HasColumnName("EncryptedTwoFactorSecret").IsUnicode();
             entity.Property(e => e.ReferralCode).HasMaxLength(255).HasColumnName("ReferralCode").IsUnicode()
                 .IsRequired();
             entity.Property(e => e.ReferrerId).HasMaxLength(255).HasColumnName("ReferrerId").IsUnicode();
             entity.Property(e=>e.ProviderName).HasMaxLength(60).HasColumnName("ProviderName").IsUnicode();
+            entity.Property(e => e.LastLoginAt).HasColumnName("LastLoginAt");
+            entity.Property(e => e.LastLogoutAt).HasColumnName("LastLogoutAt");
 
             entity.HasIndex(u => u.Email).IsUnique();
         });

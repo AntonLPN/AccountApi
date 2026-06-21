@@ -7,6 +7,6 @@ public static class DependencyInjectionDomain
 {
     public static void AddDomainServices(this IServiceCollection services)
     {
-        services.AddAutoMapper(typeof(LoginAuditMapper));
+        services.AddAutoMapper(cfg => cfg.AddMaps(typeof(LoginAuditMapper).Assembly));
     }
 }

@@ -11,6 +11,8 @@ public class AppUser
     public string? UserName { get; set; }
     public string Email { get; set; } = "";
     public bool EmailConfirmed { get; set; }
+    public bool IsTwoFactorEnabled { get; set; }
+    public string? EncryptedTwoFactorSecret { get; set; }
     public string? PasswordHash { get; set; } = "";
     
     public string? ProviderName { get; set; } = "my-corporate-ad";//Google, Aple, etc.
