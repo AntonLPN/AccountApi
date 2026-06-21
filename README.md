@@ -46,6 +46,8 @@ CQRS: MediatR
 
 Service Bus: RabbitMQ
 
+Cash: Redis
+
 Abstraction Layer: MassTransit (Sagas, Outbox, Inboxes, Retries)
 
 Testing: xUnit, FluentAssertions, Moq/NSubstitute, WebApplicationFactory (for integration tests)
