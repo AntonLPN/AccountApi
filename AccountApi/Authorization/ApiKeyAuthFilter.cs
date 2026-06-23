@@ -73,7 +73,7 @@ public class ApiKeyAuthFilter(
         catch (Exception e)
         {
             logger.LogError(e, "ApiKeyAuthFilter: Error checking API key. Error: {ErrorMessage}", e.Message);
-            context.Result = new UnauthorizedResult();
+            throw;
         }
     }
 }
