@@ -12,8 +12,7 @@ builder.Services.AddControllers(options => { options.Filters.Add<ApiKeyAuthFilte
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
-builder.Services.AddMemoryCache();
+builder.Services.AddMemoryCache();//for debug
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Host.AddSerilogLogging();
 

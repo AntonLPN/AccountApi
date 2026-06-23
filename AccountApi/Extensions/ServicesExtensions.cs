@@ -1,4 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
 using Account.Application.Features.Account.Register;
 using Account.Domain.Extensions;
 using Account.Infrastructure.Configuration;
@@ -55,18 +54,18 @@ public static class ServicesExtensions
                     OnTokenValidated = ctx =>
                     {
                         var acr = ctx.Principal?.FindFirst("acr")?.Value;
-                        Console.WriteLine($"✅ Token OK, acr={acr}");
+                        Console.WriteLine($"Token OK, acr={acr}");
                         return Task.CompletedTask;
                     },
                     OnAuthenticationFailed = ctx =>
                     {
-                        Console.WriteLine($"❌ Auth FAILED: {ctx.Exception.Message}");
+                        Console.WriteLine($"Auth FAILED: {ctx.Exception.Message}");
                         return Task.CompletedTask;
                     },
                     OnForbidden = ctx =>
                     {
                         var claims = string.Join(", ", ctx.HttpContext.User.Claims.Select(c => $"{c.Type}={c.Value}"));
-                        Console.WriteLine($"🚫 Forbidden, claims: {claims}");
+                        Console.WriteLine($"Forbidden, claims: {claims}");
                         return Task.CompletedTask;
                     }
                 };          

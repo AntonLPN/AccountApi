@@ -1,8 +1,9 @@
+using System.Text.Json;
 using Account.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
+using StackExchange.Redis;
 
 namespace AccountApi.Authorization;
 
@@ -10,7 +11,7 @@ public class ApiKeyAuthFilter(
     IConfiguration configuration,
     ILogger<ApiKeyAuthFilter> logger,
     IServiceScopeFactory scopeFactory,
-    IMemoryCache memoryCache)
+    IConnectionMultiplexer connectionMultiplexer)
     : IAsyncAuthorizationFilter
 {
     private readonly List<string> _apiKeys =
@@ -38,12 +39,18 @@ public class ApiKeyAuthFilter(
             if (_apiKeys.Contains(apiKey))
                 return;
 
+            var dbRedis = connectionMultiplexer.GetDatabase();
             var cacheKey = $"auth_key_{apiKey}";
-            if (memoryCache.TryGetValue(cacheKey, out CachedApiKeyInfo? cachedInfo))
+            string? cashedInfo = await dbRedis.StringGetAsync(cacheKey);
+            if (!string.IsNullOrEmpty(cashedInfo))
             {
-                if (cachedInfo is not null && cachedInfo.IsActive) return;
-                context.Result = new UnauthorizedResult();
-                return;
+                CachedApiKeyInfo? info = JsonSerializer.Deserialize<CachedApiKeyInfo>(cashedInfo);
+                ArgumentNullException.ThrowIfNull(info);
+                if (!info.IsActive)
+                {
+                    context.Result = new UnauthorizedResult();
+                    return;
+                }
             }
 
             using var scope = scopeFactory.CreateScope();
@@ -56,16 +63,11 @@ public class ApiKeyAuthFilter(
                 return;
             }
 
-            // Cache only successful auth results
             if (key.UserId != null)
             {
-                var infoToCache = new CachedApiKeyInfo(key.UserId, IsActive: true);
-
-                var cacheOptions = new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(30))
-                    .SetPriority(CacheItemPriority.High);
-
-                memoryCache.Set(cacheKey, infoToCache, cacheOptions);
+                var serializedInfo =
+                    JsonSerializer.Serialize(new CachedApiKeyInfo(key.UserId, IsActive: key.IsAuthorize));
+                await dbRedis.StringSetAsync(cacheKey, serializedInfo, TimeSpan.FromMinutes(30));
             }
         }
         catch (Exception e)
