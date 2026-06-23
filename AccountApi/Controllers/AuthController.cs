@@ -35,8 +35,8 @@ public class AuthController(IMediator mediator) : ControllerBase
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
 
-        SetRefreshTokenCookie(res?.Value?.Token?.RefreshToken);
-        return Ok(res?.Value);
+        SetRefreshTokenCookie(res.Value?.Token?.RefreshToken);
+        return Ok(res.Value);
     }
 
     [AllowAnonymous]
@@ -56,7 +56,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
 
-        SetRefreshTokenCookie(res.Value.Token.RefreshToken);
+        SetRefreshTokenCookie(res.Value?.Token?.RefreshToken);
         return Ok(res.Value);
     }
 
@@ -105,7 +105,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
 
-        SetRefreshTokenCookie(res.Value.Token.RefreshToken);
+        SetRefreshTokenCookie(res.Value?.Token?.RefreshToken);
         return Ok(res.Value);
     }
 

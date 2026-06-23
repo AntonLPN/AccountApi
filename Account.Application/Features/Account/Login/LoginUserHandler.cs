@@ -40,12 +40,16 @@ public class LoginUserHandler(
                 var otpCode = totp.ComputeTotp();
                 
                 
-                
-                throw new  NotImplementedException();
                 return Result<LoginUserResult>.Success(new LoginUserResult()
                 {
                     IsMfaRequired = true,
-                    MfaStateToken = "IMPLEMENT TOKEN LOGIC HERE"
+                    Token = new TokenResponse()
+                    {
+                        AccessToken = tokenResponse.AccessToken,
+                        ExpiresIn = tokenResponse.ExpiresIn
+                    }
+                    
+                    
                 });
             }           
 

@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<UserRegistrationSagaState> UserRegistrationSagaStates { get; set; } = null!;
     public DbSet<UserLoginSagaState> UserLoginSagaStates { get; set; } = null!;
     public DbSet<UserLogoutSagaState> UserLogoutSagaStates { get; set; } = null!;
+    public DbSet<TwoFactorSagaState> TwoFactorSagaStates { get; set; } = null!;
 
     // ReSharper disable once ConvertToPrimaryConstructor
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
@@ -44,7 +45,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.ReferralCode).HasMaxLength(255).HasColumnName("ReferralCode").IsUnicode()
                 .IsRequired();
             entity.Property(e => e.ReferrerId).HasMaxLength(255).HasColumnName("ReferrerId").IsUnicode();
-            entity.Property(e=>e.ProviderName).HasMaxLength(60).HasColumnName("ProviderName").IsUnicode();
+            entity.Property(e => e.ProviderName).HasMaxLength(60).HasColumnName("ProviderName").IsUnicode();
             entity.Property(e => e.LastLoginAt).HasColumnName("LastLoginAt");
             entity.Property(e => e.LastLogoutAt).HasColumnName("LastLogoutAt");
 
@@ -129,6 +130,23 @@ public class AppDbContext : DbContext
             entity.Property(x => x.CreatedAt).HasColumnName("CreatedAt");
             entity.Property(x => x.UpdatedAt).HasColumnName("UpdatedAt");
             entity.HasIndex(x => x.UserId);
+        });
+
+        builder.Entity<TwoFactorSagaState>(entity =>
+        {
+            entity.HasKey(s => s.CorrelationId);
+            entity.Property(s => s.CorrelationId).HasMaxLength(255);
+            entity.Property(s => s.CurrentState).HasMaxLength(64);
+            entity.Property(x => x.UserId).HasMaxLength(255);
+            entity.Property(x => x.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode();
+            entity.Property(x => x.OtpCode).HasMaxLength(7).HasColumnName("OtpCode").IsUnicode();
+            entity.Property(x=>x.OtpCodeSent).HasColumnName("OtpCodeSent").HasDefaultValue(false);
+            entity.Property(x => x.FailureReason).HasMaxLength(255).HasColumnName("FailureReason").IsUnicode();
+            entity.Property(x=>x.ExpiredAt).HasColumnName("ExpiredAt");
+            entity.Property(x => x.CreatedAt).HasColumnName("CreatedAt");
+            entity.Property(x => x.UpdatedAt).HasColumnName("UpdatedAt");
+            entity.HasIndex(x => x.UserId);
+
         });
 
         builder.Entity<LogoutAudit>(entity =>

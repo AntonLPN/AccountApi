@@ -4,6 +4,7 @@ using Account.Infrastructure.Configuration;
 using Account.Infrastructure.Extensions;
 using Account.Infrastructure.Persistence;
 using Account.Infrastructure.Persistence.SagaModels;
+using Account.Infrastructure.Saga.TwoFactor;
 using Account.Infrastructure.Saga.UserLogin;
 using Account.Infrastructure.Saga.UserLogout;
 using Account.Infrastructure.Saga.UserRegister;
@@ -42,13 +43,12 @@ public static class ServicesExtensions
         services.AddAuthentication("Bearer")
             .AddJwtBearer("Bearer", options =>
             {
-                
                 var keycloakSettings = configuration.GetSection("Authentication:Schemes:Bearer");
                 options.Authority = keycloakSettings["Authority"];
                 options.Audience = keycloakSettings["ValidAudience"];
                 options.RequireHttpsMetadata = false;
                 options.MapInboundClaims = false;
-#if  DEBUG
+#if DEBUG
                 options.Events = new JwtBearerEvents
                 {
                     OnTokenValidated = ctx =>
@@ -68,9 +68,8 @@ public static class ServicesExtensions
                         Console.WriteLine($"Forbidden, claims: {claims}");
                         return Task.CompletedTask;
                     }
-                };          
+                };
 #endif
-             
             });
         services.AddAuthorizationBuilder()
             .AddPolicy(AuthPolicies.PreAuthOnly, new AuthorizationPolicyBuilder()
@@ -100,28 +99,7 @@ public static class ServicesExtensions
     {
         services.AddMassTransit(x =>
         {
-            //Sagas registration
-            x.AddSagaStateMachine<UserRegistrationSaga, UserRegistrationSagaState, UserRegistrationSagaDefinition>()
-                .EntityFrameworkRepository(r =>
-                {
-                    r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
-                    r.ExistingDbContext<AppDbContext>();
-                    r.UseMySql();
-                });
-            x.AddSagaStateMachine<UserLoginSaga, UserLoginSagaState, UserLoginSagaDefinition>()
-                .EntityFrameworkRepository(r =>
-                {
-                    r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
-                    r.ExistingDbContext<AppDbContext>();
-                    r.UseMySql();
-                });
-            x.AddSagaStateMachine<UserLogoutSaga, UserLogoutSagaState, UserLogoutSagaDefinition>()
-                .EntityFrameworkRepository(r =>
-                {
-                    r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
-                    r.ExistingDbContext<AppDbContext>();
-                    r.UseMySql();
-                });
+            RegisterSagas(x);
             //Set up MassTransit consumers and outbox
             x.AddConsumers(typeof(AppDbContext)
                 .Assembly); //IConsumer implementations for MassTransit Outbox
@@ -184,6 +162,21 @@ public static class ServicesExtensions
         return services;
     }
 
+    private static void RegisterSagas(IBusRegistrationConfigurator x)
+    {
+        
+        x.SetEntityFrameworkSagaRepositoryProvider(r =>
+        {
+            r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
+            r.ExistingDbContext<AppDbContext>();
+            r.UseMySql();
+        });
+        x.AddSagaStateMachine<UserRegistrationSaga, UserRegistrationSagaState, UserRegistrationSagaDefinition>();
+        x.AddSagaStateMachine<UserLoginSaga, UserLoginSagaState, UserLoginSagaDefinition>();
+        x.AddSagaStateMachine<UserLogoutSaga, UserLogoutSagaState, UserLogoutSagaDefinition>();
+        x.AddSagaStateMachine<TwoFactorSaga, TwoFactorSagaState, TwoFactorSagaDefinition>();
+    }
+
     public static void AddRedis(this IServiceCollection services, IConfiguration configuration)
     {
         //if user docker compose, redis will be in localhost
@@ -191,8 +184,8 @@ public static class ServicesExtensions
         //var redis = ConnectionMultiplexer.Connect($"{cfg.Host}:{cfg.Port}");
         // var db = redis.GetDatabase();
         //builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
-        
-        //if user run app without docker compose, for example, https://upstash.com/
+
+        //if run app without docker compose, for example, https://upstash.com/
         var redisSection = configuration.GetSection("Redis");
         ArgumentNullException.ThrowIfNull(redisSection);
         var redisOptions = new ConfigurationOptions
