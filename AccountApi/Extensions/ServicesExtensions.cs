@@ -12,7 +12,6 @@ using Account.Infrastructure.Services;
 using AccountApi.Authorization;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 
