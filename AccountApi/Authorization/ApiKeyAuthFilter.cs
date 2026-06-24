@@ -19,6 +19,7 @@ public class ApiKeyAuthFilter(
     : IAsyncAuthorizationFilter
 {
     private readonly string _masterApiKey = apiKeyOptions.Value.Key;
+
     private record CachedApiKeyInfo(string UserId, bool IsActive);
 
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
@@ -30,7 +31,6 @@ public class ApiKeyAuthFilter(
             var apiKey = ExtractApiKeyFromHeader(context.HttpContext);
             if (apiKey is null || !await IsAuthorizedAsync(apiKey))
                 context.Result = new UnauthorizedResult();
-
         }
         catch (Exception e)
         {
@@ -78,10 +78,9 @@ public class ApiKeyAuthFilter(
             .AsNoTracking()
             .FirstOrDefaultAsync(k => k.ApiKeyValue == apiKey);
 
-        if (key is null || !key.IsAuthorize) return false;
-
-        await SetCacheAsync(apiKey, key.IsAuthorize, key.UserId);
-        return true;
+        if (key is not null)
+            await SetCacheAsync(apiKey, key.IsAuthorize, key.UserId);
+        return key is not null && key.IsAuthorize;
     }
 
     private async Task SetCacheAsync(string apiKey, bool isActive, string userId)
