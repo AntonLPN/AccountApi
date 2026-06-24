@@ -1,79 +1,93 @@
 using System.Text.Json;
+using Account.Infrastructure.Configuration;
 using Account.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
 namespace AccountApi.Authorization;
 
 public class ApiKeyAuthFilter(
-    IConfiguration configuration,
     ILogger<ApiKeyAuthFilter> logger,
-    IServiceScopeFactory scopeFactory,
-    IConnectionMultiplexer connectionMultiplexer)
+    IConnectionMultiplexer connectionMultiplexer,
+    IOptions<ApiKeyOptions> apiKeyOptions,
+    IOptions<RedisOptions> redisOptions,
+    AppDbContext dbContext)
     : IAsyncAuthorizationFilter
 {
-    private readonly List<string> _apiKeys =
-        configuration.GetSection("ApiSettings:ApiKeys").Get<List<string>>() ??
-        throw new InvalidOperationException("ApiSettings:ApiKeys configuration section is missing or invalid.");
-
+    private readonly string _masterApiKey = apiKeyOptions.Value.Key;
     private record CachedApiKeyInfo(string UserId, bool IsActive);
 
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
         try
         {
-            var endpoint = context.HttpContext.GetEndpoint();
-            if (endpoint?.Metadata?.GetMetadata<Microsoft.AspNetCore.Authorization.AllowAnonymousAttribute>() != null)
-                return;
+            if (IsAnonymousEndpoint(context)) return;
 
-            if (!context.HttpContext.Request.Headers.TryGetValue("X-Api-Key", out var extractedApiKey) ||
-                string.IsNullOrWhiteSpace(extractedApiKey.ToString()))
-            {
+            var apiKey = ExtractApiKeyFromHeader(context.HttpContext);
+            if (apiKey is null || !await IsAuthorizedAsync(apiKey))
                 context.Result = new UnauthorizedResult();
-                return;
-            }
 
-            var apiKey = extractedApiKey.ToString();
-            if (_apiKeys.Contains(apiKey))
-                return;
-
-            var dbRedis = connectionMultiplexer.GetDatabase();
-            var cacheKey = $"auth_key_{apiKey}";
-            string? cashedInfo = await dbRedis.StringGetAsync(cacheKey);
-            if (!string.IsNullOrEmpty(cashedInfo))
-            {
-                CachedApiKeyInfo? info = JsonSerializer.Deserialize<CachedApiKeyInfo>(cashedInfo);
-                ArgumentNullException.ThrowIfNull(info);
-                if (!info.IsActive)
-                {
-                    context.Result = new UnauthorizedResult();
-                    return;
-                }
-            }
-
-            using var scope = scopeFactory.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var key = await dbContext.ApiKeys.AsNoTracking().FirstOrDefaultAsync(k => k.ApiKeyValue == apiKey);
-
-            if (key is null || !key.IsAuthorize)
-            {
-                context.Result = new UnauthorizedResult();
-                return;
-            }
-
-            if (key.UserId != null)
-            {
-                var serializedInfo =
-                    JsonSerializer.Serialize(new CachedApiKeyInfo(key.UserId, IsActive: key.IsAuthorize));
-                await dbRedis.StringSetAsync(cacheKey, serializedInfo, TimeSpan.FromMinutes(30));
-            }
         }
         catch (Exception e)
         {
             logger.LogError(e, "ApiKeyAuthFilter: Error checking API key. Error: {ErrorMessage}", e.Message);
             throw;
         }
+    }
+
+    private static bool IsAnonymousEndpoint(AuthorizationFilterContext context) =>
+        context.HttpContext.GetEndpoint()
+            ?.Metadata.GetMetadata<AllowAnonymousAttribute>() is not null;
+
+    private string? ExtractApiKeyFromHeader(HttpContext context)
+    {
+        if (context.Request.Headers.TryGetValue("X-Api-Key", out var key) &&
+            !string.IsNullOrWhiteSpace(key))
+            return key.ToString();
+
+        logger.LogWarning("ApiKeyAuthFilter: API key missing from request headers.");
+        return null;
+    }
+
+    private async Task<bool> IsAuthorizedAsync(string apiKey)
+    {
+        if (apiKey.Equals(_masterApiKey)) return true;
+
+        var cached = await GetFromCacheAsync(apiKey);
+        if (cached.HasValue) return cached.Value;
+
+        return await ValidateFromDbAsync(apiKey);
+    }
+
+    private async Task<bool?> GetFromCacheAsync(string apiKey)
+    {
+        var raw = await connectionMultiplexer.GetDatabase().StringGetAsync(apiKey);
+        if (raw.IsNullOrEmpty) return null;
+
+        var info = JsonSerializer.Deserialize<CachedApiKeyInfo>(raw!);
+        return info?.IsActive;
+    }
+
+    private async Task<bool> ValidateFromDbAsync(string apiKey)
+    {
+        var key = await dbContext.ApiKeys
+            .AsNoTracking()
+            .FirstOrDefaultAsync(k => k.ApiKeyValue == apiKey);
+
+        if (key is null || !key.IsAuthorize) return false;
+
+        await SetCacheAsync(apiKey, key.IsAuthorize, key.UserId);
+        return true;
+    }
+
+    private async Task SetCacheAsync(string apiKey, bool isActive, string userId)
+    {
+        var payload = JsonSerializer.Serialize(new CachedApiKeyInfo(userId, isActive));
+        await connectionMultiplexer.GetDatabase()
+            .StringSetAsync(apiKey, payload, TimeSpan.FromMinutes(redisOptions.Value.CacheStorageTime));
     }
 }
