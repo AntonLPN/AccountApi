@@ -70,17 +70,11 @@ public static class ServicesExtensions
                     }
                 };
 #endif
-            }).AddScheme<ApiKeyAuthSchemeOptions, ApiKeyAuthHandler>("ApiKey", _ => { });
+            }).AddScheme<ApiKeyAuthSchemeOptions, ApiKeyAuthHandler>(AuthPolicies.ApiKeyOnly, _ => { });
 
         services.AddAuthorizationBuilder()
-            .AddPolicy(AuthPolicies.PreAuthOnly, policy => policy
-                .RequireAuthenticatedUser()
-                .RequireClaim("acr", "1", "2"))
-            .AddPolicy(AuthPolicies.MfaRequired, policy => policy
-                .RequireAuthenticatedUser()
-                .RequireClaim("acr", "2"))
             .AddPolicy(AuthPolicies.ApiKeyOnly, policy => policy  
-                .AddAuthenticationSchemes("ApiKey")
+                .AddAuthenticationSchemes(AuthPolicies.ApiKeyOnly)
                 .RequireAuthenticatedUser());
     }
 

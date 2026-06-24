@@ -16,22 +16,6 @@ public class TestController(IAuthService authService) : ControllerBase
     {
         return Ok();
     }
-
-    [AuthorizeMfaRequired]
-    [HttpGet("test-acr-2")]
-    public IActionResult TeestAcr2()
-    {
-        var claims = User.Claims;
-        return Ok();
-    }
-
-    [AuthorizePreAuthOnly]
-    [HttpGet("test-acr-1")]
-    public IActionResult TestAcr1()
-    {
-        var claims = User.Claims;
-        return Ok();
-    }
     
     [AuthorizeApiKeyOnly]
     [HttpGet("test-allow-only-api-key")]
