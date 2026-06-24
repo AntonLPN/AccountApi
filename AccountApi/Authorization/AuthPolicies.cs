@@ -6,6 +6,7 @@ public static class AuthPolicies
 {
     public const string PreAuthOnly = "MfaPreAuthOnlyPolicy";
     public const string MfaRequired = "MfaRequiredPolicy";
+    public const string ApiKeyOnly = "ApiKeyOnlyPolicy";
 }
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
@@ -16,11 +17,18 @@ public class AuthorizePreAuthOnlyAttribute : AuthorizeAttribute
     }
 }
 
-// Атрибут для полноценных бизнес-эндпоинтов (требуется 2FA)
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public class AuthorizeMfaRequiredAttribute : AuthorizeAttribute
 {
     public AuthorizeMfaRequiredAttribute() : base(AuthPolicies.MfaRequired)
+    {
+    }
+}
+
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public class AuthorizeApiKeyOnlyAttribute: AuthorizeAttribute
+{
+    public AuthorizeApiKeyOnlyAttribute() : base(AuthPolicies.ApiKeyOnly)
     {
     }
 }

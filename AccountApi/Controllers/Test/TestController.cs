@@ -14,7 +14,6 @@ public class TestController(IAuthService authService) : ControllerBase
     [HttpGet("test")]
     public async Task<IActionResult> Index()
     {
-     
         return Ok();
     }
 
@@ -29,6 +28,22 @@ public class TestController(IAuthService authService) : ControllerBase
     [AuthorizePreAuthOnly]
     [HttpGet("test-acr-1")]
     public IActionResult TestAcr1()
+    {
+        var claims = User.Claims;
+        return Ok();
+    }
+    
+    [AuthorizeApiKeyOnly]
+    [HttpGet("test-allow-only-api-key")]
+    public IActionResult TestApiKey()
+    {
+        var claims = User.Claims;
+        return Ok();
+    }
+    
+    [AuthorizeApiKeyOnly]
+    [HttpGet("test-allow")]
+    public IActionResult TestApiKeyAndJwt()
     {
         var claims = User.Claims;
         return Ok();

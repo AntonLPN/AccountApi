@@ -7,7 +7,7 @@ using AccountApi.Middleware;
 using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddControllers(options => { options.Filters.Add<ApiKeyAuthFilter>(); });
+builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

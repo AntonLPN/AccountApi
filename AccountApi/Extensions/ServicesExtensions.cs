@@ -70,16 +70,18 @@ public static class ServicesExtensions
                     }
                 };
 #endif
-            });
+            }).AddScheme<ApiKeyAuthSchemeOptions, ApiKeyAuthHandler>("ApiKey", _ => { });
+
         services.AddAuthorizationBuilder()
-            .AddPolicy(AuthPolicies.PreAuthOnly, new AuthorizationPolicyBuilder()
+            .AddPolicy(AuthPolicies.PreAuthOnly, policy => policy
                 .RequireAuthenticatedUser()
-                .RequireClaim("acr", "1", "2")
-                .Build())
-            .AddPolicy(AuthPolicies.MfaRequired, new AuthorizationPolicyBuilder()
+                .RequireClaim("acr", "1", "2"))
+            .AddPolicy(AuthPolicies.MfaRequired, policy => policy
                 .RequireAuthenticatedUser()
-                .RequireClaim("acr", "2")
-                .Build());
+                .RequireClaim("acr", "2"))
+            .AddPolicy(AuthPolicies.ApiKeyOnly, policy => policy  
+                .AddAuthenticationSchemes("ApiKey")
+                .RequireAuthenticatedUser());
     }
 
     public static IServiceCollection AddLifeTimeServices(this IServiceCollection services)
@@ -164,7 +166,6 @@ public static class ServicesExtensions
 
     private static void RegisterSagas(IBusRegistrationConfigurator x)
     {
-        
         x.SetEntityFrameworkSagaRepositoryProvider(r =>
         {
             r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
