@@ -28,7 +28,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
         Event(() => WelcomeEmailSent, x => x.CorrelateById(context => context.Message.CorrelationId));
         Event(() => ProfileInitialized, x => x.CorrelateById(context => context.Message.CorrelationId));
         Event(() => RegistrationFailedEvent, x => x.CorrelateById(context => context.Message.CorrelationId));
-        
+
         InstanceState(x => x.CurrentState);
 
         Initially(
@@ -83,7 +83,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                     context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Profile initialized for UserId={UserId}", context.Saga.UserId);
                 })
-                .TransitionTo(RegistrationCompleted));
+                .TransitionTo(RegistrationCompleted));//save saga to db for history
         DuringAny(
             When(RegistrationFailedEvent)
                 .Then(context =>
@@ -92,11 +92,6 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                     context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogError("User registration failed for UserId={UserId}. Reason: {Reason}",
                         context.Saga.UserId, context.Message.FailureReason);
-                })
-                .Publish(context => new UserRegistrationSagaFailedIntegrationEvent
-                {
-                    UserId = context.Saga.UserId,
-                    FailureReason = context.Message.FailureReason
                 })
                 .TransitionTo(RegistrationFailed));
     }
