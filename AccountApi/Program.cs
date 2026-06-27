@@ -1,7 +1,6 @@
 using Account.Infrastructure.Configuration;
 using Account.Infrastructure.HttpClients;
 using Account.Infrastructure.Persistence;
-using AccountApi.Authorization;
 using AccountApi.Extensions;
 using AccountApi.Middleware;
 using Microsoft.AspNetCore.RateLimiting;

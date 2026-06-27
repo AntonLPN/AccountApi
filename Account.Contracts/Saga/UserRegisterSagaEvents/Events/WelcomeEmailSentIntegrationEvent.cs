@@ -1,6 +1,6 @@
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Models;
 
-namespace Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
+namespace Account.Contracts.Saga.UserRegisterSagaEvents.Events;
 
 public class WelcomeEmailSentIntegrationEvent : BaseUserModel
 {

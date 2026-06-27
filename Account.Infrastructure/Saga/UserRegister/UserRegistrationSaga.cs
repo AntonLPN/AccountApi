@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Account.Contracts.Events.External;
-using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Commands;
-using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
+using Account.Contracts.Saga.UserRegisterSagaEvents.Commands;
+using Account.Contracts.Saga.UserRegisterSagaEvents.Events;
 using Account.Infrastructure.Persistence.SagaModels;
 using MassTransit;
 using Microsoft.Extensions.Logging;
@@ -25,7 +25,10 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
     public UserRegistrationSaga(ILogger<UserRegistrationSaga> logger)
     {
         Event(() => RegistrationStarted, x => x.CorrelateById(context => context.Message.CorrelationId));
-
+        Event(() => WelcomeEmailSent, x => x.CorrelateById(context => context.Message.CorrelationId));
+        Event(() => ProfileInitialized, x => x.CorrelateById(context => context.Message.CorrelationId));
+        Event(() => RegistrationFailedEvent, x => x.CorrelateById(context => context.Message.CorrelationId));
+        
         InstanceState(x => x.CurrentState);
 
         Initially(
@@ -35,9 +38,8 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                     context.Saga.UserId = context.Message.UserId;
                     context.Saga.Email = context.Message.Email;
                     context.Saga.ApiKey = context.Message.ApiKey;
-                    context.Message.ReferralCode = context.Message.ReferralCode;
-                    context.Message.IsActive = context.Message.IsActive;
-                    context.Message.EmailConfirmed = context.Message.EmailConfirmed;
+                    context.Saga.CreatedAt = DateTime.UtcNow;
+                    context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Saga registration started for UserId={UserId}", context.Message.UserId);
                 })
                 .Publish(context => new SendWelcomeEmailIntegrationEvent
@@ -64,9 +66,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
             When(WelcomeEmailSent).Then(context =>
                 {
                     context.Saga.EmailConfirmationSent = true;
-                    context.Saga.ApiKey = context.Saga.ApiKey;
-                    context.Saga.Email = context.Saga.Email;
-                    context.Saga.UserId = context.Saga.UserId;
+                    context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Email confirmation sent for UserId={UserId}", context.Saga.UserId);
                 }).Publish(context => new InitializeUserProfileIntegrationEvent
                 {
@@ -80,6 +80,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
             When(ProfileInitialized).Then(context =>
                 {
                     context.Saga.ProfileInitialized = true;
+                    context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Profile initialized for UserId={UserId}", context.Saga.UserId);
                 })
                 .TransitionTo(RegistrationCompleted));

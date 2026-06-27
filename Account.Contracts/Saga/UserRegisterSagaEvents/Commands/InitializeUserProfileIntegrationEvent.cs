@@ -1,6 +1,6 @@
 using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Models;
 
-namespace Account.Contracts.SagaEvents.UserRegisterSagaEvents.Commands;
+namespace Account.Contracts.Saga.UserRegisterSagaEvents.Commands;
 
 public class InitializeUserProfileIntegrationEvent : BaseUserModel
 {

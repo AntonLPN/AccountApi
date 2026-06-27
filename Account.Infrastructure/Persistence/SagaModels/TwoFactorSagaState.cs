@@ -2,7 +2,7 @@ using MassTransit;
 
 namespace Account.Infrastructure.Persistence.SagaModels;
 
-public class TwoFactorSagaState:SagaStateMachineInstance, ISagaVersion
+public class TwoFactorSagaState : SagaStateMachineInstance, ISagaVersion
 {
     public Guid CorrelationId { get; set; }
     public int Version { get; set; }
@@ -15,5 +15,4 @@ public class TwoFactorSagaState:SagaStateMachineInstance, ISagaVersion
     public DateTime ExpiredAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    
 }

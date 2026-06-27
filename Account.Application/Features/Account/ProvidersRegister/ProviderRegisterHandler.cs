@@ -1,6 +1,6 @@
 using System.Data.Common;
 using Account.Application.Interfaces;
-using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
+using Account.Contracts.Saga.UserRegisterSagaEvents.Events;
 using Account.Domain.DTOs;
 using Account.Domain.Entities;
 using Account.Domain.Enums;

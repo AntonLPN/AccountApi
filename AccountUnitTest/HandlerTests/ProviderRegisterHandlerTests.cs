@@ -1,6 +1,6 @@
 using Account.Application.Features.Account.ProvidersRegister;
 using Account.Application.Interfaces;
-using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Events;
+using Account.Contracts.Saga.UserRegisterSagaEvents.Events;
 using Account.Domain.Entities;
 using Account.Domain.Enums;
 using Account.Domain.Interfaces;
