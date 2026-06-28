@@ -9,7 +9,6 @@ using Account.Domain.Repositories;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
-using AutoMapper;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
@@ -85,7 +84,7 @@ public class RegisterUserHandler(
         }
         catch (DbException e)
         {
-            logger.LogError(e, "Database error occurred while handling GoogleRegisterCommand");
+            logger.LogError(e, "Database error occurred while handling Provider registration");
             throw;
         }
         catch (Exception e)

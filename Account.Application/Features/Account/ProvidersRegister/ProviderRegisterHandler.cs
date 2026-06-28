@@ -81,7 +81,7 @@ public class ProviderRegisterHandler(
         }
         catch (DbException e)
         {
-            logger.LogError(e, "Database error occurred while handling GoogleRegisterCommand");
+            logger.LogError(e, "Database error occurred while handling Provider registration");
             throw;
         }
         catch (Exception e)
@@ -95,7 +95,7 @@ public class ProviderRegisterHandler(
                 logger.LogWarning(cleanupEx, "Failed to rollback external user creation");
             }
 
-            logger.LogError(e, "Error occurred while handling GoogleRegisterCommand");
+            logger.LogError(e, "Error occurred while handling Provider registration");
             throw;
         }
     }
