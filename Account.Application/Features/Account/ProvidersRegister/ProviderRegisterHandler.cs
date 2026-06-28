@@ -63,7 +63,7 @@ public class ProviderRegisterHandler(
             loginAuditRepository.AddLogin(loginAudit, cancellationToken);
             
             //Start Saga
-            await publishEndpoint.Publish(new UserSagaStartedIntegrationEvent
+            await publishEndpoint.Publish(new UserRegisterSagaStartedIntegrationEvent
             {
                 CorrelationId = Guid.NewGuid(),
                 UserId = user.Id,

@@ -2,7 +2,7 @@ using Account.Contracts.Saga.UserRegisterSagaEvents.Models;
 
 namespace Account.Contracts.Saga.UserRegisterSagaEvents.Events;
 
-public class UserSagaStartedIntegrationEvent : BaseUserModel
+public class UserRegisterSagaStartedIntegrationEvent : BaseUserModel
 {
     public string ? ReferralCode { get; set; }
     public bool IsActive { get; set; }

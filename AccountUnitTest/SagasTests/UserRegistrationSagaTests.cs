@@ -44,7 +44,7 @@ public class UserRegistrationSagaTests : IAsyncLifetime
         var correlationId = Guid.NewGuid();
         string email = "test@example.com";
         // Act
-        await _harness.Bus.Publish(new UserSagaStartedIntegrationEvent()
+        await _harness.Bus.Publish(new UserRegisterSagaStartedIntegrationEvent()
         {
             CorrelationId = correlationId,
             UserId = Guid.NewGuid().ToString(),
@@ -75,7 +75,7 @@ public class UserRegistrationSagaTests : IAsyncLifetime
         string email = "test@mail.com";
         string userId = Guid.NewGuid().ToString();
         // Act
-        await _harness.Bus.Publish(new UserSagaStartedIntegrationEvent()
+        await _harness.Bus.Publish(new UserRegisterSagaStartedIntegrationEvent()
         {
             CorrelationId = correlationId,
             UserId = userId,
@@ -111,7 +111,7 @@ public class UserRegistrationSagaTests : IAsyncLifetime
         const string failureReason = "Registration failed";
         // Act
         var sagaHarness = _harness.GetSagaStateMachineHarness<UserRegistrationSaga, UserRegistrationSagaState>();
-        await _harness.Bus.Publish(new UserSagaStartedIntegrationEvent()
+        await _harness.Bus.Publish(new UserRegisterSagaStartedIntegrationEvent()
         {
             CorrelationId = correlationId,
             UserId = userId,

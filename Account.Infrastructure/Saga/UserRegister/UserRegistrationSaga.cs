@@ -17,9 +17,9 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
     public State RegistrationCompleted { get; private set; } = null!;
     public State RegistrationFailed { get; private set; } = null!;
 
-    public Event<UserSagaStartedIntegrationEvent> RegistrationStartedEvent { get; private set; } = null!;
+    public Event<UserRegisterSagaStartedIntegrationEvent> RegistrationStartedEvent { get; private set; } = null!;
     public Event<WelcomeEmailSentIntegrationEvent> WelcomeEmailSentEvent { get; private set; } = null!;
-    public Event<UserProfileInitializedIntegrationEvent> ProfileInitializedEvent { get; private set; } = null!;
+    public Event<UserRegisterProfileInitializedIntegrationEvent> ProfileInitializedEvent { get; private set; } = null!;
     public Event<UserRegistrationSagaFailedIntegrationEvent> RegistrationFailedEvent { get; private set; } = null!;
 
     public UserRegistrationSaga(ILogger<UserRegistrationSaga> logger)

@@ -15,7 +15,7 @@ public class InitializeUserProfileCommandConsumer(
         logger.LogInformation(
             "Starting profile initialization for UserId={UserId}", context.Message.UserId);
 
-        await context.Publish(new UserProfileInitializedIntegrationEvent
+        await context.Publish(new UserRegisterProfileInitializedIntegrationEvent
         {
             CorrelationId = context.Message.CorrelationId,
             UserId = context.Message.UserId

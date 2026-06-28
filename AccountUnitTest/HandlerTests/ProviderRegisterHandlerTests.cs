@@ -117,7 +117,7 @@ public class ProviderRegisterHandlerTests
 
         _userRepository.Verify(x => x.AddUser(It.IsAny<AppUser>()), Times.Once);
         _apiKeyRepository.Verify(x => x.CreateApiKey(It.IsAny<string>()), Times.Once);
-        _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserSagaStartedIntegrationEvent>(), It.IsAny<CancellationToken>()), Times.Once);
+        _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserRegisterSagaStartedIntegrationEvent>(), It.IsAny<CancellationToken>()), Times.Once);
         _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _tx.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _loginAuditRepository.Verify(x => x.AddLogin(It.Is<LoginAudit>(a =>
