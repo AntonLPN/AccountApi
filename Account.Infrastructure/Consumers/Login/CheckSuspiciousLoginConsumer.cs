@@ -1,4 +1,4 @@
-using Account.Contracts.SagaEvents.UserLoginSagaEvents.Commands;
+using Account.Contracts.Saga.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
 using Account.Domain.Repositories;
 using MassTransit;
@@ -9,9 +9,9 @@ namespace Account.Infrastructure.Consumers.Login;
 public class CheckSuspiciousLoginConsumer(
     ILogger<CheckSuspiciousLoginConsumer> logger,
     ILoginAuditRepository loginAuditRepository)
-    : IConsumer<CheckSuspiciousLoginIntegrationEvent>
+    : IConsumer<CheckSuspiciousLoginIntegrationCommand>
 {
-    public async Task Consume(ConsumeContext<CheckSuspiciousLoginIntegrationEvent> context)
+    public async Task Consume(ConsumeContext<CheckSuspiciousLoginIntegrationCommand> context)
     {
         var message = context.Message;
         ArgumentException.ThrowIfNullOrEmpty(message.UserId, nameof(message.UserId));

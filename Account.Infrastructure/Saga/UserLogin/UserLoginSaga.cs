@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using Account.Contracts.SagaEvents.UserLoginSagaEvents.Commands;
+using Account.Contracts.Saga.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
 using Account.Infrastructure.Persistence.SagaModels;
 using MassTransit;
@@ -48,7 +48,7 @@ public class UserLoginSaga : MassTransitStateMachine<UserLoginSagaState>
                     context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Login saga started for UserId={UserId}", context.Message.UserId);
                 })
-                .Publish(context => new CheckSuspiciousLoginIntegrationEvent
+                .Publish(context => new CheckSuspiciousLoginIntegrationCommand
                 {
                     CorrelationId = context.Saga.CorrelationId,
                     UserId = context.Saga.UserId,
@@ -67,7 +67,7 @@ public class UserLoginSaga : MassTransitStateMachine<UserLoginSagaState>
                     logger.LogInformation("Suspicious check done for UserId={UserId}. IsSuspicious={IsSuspicious}",
                         context.Saga.UserId, context.Message.IsSuspicious);
                 })
-                .Publish(context => new RecordLoginAuditIntegrationEvent
+                .Publish(context => new RecordLoginAuditIntegrationCommand
                 {
                     CorrelationId = context.Saga.CorrelationId,
                     UserId = context.Saga.UserId,
@@ -86,7 +86,7 @@ public class UserLoginSaga : MassTransitStateMachine<UserLoginSagaState>
                     context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Login audit recorded for UserId={UserId}", context.Saga.UserId);
                 })
-                .Publish(context => new UpdateLastLoginIntegrationEvent
+                .Publish(context => new UpdateLastLoginIntegrationCommand
                 {
                     CorrelationId = context.Saga.CorrelationId,
                     UserId = context.Saga.UserId,
@@ -104,7 +104,7 @@ public class UserLoginSaga : MassTransitStateMachine<UserLoginSagaState>
                     context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Last login updated for UserId={UserId}", context.Saga.UserId);
                 })
-                .Publish(context => new SendLoginNotificationEmailIntegrationEvent
+                .Publish(context => new SendLoginNotificationEmailIntegrationCommand
                 {
                     CorrelationId = context.Saga.CorrelationId,
                     UserId = context.Saga.UserId,

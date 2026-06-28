@@ -8,9 +8,9 @@ using Microsoft.Extensions.Logging;
 namespace Account.Infrastructure.Consumers.Register;
 
 public class SendWelcomeEmailConsumer(ILogger<SendWelcomeEmailConsumer> logger, IEmail emailService)
-    : IConsumer<SendWelcomeEmailIntegrationEvent>
+    : IConsumer<SendWelcomeEmailIntegrationCommand>
 {
-    public async Task Consume(ConsumeContext<SendWelcomeEmailIntegrationEvent> context)
+    public async Task Consume(ConsumeContext<SendWelcomeEmailIntegrationCommand> context)
     {
         var res = await emailService.SendWelcomeEmail(context.Message.Email, context.CancellationToken);
         if (!res)

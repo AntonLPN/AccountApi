@@ -63,7 +63,7 @@ public class UserRegistrationSagaTests : IAsyncLifetime
         instance.Saga.Email.Should().Be(email);
 
         // Check the SendEmailConfirmationCommandIntegrationEvent was published
-        (await _harness.Published.Any<SendWelcomeEmailIntegrationEvent>(TestContext.Current
+        (await _harness.Published.Any<SendWelcomeEmailIntegrationCommand>(TestContext.Current
                 .CancellationToken))
             .Should().BeTrue();
     }

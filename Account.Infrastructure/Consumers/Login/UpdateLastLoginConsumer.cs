@@ -1,4 +1,4 @@
-using Account.Contracts.SagaEvents.UserLoginSagaEvents.Commands;
+using Account.Contracts.Saga.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
 using Account.Domain.Repositories;
 using MassTransit;
@@ -9,9 +9,9 @@ namespace Account.Infrastructure.Consumers.Login;
 public class UpdateLastLoginConsumer(
     ILogger<UpdateLastLoginConsumer> logger,
     IUserRepository userRepository)
-    : IConsumer<UpdateLastLoginIntegrationEvent>
+    : IConsumer<UpdateLastLoginIntegrationCommand>
 {
-    public async Task Consume(ConsumeContext<UpdateLastLoginIntegrationEvent> context)
+    public async Task Consume(ConsumeContext<UpdateLastLoginIntegrationCommand> context)
     {
         var message = context.Message;
         

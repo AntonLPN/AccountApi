@@ -1,4 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
+using Account.Contracts.Saga.UserLogoutSagaEvents.Commands;
+using Account.Contracts.Saga.UserLogoutSagaEvents.Events;
 using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Events;
 using Account.Infrastructure.Persistence.SagaModels;
@@ -45,7 +47,7 @@ public class UserLogoutSaga : MassTransitStateMachine<UserLogoutSagaState>
                     context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Logout saga started for UserId={UserId}", context.Message.UserId);
                 })
-                .Publish(context => new RecordLogoutAuditIntegrationEvent
+                .Publish(context => new RecordLogoutAuditIntegrationCommand
                 {
                     CorrelationId = context.Saga.CorrelationId,
                     UserId = context.Saga.UserId,
@@ -63,7 +65,7 @@ public class UserLogoutSaga : MassTransitStateMachine<UserLogoutSagaState>
                     context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Logout audit recorded for UserId={UserId}", context.Saga.UserId);
                 })
-                .Publish(context => new UpdateLastLogoutIntegrationEvent
+                .Publish(context => new UpdateLastLogoutIntegrationCommand
                 {
                     CorrelationId = context.Saga.CorrelationId,
                     UserId = context.Saga.UserId,
@@ -81,7 +83,7 @@ public class UserLogoutSaga : MassTransitStateMachine<UserLogoutSagaState>
                     context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Last logout updated for UserId={UserId}", context.Saga.UserId);
                 })
-                .Publish(context => new SendLogoutNotificationEmailIntegrationEvent
+                .Publish(context => new SendLogoutNotificationEmailIntegrationCommand
                 {
                     CorrelationId = context.Saga.CorrelationId,
                     UserId = context.Saga.UserId,
@@ -114,6 +116,6 @@ public class UserLogoutSaga : MassTransitStateMachine<UserLogoutSagaState>
                 })
                 .TransitionTo(LogoutFailed));
 
-        SetCompletedWhenFinalized();
+        SetCompletedWhenFinalized();//if you need delete from Db 
     }
 }

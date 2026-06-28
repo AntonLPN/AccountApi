@@ -12,9 +12,9 @@ namespace Account.Infrastructure.Consumers.Logout;
 public class SendLogoutNotificationConsumer(
     ILogger<SendLogoutNotificationConsumer> logger,
     IEmail emailService)
-    : IConsumer<SendLogoutNotificationEmailIntegrationEvent>
+    : IConsumer<SendLogoutNotificationEmailIntegrationCommand>
 {
-    public async Task Consume(ConsumeContext<SendLogoutNotificationEmailIntegrationEvent> context)
+    public async Task Consume(ConsumeContext<SendLogoutNotificationEmailIntegrationCommand> context)
     {
         var message = context.Message;
 

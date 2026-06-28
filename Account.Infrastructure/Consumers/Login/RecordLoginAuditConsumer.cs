@@ -1,4 +1,4 @@
-using Account.Contracts.SagaEvents.UserLoginSagaEvents.Commands;
+using Account.Contracts.Saga.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
 using Account.Domain.DTOs;
 using Account.Domain.Entities;
@@ -12,9 +12,9 @@ public class RecordLoginAuditConsumer(
     ILogger<RecordLoginAuditConsumer> logger,
     ILoginAuditRepository loginAuditRepository,
     IUnitOfWork unitOfWork)
-    : IConsumer<RecordLoginAuditIntegrationEvent>
+    : IConsumer<RecordLoginAuditIntegrationCommand>
 {
-    public async Task Consume(ConsumeContext<RecordLoginAuditIntegrationEvent> context)
+    public async Task Consume(ConsumeContext<RecordLoginAuditIntegrationCommand> context)
     {
         var message = context.Message;
         try

@@ -42,7 +42,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                     context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Saga registration started for UserId={UserId}", context.Message.UserId);
                 })
-                .Publish(context => new SendWelcomeEmailIntegrationEvent
+                .Publish(context => new SendWelcomeEmailIntegrationCommand
                     {
                         CorrelationId = context.Saga.CorrelationId,
                         UserId = context.Message.UserId,
@@ -68,7 +68,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                     context.Saga.EmailConfirmationSent = true;
                     context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Email confirmation sent for UserId={UserId}", context.Saga.UserId);
-                }).Publish(context => new InitializeUserProfileIntegrationEvent
+                }).Publish(context => new InitializeUserProfileIntegrationCommand
                 {
                     CorrelationId = context.Saga.CorrelationId,
                     UserId = context.Saga.UserId,
@@ -83,7 +83,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                     context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Profile initialized for UserId={UserId}", context.Saga.UserId);
                 })
-                .TransitionTo(RegistrationCompleted));//save saga to db for history
+                .TransitionTo(RegistrationCompleted)); //save saga to db for history
         DuringAny(
             When(RegistrationFailedEvent)
                 .Then(context =>

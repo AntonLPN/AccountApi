@@ -12,9 +12,9 @@ public class RecordLogoutAuditConsumer(
     ILogger<RecordLogoutAuditConsumer> logger,
     ILogoutAuditRepository logoutAuditRepository,
     IUnitOfWork unitOfWork)
-    : IConsumer<RecordLogoutAuditIntegrationEvent>
+    : IConsumer<RecordLogoutAuditIntegrationCommand>
 {
-    public async Task Consume(ConsumeContext<RecordLogoutAuditIntegrationEvent> context)
+    public async Task Consume(ConsumeContext<RecordLogoutAuditIntegrationCommand> context)
     {
         var message = context.Message;
         try

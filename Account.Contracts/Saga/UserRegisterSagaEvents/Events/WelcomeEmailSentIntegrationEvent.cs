@@ -1,4 +1,4 @@
-using Account.Contracts.SagaEvents.UserRegisterSagaEvents.Models;
+using Account.Contracts.Saga.UserRegisterSagaEvents.Models;
 
 namespace Account.Contracts.Saga.UserRegisterSagaEvents.Events;
 

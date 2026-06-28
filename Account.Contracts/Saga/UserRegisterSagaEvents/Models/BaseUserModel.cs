@@ -1,4 +1,4 @@
-namespace Account.Contracts.SagaEvents.UserRegisterSagaEvents.Models;
+namespace Account.Contracts.Saga.UserRegisterSagaEvents.Models;
 
 public class BaseUserModel
 {

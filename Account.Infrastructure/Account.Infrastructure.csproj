@@ -38,6 +38,10 @@
       <EmbeddedResource Include="Services\Email\Templates\LogoutTemplate.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
+      <None Remove="Services\Email\Templates\OtpCodeTemplate.html" />
+      <EmbeddedResource Include="Services\Email\Templates\OtpCodeTemplate.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
     </ItemGroup>
 
 </Project>

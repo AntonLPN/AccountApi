@@ -1,4 +1,4 @@
-using Account.Contracts.SagaEvents.UserLoginSagaEvents.Commands;
+using Account.Contracts.Saga.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
@@ -11,9 +11,9 @@ namespace Account.Infrastructure.Consumers.Login;
 public class SendLoginNotificationConsumer(
     ILogger<SendLoginNotificationConsumer> logger,
     IEmail emailService)
-    : IConsumer<SendLoginNotificationEmailIntegrationEvent>
+    : IConsumer<SendLoginNotificationEmailIntegrationCommand>
 {
-    public async Task Consume(ConsumeContext<SendLoginNotificationEmailIntegrationEvent> context)
+    public async Task Consume(ConsumeContext<SendLoginNotificationEmailIntegrationCommand> context)
     {
         var message = context.Message;
 

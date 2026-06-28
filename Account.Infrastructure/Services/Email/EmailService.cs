@@ -1,4 +1,3 @@
-using Account.Domain.DTOs;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Infrastructure.Configuration;
@@ -64,12 +63,12 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
         CancellationToken cancellationToken = default)
     {
         var htmlTemplate = GetEmailTemplateAsync("SuspiciousLoginTemplate.html");
+        ArgumentException.ThrowIfNullOrEmpty(htmlTemplate);
         var body = htmlTemplate
             .Replace("{{DEVICE_NAME}}", suspiciousDevice.DeviceName)
             .Replace("{{IP_ADDRESS}}", suspiciousDevice.IpAddress)
             .Replace("{{DATE_TIME}}", suspiciousDevice.LoginTime.ToString("dd.MM.yyyy, HH:mm 'UTC'"))
             .Replace("{{USER_AGENT}}", suspiciousDevice.UserAgent);
-        ArgumentException.ThrowIfNullOrEmpty(htmlTemplate);
         return await _emailRetryPolicy.ExecuteAsync(async () => await SendEmailAsync(
             suspiciousDevice.ToEmail,
             "New Device Login — " + _emailConfig.OwnerName,
@@ -81,16 +80,30 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
         CancellationToken cancellationToken = default)
     {
         var htmlTemplate = GetEmailTemplateAsync("LogoutTemplate.html");
+        ArgumentException.ThrowIfNullOrEmpty(htmlTemplate);
         var body = htmlTemplate
             .Replace("{{IP_ADDRESS}}", logoutNotification.IpAddress)
             .Replace("{{DATE_TIME}}", logoutNotification.LogoutTime.ToString("dd.MM.yyyy, HH:mm 'UTC'"))
             .Replace("{{USER_AGENT}}", logoutNotification.UserAgent);
-        ArgumentException.ThrowIfNullOrEmpty(htmlTemplate);
         return await _emailRetryPolicy.ExecuteAsync(async () => await SendEmailAsync(
             logoutNotification.ToEmail,
             "You have been logged out — " + _emailConfig.OwnerName,
             body,
             cancellationToken));
+    }
+
+    public async Task<bool> SendOtpCodeAsync(string toEmail, string otpCode,
+        CancellationToken cancellationToken = default)
+    {
+        var htmlTemplate = GetEmailTemplateAsync("OtpCodeTemplate.html");
+        ArgumentException.ThrowIfNullOrEmpty(htmlTemplate);
+        var body = htmlTemplate.Replace("{{CODE}}", otpCode);
+        return await _emailRetryPolicy.ExecuteAsync(async () => await SendEmailAsync(
+            toEmail,
+            "Otp code - " + _emailConfig.OwnerName,
+            body
+        ));
+
     }
 
     private async Task<bool> SendMessageSmtp(MimeMessage message, CancellationToken cancellationToken = default)

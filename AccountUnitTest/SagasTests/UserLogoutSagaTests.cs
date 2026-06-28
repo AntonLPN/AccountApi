@@ -1,3 +1,5 @@
+using Account.Contracts.Saga.UserLogoutSagaEvents.Commands;
+using Account.Contracts.Saga.UserLogoutSagaEvents.Events;
 using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Events;
 using Account.Infrastructure.Persistence.SagaModels;
@@ -75,7 +77,7 @@ public class UserLogoutSagaTests : IAsyncLifetime
         instance.Saga.UpdatedAt.Should().NotBe(default);
 
         // Check the RecordLogoutAuditIntegrationEvent was published
-        (await _harness.Published.Any<RecordLogoutAuditIntegrationEvent>(TestContext.Current.CancellationToken))
+        (await _harness.Published.Any<RecordLogoutAuditIntegrationCommand>(TestContext.Current.CancellationToken))
             .Should().BeTrue("Saga must publish RecordLogoutAuditIntegrationEvent");
     }
 
@@ -122,7 +124,7 @@ public class UserLogoutSagaTests : IAsyncLifetime
         instance.Saga.AuditRecorded.Should().BeTrue("AuditRecorded should be true");
 
         // Check the UpdateLastLogoutIntegrationEvent was published
-        (await _harness.Published.Any<UpdateLastLogoutIntegrationEvent>(TestContext.Current.CancellationToken))
+        (await _harness.Published.Any<UpdateLastLogoutIntegrationCommand>(TestContext.Current.CancellationToken))
             .Should().BeTrue("Saga must publish UpdateLastLogoutIntegrationEvent");
     }
 
@@ -180,7 +182,7 @@ public class UserLogoutSagaTests : IAsyncLifetime
         instance.Saga.LastLogoutUpdated.Should().BeTrue("LastLogoutUpdated should be true");
 
         // Check the SendLogoutNotificationEmailIntegrationEvent was published
-        (await _harness.Published.Any<SendLogoutNotificationEmailIntegrationEvent>(TestContext.Current.CancellationToken))
+        (await _harness.Published.Any<SendLogoutNotificationEmailIntegrationCommand>(TestContext.Current.CancellationToken))
             .Should().BeTrue("Saga must publish SendLogoutNotificationEmailIntegrationEvent");
     }
 
@@ -394,11 +396,11 @@ public class UserLogoutSagaTests : IAsyncLifetime
         // Assert - Give saga time to process final event and finalize
         await Task.Delay(100, TestContext.Current.CancellationToken);
 
-        (await _harness.Published.Any<RecordLogoutAuditIntegrationEvent>(TestContext.Current.CancellationToken))
+        (await _harness.Published.Any<RecordLogoutAuditIntegrationCommand>(TestContext.Current.CancellationToken))
             .Should().BeTrue("RecordLogoutAudit command should have been published");
-        (await _harness.Published.Any<UpdateLastLogoutIntegrationEvent>(TestContext.Current.CancellationToken))
+        (await _harness.Published.Any<UpdateLastLogoutIntegrationCommand>(TestContext.Current.CancellationToken))
             .Should().BeTrue("UpdateLastLogout command should have been published");
-        (await _harness.Published.Any<SendLogoutNotificationEmailIntegrationEvent>(TestContext.Current.CancellationToken))
+        (await _harness.Published.Any<SendLogoutNotificationEmailIntegrationCommand>(TestContext.Current.CancellationToken))
             .Should().BeTrue("SendLogoutNotification command should have been published");
     }
 }

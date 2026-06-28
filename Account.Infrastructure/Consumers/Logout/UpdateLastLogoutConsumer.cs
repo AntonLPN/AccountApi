@@ -1,3 +1,5 @@
+using Account.Contracts.Saga.UserLogoutSagaEvents.Commands;
+using Account.Contracts.Saga.UserLogoutSagaEvents.Events;
 using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Events;
 using Account.Domain.Repositories;
@@ -9,9 +11,9 @@ namespace Account.Infrastructure.Consumers.Logout;
 public class UpdateLastLogoutConsumer(
     ILogger<UpdateLastLogoutConsumer> logger,
     IUserRepository userRepository)
-    : IConsumer<UpdateLastLogoutIntegrationEvent>
+    : IConsumer<UpdateLastLogoutIntegrationCommand>
 {
-    public async Task Consume(ConsumeContext<UpdateLastLogoutIntegrationEvent> context)
+    public async Task Consume(ConsumeContext<UpdateLastLogoutIntegrationCommand> context)
     {
         var message = context.Message;
 

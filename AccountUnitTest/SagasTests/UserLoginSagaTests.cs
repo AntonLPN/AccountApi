@@ -1,4 +1,4 @@
-using Account.Contracts.SagaEvents.UserLoginSagaEvents.Commands;
+using Account.Contracts.Saga.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
 using Account.Infrastructure.Persistence.SagaModels;
 using Account.Infrastructure.Saga.UserLogin;
@@ -75,7 +75,7 @@ public class UserLoginSagaTests : IAsyncLifetime
         instance.Saga.UpdatedAt.Should().NotBe(default);
 
         // Check the CheckSuspiciousLoginIntegrationEvent was published
-        (await _harness.Published.Any<CheckSuspiciousLoginIntegrationEvent>(TestContext.Current.CancellationToken))
+        (await _harness.Published.Any<CheckSuspiciousLoginIntegrationCommand>(TestContext.Current.CancellationToken))
             .Should().BeTrue("Saga must publish CheckSuspiciousLoginIntegrationEvent");
     }
 
@@ -126,7 +126,7 @@ public class UserLoginSagaTests : IAsyncLifetime
         instance.Saga.IsSuspicious.Should().BeFalse("IsSuspicious should be false");
 
         // Check the RecordLoginAuditIntegrationEvent was published
-        (await _harness.Published.Any<RecordLoginAuditIntegrationEvent>(TestContext.Current.CancellationToken))
+        (await _harness.Published.Any<RecordLoginAuditIntegrationCommand>(TestContext.Current.CancellationToken))
             .Should().BeTrue("Saga must publish RecordLoginAuditIntegrationEvent");
     }
 
@@ -174,7 +174,7 @@ public class UserLoginSagaTests : IAsyncLifetime
         instance.Saga.IsSuspicious.Should().BeTrue("IsSuspicious should be true");
 
         // Saga must still publish RecordLoginAuditIntegrationEvent with IsSuspicious=true
-        (await _harness.Published.Any<RecordLoginAuditIntegrationEvent>(
+        (await _harness.Published.Any<RecordLoginAuditIntegrationCommand>(
                 x => x.Context.Message.IsSuspicious,
                 TestContext.Current.CancellationToken))
             .Should().BeTrue("Saga must publish RecordLoginAuditIntegrationEvent with IsSuspicious=true");
@@ -237,7 +237,7 @@ public class UserLoginSagaTests : IAsyncLifetime
         instance.Saga.AuditRecorded.Should().BeTrue("AuditRecorded should be true");
 
         // Check the UpdateLastLoginIntegrationEvent was published
-        (await _harness.Published.Any<UpdateLastLoginIntegrationEvent>(TestContext.Current.CancellationToken))
+        (await _harness.Published.Any<UpdateLastLoginIntegrationCommand>(TestContext.Current.CancellationToken))
             .Should().BeTrue("Saga must publish UpdateLastLoginIntegrationEvent");
     }
 
@@ -310,7 +310,7 @@ public class UserLoginSagaTests : IAsyncLifetime
         instance.Saga.LastLoginUpdated.Should().BeTrue("LastLoginUpdated should be true");
 
         // Check the SendLoginNotificationEmailIntegrationEvent was published
-        (await _harness.Published.Any<SendLoginNotificationEmailIntegrationEvent>(TestContext.Current.CancellationToken))
+        (await _harness.Published.Any<SendLoginNotificationEmailIntegrationCommand>(TestContext.Current.CancellationToken))
             .Should().BeTrue("Saga must publish SendLoginNotificationEmailIntegrationEvent");
     }
 
@@ -613,13 +613,13 @@ public class UserLoginSagaTests : IAsyncLifetime
         await Task.Delay(100, TestContext.Current.CancellationToken);
         
         // Verify that all command events were published
-        (await _harness.Published.Any<CheckSuspiciousLoginIntegrationEvent>(TestContext.Current.CancellationToken))
+        (await _harness.Published.Any<CheckSuspiciousLoginIntegrationCommand>(TestContext.Current.CancellationToken))
             .Should().BeTrue("CheckSuspiciousLogin command should have been published");
-        (await _harness.Published.Any<RecordLoginAuditIntegrationEvent>(TestContext.Current.CancellationToken))
+        (await _harness.Published.Any<RecordLoginAuditIntegrationCommand>(TestContext.Current.CancellationToken))
             .Should().BeTrue("RecordLoginAudit command should have been published");
-        (await _harness.Published.Any<UpdateLastLoginIntegrationEvent>(TestContext.Current.CancellationToken))
+        (await _harness.Published.Any<UpdateLastLoginIntegrationCommand>(TestContext.Current.CancellationToken))
             .Should().BeTrue("UpdateLastLogin command should have been published");
-        (await _harness.Published.Any<SendLoginNotificationEmailIntegrationEvent>(TestContext.Current.CancellationToken))
+        (await _harness.Published.Any<SendLoginNotificationEmailIntegrationCommand>(TestContext.Current.CancellationToken))
             .Should().BeTrue("SendLoginNotification command should have been published");
     }
 }
