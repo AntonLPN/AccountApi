@@ -17,22 +17,23 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
     public State RegistrationCompleted { get; private set; } = null!;
     public State RegistrationFailed { get; private set; } = null!;
 
-    public Event<UserSagaStartedIntegrationEvent> RegistrationStarted { get; private set; } = null!;
-    public Event<WelcomeEmailSentIntegrationEvent> WelcomeEmailSent { get; private set; } = null!;
-    public Event<UserProfileInitializedIntegrationEvent> ProfileInitialized { get; private set; } = null!;
+    public Event<UserSagaStartedIntegrationEvent> RegistrationStartedEvent { get; private set; } = null!;
+    public Event<WelcomeEmailSentIntegrationEvent> WelcomeEmailSentEvent { get; private set; } = null!;
+    public Event<UserProfileInitializedIntegrationEvent> ProfileInitializedEvent { get; private set; } = null!;
     public Event<UserRegistrationSagaFailedIntegrationEvent> RegistrationFailedEvent { get; private set; } = null!;
 
     public UserRegistrationSaga(ILogger<UserRegistrationSaga> logger)
     {
-        Event(() => RegistrationStarted, x => x.CorrelateById(context => context.Message.CorrelationId));
-        Event(() => WelcomeEmailSent, x => x.CorrelateById(context => context.Message.CorrelationId));
-        Event(() => ProfileInitialized, x => x.CorrelateById(context => context.Message.CorrelationId));
+        InstanceState(x => x.CurrentState);
+        
+        Event(() => RegistrationStartedEvent, x => x.CorrelateById(context => context.Message.CorrelationId));
+        Event(() => WelcomeEmailSentEvent, x => x.CorrelateById(context => context.Message.CorrelationId));
+        Event(() => ProfileInitializedEvent, x => x.CorrelateById(context => context.Message.CorrelationId));
         Event(() => RegistrationFailedEvent, x => x.CorrelateById(context => context.Message.CorrelationId));
 
-        InstanceState(x => x.CurrentState);
 
         Initially(
-            When(RegistrationStarted)
+            When(RegistrationStartedEvent)
                 .Then(context =>
                 {
                     context.Saga.UserId = context.Message.UserId;
@@ -63,7 +64,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                     })
                 .TransitionTo(AwaitingWelcomeEmailSent));
         During(AwaitingWelcomeEmailSent,
-            When(WelcomeEmailSent).Then(context =>
+            When(WelcomeEmailSentEvent).Then(context =>
                 {
                     context.Saga.EmailConfirmationSent = true;
                     context.Saga.UpdatedAt = DateTime.UtcNow;
@@ -77,7 +78,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                 })
                 .TransitionTo(AwaitingProfileInitialization));
         During(AwaitingProfileInitialization,
-            When(ProfileInitialized).Then(context =>
+            When(ProfileInitializedEvent).Then(context =>
                 {
                     context.Saga.ProfileInitialized = true;
                     context.Saga.UpdatedAt = DateTime.UtcNow;
