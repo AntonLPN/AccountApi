@@ -1,3 +1,4 @@
+using Account.Contracts.Saga.TwoFactor.Events;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
@@ -34,12 +35,20 @@ public class LoginUserHandler(
 
             if (user.IsTwoFactorEnabled)
             {
-                //TODO implement mfa
                 var secretKey = Convert.FromBase64String(user.EncryptedTwoFactorSecret);
                 var totp = new Totp(secretKey, step: 300, mode: OtpHashMode.Sha1, totpSize: 6);
                 var otpCode = totp.ComputeTotp();
+                await publishEndpoint.Publish(new TwoFactorSagaStartedIntegrationEvent
+                {
+                    CorrelationId = Guid.NewGuid(),
+                    UserId = user.Id,
+                    Email = user.Email,
+                    OtpCode = otpCode,
+                    ExpirationTime = DateTime.UtcNow.AddMinutes(5)
+                }, cancellationToken);
                 
-                
+                await unitOfWork.SaveChangesAsync(cancellationToken); //need for saga
+                //give user temporal access to the app for confirmation otp
                 return Result<LoginUserResult>.Success(new LoginUserResult()
                 {
                     IsMfaRequired = true,
@@ -48,10 +57,8 @@ public class LoginUserHandler(
                         AccessToken = tokenResponse.AccessToken,
                         ExpiresIn = tokenResponse.ExpiresIn
                     }
-                    
-                    
                 });
-            }           
+            }
 
             var apiKey = await apiKeyRepository.GetApiKeyByUserIdAsync(user.Id);
 
@@ -64,7 +71,7 @@ public class LoginUserHandler(
                 UserAgent = request.UserAgent
             }, cancellationToken);
 
-            await unitOfWork.SaveChangesAsync(cancellationToken);//need for saga
+            await unitOfWork.SaveChangesAsync(cancellationToken); //need for saga
 
             logger.LogInformation("User {Email} logged in, login saga started", MaskedEmail.Create(request.Email));
 
@@ -76,9 +83,9 @@ public class LoginUserHandler(
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Error occurred while handling LoginCommand for email {Email}", MaskedEmail.Create(request.Email));
+            logger.LogError(e, "Error occurred while handling LoginCommand for email {Email}",
+                MaskedEmail.Create(request.Email));
             throw;
         }
-
     }
 }

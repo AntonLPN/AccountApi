@@ -4,120 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to LPN</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background-color: #0A0A0A;
-            color: #FFFFFF;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .main-container {
-            text-align: center;
-            padding: 50px 30px;
-            background: #141414;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
-            max-width: 450px;
-            width: 90%;
-            border: 1px solid #222;
-        }
-
-        .logo-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 40px;
-            width: 100%;
-
-        }
-
-        .logo-simulation {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            width: 100px;
-            height: 100px;
-        }
-
-        .logo-simulation::before {
-            content: 'API';
-            font-size: 85px;
-            font-weight: 900;
-            background: linear-gradient(135deg, #FF6B00 0%, #FF9E00 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            position: absolute;
-            z-index: 1;
-            left: 20px;
-        }
-
-        .logo-text {
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            position: absolute;
-            left: -150px;
-            z-index: 2;
-        }
-
-        h1 {
-            font-size: 26px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            letter-spacing: -0.5px;
-        }
-
-        p {
-            font-size: 16px;
-            color: #B0B0B0;
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-
-        .footer-note {
-            margin-top: 35px;
-            font-size: 13px;
-            color: #555555;
-            border-top: 1px solid #222;
-            padding-top: 25px;
-        }
-
-        .footer-note a {
-            color: #FF6B00;
-            text-decoration: none;
-        }
-    </style>
 </head>
-<body>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #0A0A0A; color: #FFFFFF; text-align: center;">
 
-<div class="main-container">
-    <div class="logo-container">
-        <div class="logo-simulation">
-            <span class="logo-text">LPN Account-</span>
-        </div>
-    </div>
+<!-- Основной контейнер-таблица для центрирования -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0A0A0A; padding: 40px 10px;">
+    <tr>
+        <td align="center">
 
-    <h1>Thank you for registering!</h1>
-    <p>
-        Welcome to <strong>LPN Account API</strong>. We are thrilled to have you on board!
-    </p>
-    <p>
-        To get full access to all platform features, please confirm your email address in your <strong>account
-        settings</strong>.
-    </p>
+            <!-- Карточка письма -->
+            <div style="background-color: #141414; padding: 50px 30px; border-radius: 20px; max-width: 450px; width: 100%; border: 1px solid #222222; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7); text-align: center; box-sizing: border-box;">
 
-    <div class="footer-note">
-        If you didn't create an account, you can safely ignore this email.<br>
-        Need help? <a href="https://github.com/AntonLPN/AccountApi">Contact Support</a>
-    </div>
-</div>
+                <!-- Безопасный Логотип без flex и absolute -->
+                <div style="margin-bottom: 40px; font-size: 24px; font-weight: bold; color: #FFFFFF;">
+                    LPN Account- <span style="color: #FF6B00; font-size: 32px; font-weight: 900; vertical-align: middle;">API</span>
+                </div>
+
+                <!-- Заголовок с принудительным цветом -->
+                <h1 style="font-size: 26px; font-weight: 700; margin: 0 0 20px 0; color: #FFFFFF; letter-spacing: -0.5px;">
+                    Thank you for registering!
+                </h1>
+
+                <!-- Текст -->
+                <p style="font-size: 16px; color: #B0B0B0; line-height: 1.6; margin: 0 0 15px 0;">
+                    Welcome to <strong style="color: #FFFFFF;">LPN Account API</strong>. We are thrilled to have you on board!
+                </p>
+
+                <p style="font-size: 16px; color: #B0B0B0; line-height: 1.6; margin: 0 0 35px 0;">
+                    To get full access to all platform features, please confirm your email address in your <strong style="color: #FFFFFF;">account settings</strong>.
+                </p>
+
+                <!-- Подвал -->
+                <div style="margin-top: 35px; font-size: 13px; color: #555555; border-top: 1px solid #222222; padding-top: 25px; line-height: 1.5;">
+                    If you didn't create an account, you can safely ignore this email.<br>
+                    Need help? <a href="https://github.com/AntonLPN/AccountApi" style="color: #FF6B00; text-decoration: none; font-weight: bold;">Contact Support</a>
+                </div>
+
+            </div>
+
+        </td>
+    </tr>
+</table>
 
 </body>
 </html>
