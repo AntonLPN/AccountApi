@@ -1,5 +1,6 @@
 using Account.Contracts.Saga.TwoFactor.Events;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
+using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Domain.Repositories;
@@ -34,52 +35,10 @@ public class LoginUserHandler(
                 return Result<LoginUserResult>.Unauthorized();
 
             if (user.IsTwoFactorEnabled)
-            {
-                var secretKey = Convert.FromBase64String(user.EncryptedTwoFactorSecret);
-                var totp = new Totp(secretKey, step: 300, mode: OtpHashMode.Sha1, totpSize: 6);
-                var otpCode = totp.ComputeTotp();
-                await publishEndpoint.Publish(new TwoFactorSagaStartedIntegrationEvent
-                {
-                    CorrelationId = Guid.NewGuid(),
-                    UserId = user.Id,
-                    Email = user.Email,
-                    OtpCode = otpCode,
-                    ExpirationTime = DateTime.UtcNow.AddMinutes(5)
-                }, cancellationToken);
-                
-                await unitOfWork.SaveChangesAsync(cancellationToken); //need for saga
-                //give user temporal access to the app for confirmation otp
-                return Result<LoginUserResult>.Success(new LoginUserResult()
-                {
-                    IsMfaRequired = true,
-                    Token = new TokenResponse()
-                    {
-                        AccessToken = tokenResponse.AccessToken,
-                        ExpiresIn = tokenResponse.ExpiresIn
-                    }
-                });
-            }
+                return await TwoFactorProcess(user, tokenResponse, cancellationToken);
 
-            var apiKey = await apiKeyRepository.GetApiKeyByUserIdAsync(user.Id);
-
-            await publishEndpoint.Publish(new UserLoginSagaStartedIntegrationEvent
-            {
-                CorrelationId = Guid.NewGuid(),
-                UserId = user.Id,
-                Email = user.Email,
-                IpAddress = request.IpAddress,
-                UserAgent = request.UserAgent
-            }, cancellationToken);
-
-            await unitOfWork.SaveChangesAsync(cancellationToken); //need for saga
-
-            logger.LogInformation("User {Email} logged in, login saga started", MaskedEmail.Create(request.Email));
-
-            return Result<LoginUserResult>.Success(new LoginUserResult
-            {
-                ApiKey = apiKey ?? "",
-                Token = tokenResponse
-            });
+            return await LoginProcess(user, request.IpAddress, request.UserAgent, tokenResponse,
+                cancellationToken);
         }
         catch (Exception e)
         {
@@ -87,5 +46,58 @@ public class LoginUserHandler(
                 MaskedEmail.Create(request.Email));
             throw;
         }
+    }
+
+    private async Task<LoginUserResult> TwoFactorProcess(AppUser user, TokenResponse tokenResponse,
+        CancellationToken cancellationToken)
+    {
+        var secretKey = Convert.FromBase64String(user.EncryptedTwoFactorSecret);
+        var totp = new Totp(secretKey, step: 300, mode: OtpHashMode.Sha1, totpSize: 6);
+        var otpCode = totp.ComputeTotp();
+        await publishEndpoint.Publish(new TwoFactorSagaStartedIntegrationEvent
+        {
+            CorrelationId = Guid.NewGuid(),
+            UserId = user.Id,
+            Email = user.Email,
+            OtpCode = otpCode,
+            ExpirationTime = DateTime.UtcNow.AddMinutes(5)
+        }, cancellationToken);
+
+        await unitOfWork.SaveChangesAsync(cancellationToken); //need for saga
+        //give user temporal access to the app for confirmation otp
+        return Result<LoginUserResult>.Success(new LoginUserResult()
+        {
+            IsMfaRequired = true,
+            Token = new TokenResponse()
+            {
+                AccessToken = tokenResponse.AccessToken,
+                ExpiresIn = tokenResponse.ExpiresIn
+            }
+        });
+    }
+
+    private async Task<LoginUserResult> LoginProcess(AppUser user, string? ipAddress, string? userAgent,
+        TokenResponse tokenResponse, CancellationToken cancellationToken)
+    {
+        var apiKey = await apiKeyRepository.GetApiKeyByUserIdAsync(user.Id);
+
+        await publishEndpoint.Publish(new UserLoginSagaStartedIntegrationEvent
+        {
+            CorrelationId = Guid.NewGuid(),
+            UserId = user.Id,
+            Email = user.Email,
+            IpAddress = ipAddress,
+            UserAgent = userAgent
+        }, cancellationToken);
+
+        await unitOfWork.SaveChangesAsync(cancellationToken); //need for saga
+
+        logger.LogInformation("User id  {UserId} logged in {DateTime}, login saga started", user.Id, DateTime.UtcNow);
+
+        return Result<LoginUserResult>.Success(new LoginUserResult
+        {
+            ApiKey = apiKey ?? "",
+            Token = tokenResponse
+        });
     }
 }

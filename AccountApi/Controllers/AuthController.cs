@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Account.Application.Features.Account.Login;
 using Account.Application.Features.Account.Logout;
+using Account.Application.Features.Account.OtpCodeVerification;
 using Account.Application.Features.Account.ProviderLogin;
 using Account.Application.Features.Account.ProvidersRegister;
 using Account.Application.Features.Account.Register;
@@ -78,7 +79,7 @@ public class AuthController(IMediator mediator) : ControllerBase
 
         if (!res.IsSuccess)
             return Unauthorized();
-        
+
         if (!res.Value.IsMfaRequired)
             SetRefreshTokenCookie(res.Value?.Token?.RefreshToken);
         return Ok(res.Value);
@@ -133,6 +134,28 @@ public class AuthController(IMediator mediator) : ControllerBase
             return BadRequest(res.Errors);
 
         return Ok();
+    }
+
+    //TODO in release use authorization
+    [AllowAnonymous]
+    [HttpPost("otp-code-verification")]
+    [ProducesResponseType(typeof(OtpConfirmationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> OtpCodeVerification([FromBody] OtpCodeVerificationRequestModel model)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var emailClaim = User.FindFirst(ClaimTypes.Email)?.Value;
+        if (string.IsNullOrWhiteSpace(emailClaim))
+            return BadRequest("User not found");
+        
+        var cmd = new OtpCodeVerificationCommand(emailClaim, model.OtpCode);
+        var res = await mediator.Send(cmd);
+        if (!res.IsSuccess)
+            return BadRequest(res.Errors);
+
+        return Ok(res.Value);
     }
     //TODO : Add forgot password
     //TODO : Add reset password

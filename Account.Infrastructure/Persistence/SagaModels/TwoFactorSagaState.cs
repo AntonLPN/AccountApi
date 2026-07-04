@@ -9,7 +9,7 @@ public class TwoFactorSagaState : SagaStateMachineInstance, ISagaVersion
     public string CurrentState { get; set; } = null!;
     public string UserId { get; set; } = "";
     public string Email { get; set; } = "";
-    public string OtpCode { get; set; }
+    public required string OtpCode { get; set; }
     public bool OtpCodeSent { get; set; }
     public string? FailureReason { get; set; }
     public DateTime ExpiredAt { get; set; }

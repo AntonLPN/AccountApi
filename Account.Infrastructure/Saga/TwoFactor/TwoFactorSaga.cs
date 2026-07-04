@@ -15,14 +15,14 @@ namespace Account.Infrastructure.Saga.TwoFactor;
 public class TwoFactorSaga : MassTransitStateMachine<TwoFactorSagaState>
 {
     public State AwaitingOtpCodeSend { get; private set; } = null!;
-    public State TwoFactorVerificationCompleted { get; private set; } = null!;
+    public State TwoFactorVerificationWaitingConfirmationFromUser { get; private set; } = null!;
     public State TwoFactorFailed { get; private set; } = null!;
 
     public Event<TwoFactorSagaStartedIntegrationEvent> TwoFactorStartedEvent { get; private set; } = null!;
     public Event<OtpCodeSentIntegrationEvent> OtpCodeSendEvent { get; private set; } = null!;
     public Event<TwoFactorFailedIntegrationEvent> TwoFactorFailedEvent { get; private set; }
     public Event<TwoFactorCompletedIntegrationEvent> TwoFactorCompletedEvent { get; private set; }
-
+    public Event<OtpCodeConfirmedIntegrationEvent> OtpCodeConfirmedEvent { get; private set; } = null!;
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     public TwoFactorSaga(ILogger<TwoFactorSaga> logger)
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
@@ -33,7 +33,7 @@ public class TwoFactorSaga : MassTransitStateMachine<TwoFactorSagaState>
         Event(() => OtpCodeSendEvent, x => x.CorrelateById(context => context.Message.CorrelationId));
         Event(() => TwoFactorFailedEvent, x => x.CorrelateById(context => context.Message.CorrelationId));
         Event(() => TwoFactorCompletedEvent, x => x.CorrelateById(context => context.Message.CorrelationId));
-
+        Event(() => OtpCodeConfirmedEvent, x => x.CorrelateById(context => context.Message.CorrelationId));
         Initially(
             When(TwoFactorStartedEvent)
                 .Then(context =>
@@ -59,12 +59,35 @@ public class TwoFactorSaga : MassTransitStateMachine<TwoFactorSagaState>
             context.Saga.OtpCodeSent = true;
             context.Saga.UpdatedAt = DateTime.UtcNow;
             logger.LogInformation("Otp code sent for UserId={UserId}", context.Saga.UserId);
-        }).TransitionTo(TwoFactorVerificationCompleted));
-        During(TwoFactorVerificationCompleted, When(TwoFactorCompletedEvent).Then(context =>
-        {
-            context.Saga.UpdatedAt = DateTime.UtcNow;
-            logger.LogInformation("Two factor saga completed for UserId={UserId}", context.Saga.UserId);
-        }));
+        }).TransitionTo(TwoFactorVerificationWaitingConfirmationFromUser));
+        During(TwoFactorVerificationWaitingConfirmationFromUser,
+            When(OtpCodeConfirmedEvent).Then(context =>
+                {
+                    context.Saga.UpdatedAt = DateTime.UtcNow;
+                    logger.LogInformation(
+                        "OTP code confirmation received for UserId={UserId}, IsValid={IsValid}",
+                        context.Saga.UserId, context.Message.IsValid);
+                    if (!context.Message.IsValid)
+                    {
+                        context.Saga.FailureReason = "Invalid OTP code provided";
+                    }
+                }).If(context => context.Message.IsValid,
+                    binder => binder
+                        .Publish(context => new TwoFactorCompletedIntegrationEvent
+                        {
+                            CorrelationId = context.Saga.CorrelationId,
+                            UserId = context.Saga.UserId
+                        })
+                        .TransitionTo(Final))
+                .If(context => !context.Message.IsValid,
+                    binder => binder
+                        .Publish(context => new TwoFactorFailedIntegrationEvent
+                        {
+                            CorrelationId = context.Saga.CorrelationId,
+                            UserId = context.Saga.UserId,
+                            FailureReason = "Invalid OTP code"
+                        })
+                        .TransitionTo(TwoFactorFailed)));
         DuringAny(When(TwoFactorFailedEvent).Then(context =>
         {
             context.Saga.FailureReason = context.Message.FailureReason ?? "Unknown failure reason";
