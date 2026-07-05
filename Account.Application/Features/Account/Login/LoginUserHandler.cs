@@ -57,13 +57,15 @@ public class LoginUserHandler(
         var totp = new Totp(secretKey, step: 300, mode: OtpHashMode.Sha1, totpSize: 6);
         var otpCode = totp.ComputeTotp();
 
-        var otpSessionCreateParams = new OtpSessionCreateParams(user.Id, cryptographyService.Hash(otpCode));
+        var correlationId = Guid.NewGuid();
+        var otpSessionCreateParams =
+            new OtpSessionCreateParams(cryptographyService.Hash(otpCode), user.Id, correlationId);
         var otpSession = OtpSessions.Create(otpSessionCreateParams);
         otpSessionsRepository.AddOtpSession(otpSession);
 
         await publishEndpoint.Publish(new TwoFactorSagaStartedIntegrationEvent
         {
-            CorrelationId = Guid.NewGuid(),
+            CorrelationId = correlationId,
             UserId = user.Id,
             Email = user.Email,
             OtpCode = otpCode,

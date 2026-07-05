@@ -67,27 +67,8 @@ public class TwoFactorSaga : MassTransitStateMachine<TwoFactorSagaState>
                     logger.LogInformation(
                         "OTP code confirmation received for UserId={UserId}, IsValid={IsValid}",
                         context.Saga.UserId, context.Message.IsValid);
-                    if (!context.Message.IsValid)
-                    {
-                        context.Saga.FailureReason = "Invalid OTP code provided";
-                    }
-                }).If(context => context.Message.IsValid,
-                    binder => binder
-                        .Publish(context => new TwoFactorCompletedIntegrationEvent
-                        {
-                            CorrelationId = context.Saga.CorrelationId,
-                            UserId = context.Saga.UserId
-                        })
-                        .TransitionTo(Final))
-                .If(context => !context.Message.IsValid,
-                    binder => binder
-                        .Publish(context => new TwoFactorFailedIntegrationEvent
-                        {
-                            CorrelationId = context.Saga.CorrelationId,
-                            UserId = context.Saga.UserId,
-                            FailureReason = "Invalid OTP code"
-                        })
-                        .TransitionTo(TwoFactorFailed)));
+                })
+                .TransitionTo(TwoFactorFailed));
         DuringAny(When(TwoFactorFailedEvent).Then(context =>
         {
             context.Saga.FailureReason = context.Message.FailureReason ?? "Unknown failure reason";

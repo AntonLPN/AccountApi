@@ -166,6 +166,8 @@ public class AppDbContext : DbContext
         builder.Entity<OtpSessions>(entity =>
         {
             entity.HasKey(a => a.Id).HasName("PK_OptSessions");
+            entity.Property(a => a.CodeHash).HasMaxLength(255).HasColumnName("CodeHash").IsUnicode();
+            entity.Property(a => a.CorrelationId).HasMaxLength(255).HasColumnName("CorrelationId").IsUnicode();
             entity.Property(a => a.UserId).HasMaxLength(255).HasColumnName("UserId").IsUnicode();
             entity.Property(a => a.CreatedAt).HasColumnName("CreatedAt");
             entity.Property(a => a.ExpiresAt).HasColumnName("ExpiresAt");
