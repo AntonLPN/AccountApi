@@ -11,6 +11,10 @@ public class AppDbContext : DbContext
     public DbSet<ApiKey> ApiKeys { get; set; } = null!;
     public DbSet<LoginAudit> LoginAudits { get; set; } = null!;
     public DbSet<LogoutAudit> LogoutAudits { get; set; } = null!;
+
+    public DbSet<OtpSessions> OptSessions { get; set; } = null!;
+
+    //Sagas
     public DbSet<UserRegistrationSagaState> UserRegistrationSagaStates { get; set; } = null!;
     public DbSet<UserLoginSagaState> UserLoginSagaStates { get; set; } = null!;
     public DbSet<UserLogoutSagaState> UserLogoutSagaStates { get; set; } = null!;
@@ -140,13 +144,12 @@ public class AppDbContext : DbContext
             entity.Property(x => x.UserId).HasMaxLength(255);
             entity.Property(x => x.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode();
             entity.Property(x => x.OtpCode).HasMaxLength(7).HasColumnName("OtpCode").IsUnicode();
-            entity.Property(x=>x.OtpCodeSent).HasColumnName("OtpCodeSent").HasDefaultValue(false);
+            entity.Property(x => x.OtpCodeSent).HasColumnName("OtpCodeSent").HasDefaultValue(false);
             entity.Property(x => x.FailureReason).HasMaxLength(255).HasColumnName("FailureReason").IsUnicode();
-            entity.Property(x=>x.ExpiredAt).HasColumnName("ExpiredAt");
+            entity.Property(x => x.ExpiredAt).HasColumnName("ExpiredAt");
             entity.Property(x => x.CreatedAt).HasColumnName("CreatedAt");
             entity.Property(x => x.UpdatedAt).HasColumnName("UpdatedAt");
             entity.HasIndex(x => x.UserId);
-
         });
 
         builder.Entity<LogoutAudit>(entity =>
@@ -157,6 +160,17 @@ public class AppDbContext : DbContext
             entity.Property(a => a.IpAddress).HasMaxLength(64).HasColumnName("IpAddress").IsUnicode();
             entity.Property(a => a.UserAgent).HasMaxLength(512).HasColumnName("UserAgent").IsUnicode();
             entity.Property(a => a.LoggedOutAt).HasColumnName("LoggedOutAt");
+            entity.HasIndex(a => a.UserId);
+        });
+        
+        builder.Entity<OtpSessions>(entity =>
+        {
+            entity.HasKey(a => a.Id).HasName("PK_OptSessions");
+            entity.Property(a => a.UserId).HasMaxLength(255).HasColumnName("UserId").IsUnicode();
+            entity.Property(a => a.CreatedAt).HasColumnName("CreatedAt");
+            entity.Property(a => a.ExpiresAt).HasColumnName("ExpiresAt");
+            entity.Property(a => a.UsedAt).HasColumnName("UsedAt");
+            
             entity.HasIndex(a => a.UserId);
         });
     }

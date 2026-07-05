@@ -19,7 +19,9 @@ public class LoginUserHandler(
     IUnitOfWork unitOfWork,
     IUserRepository userRepository,
     IApiKeyRepository apiKeyRepository,
-    IPublishEndpoint publishEndpoint)
+    IPublishEndpoint publishEndpoint,
+    ICryptography cryptographyService,
+    IOtpSessionRepository otpSessionsRepository)
     : ICommandHandler<LoginCommand, Result<LoginUserResult>>
 {
     public async Task<Result<LoginUserResult>> Handle(LoginCommand request, CancellationToken cancellationToken)
@@ -54,6 +56,11 @@ public class LoginUserHandler(
         var secretKey = Convert.FromBase64String(user.EncryptedTwoFactorSecret);
         var totp = new Totp(secretKey, step: 300, mode: OtpHashMode.Sha1, totpSize: 6);
         var otpCode = totp.ComputeTotp();
+
+        var otpSessionCreateParams = new OtpSessionCreateParams(user.Id, cryptographyService.Hash(otpCode));
+        var otpSession = OtpSessions.Create(otpSessionCreateParams);
+        otpSessionsRepository.AddOtpSession(otpSession);
+
         await publishEndpoint.Publish(new TwoFactorSagaStartedIntegrationEvent
         {
             CorrelationId = Guid.NewGuid(),

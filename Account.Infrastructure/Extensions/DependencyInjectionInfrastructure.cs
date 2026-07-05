@@ -24,6 +24,7 @@ public static class DependencyInjectionInfrastructure
         services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
         services.AddScoped<ILoginAuditRepository, LoginAuditRepository>();
         services.AddScoped<ILogoutAuditRepository, LogoutAuditRepository>();
+        services.AddScoped<IOtpSessionRepository, OtpSessionRepository>();
         //MassTransit
         services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();
     }
