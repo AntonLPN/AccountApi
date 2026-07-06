@@ -17,6 +17,7 @@ public class TwoFactorSaga : MassTransitStateMachine<TwoFactorSagaState>
     public State AwaitingOtpCodeSend { get; private set; } = null!;
     public State TwoFactorVerificationWaitingConfirmationFromUser { get; private set; } = null!;
     public State TwoFactorFailed { get; private set; } = null!;
+    public State TwoFactorCompleted { get; private set; } = null!;
 
     public Event<TwoFactorSagaStartedIntegrationEvent> TwoFactorStartedEvent { get; private set; } = null!;
     public Event<OtpCodeSentIntegrationEvent> OtpCodeSendEvent { get; private set; } = null!;
@@ -68,7 +69,7 @@ public class TwoFactorSaga : MassTransitStateMachine<TwoFactorSagaState>
                         "OTP code confirmation received for UserId={UserId}, IsValid={IsValid}",
                         context.Saga.UserId, context.Message.IsValid);
                 })
-                .TransitionTo(TwoFactorFailed));
+                .TransitionTo(TwoFactorCompleted));
         DuringAny(When(TwoFactorFailedEvent).Then(context =>
         {
             context.Saga.FailureReason = context.Message.FailureReason ?? "Unknown failure reason";

@@ -119,7 +119,7 @@ public class AuthController(IMediator mediator) : ControllerBase
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
-        var emailClaim = User.FindFirst(ClaimTypes.Email)?.Value;
+        var emailClaim = User.FindFirst("email")?.Value;
         if (string.IsNullOrWhiteSpace(emailClaim))
             return BadRequest("User not found");
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
@@ -146,7 +146,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var emailClaim = User.FindFirst(ClaimTypes.Email)?.Value;
+        var emailClaim = User.FindFirst("email")?.Value;
         if (string.IsNullOrWhiteSpace(emailClaim))
             return BadRequest("User not found");
         

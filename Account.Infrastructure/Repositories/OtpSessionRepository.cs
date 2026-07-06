@@ -1,11 +1,12 @@
 using Account.Domain.Entities;
+using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
 using Account.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Account.Infrastructure.Repositories;
 
-public class OtpSessionRepository(AppDbContext dbContext) : IOtpSessionRepository
+public class OtpSessionRepository(AppDbContext dbContext, ICryptography cryptographyService) : IOtpSessionRepository
 {
     public void AddOtpSession(OtpSessions createParams)
     {
@@ -16,10 +17,13 @@ public class OtpSessionRepository(AppDbContext dbContext) : IOtpSessionRepositor
         dbContext.OptSessions.Add(createParams);
     }
 
-    public Task<OtpSessions?> GetActiveOtpSessionAsync(string userId, CancellationToken cancellationToken = default)
+    public Task<OtpSessions?> GetActiveOtpSessionAsync(string userId, string otpCode,
+        CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(userId, nameof(userId));
-        return dbContext.OptSessions.FirstOrDefaultAsync(s => s.UserId == userId && s.UsedAt == null,
+        var otpCodeHash = cryptographyService.Hash(otpCode);
+        return dbContext.OptSessions.FirstOrDefaultAsync(
+            s => s.UserId == userId && s.UsedAt == null && s.CodeHash == otpCodeHash,
             cancellationToken);
     }
 

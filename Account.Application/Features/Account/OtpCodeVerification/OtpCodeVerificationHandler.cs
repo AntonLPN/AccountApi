@@ -32,7 +32,7 @@ public class OtpCodeVerificationHandler(
             if (user is null)
                 return Result<OtpConfirmationResult>.NotFound("User not found");
 
-            var otpActiveSession = await otpSessionRepository.GetActiveOtpSessionAsync(user.Id, cancellationToken);
+            var otpActiveSession = await otpSessionRepository.GetActiveOtpSessionAsync(user.Id,request.OtpCode, cancellationToken);
             if (otpActiveSession == null || otpActiveSession.UsedAt != null)
                 return Result<OtpConfirmationResult>.NotFound(
                     "No active OTP session found for the user or OTP already used");
