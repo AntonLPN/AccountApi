@@ -37,7 +37,10 @@ public class LoginUserHandler(
                 return Result<LoginUserResult>.Unauthorized();
 
             if (user.IsTwoFactorEnabled)
-                return await TwoFactorProcess(user, tokenResponse, cancellationToken);
+            {
+                var preAuthToken = authService.GeneratePreAuthToken(request.Email);
+                return await TwoFactorProcess(user, preAuthToken, cancellationToken);
+            }
 
             return await LoginProcess(user, request.IpAddress, request.UserAgent, tokenResponse,
                 cancellationToken);
@@ -50,7 +53,7 @@ public class LoginUserHandler(
         }
     }
 
-    private async Task<LoginUserResult> TwoFactorProcess(AppUser user, TokenResponse tokenResponse,
+    private async Task<LoginUserResult> TwoFactorProcess(AppUser user, string tokenResponse,
         CancellationToken cancellationToken)
     {
         var secretKey = Convert.FromBase64String(user.EncryptedTwoFactorSecret);
@@ -79,8 +82,11 @@ public class LoginUserHandler(
             IsMfaRequired = true,
             Token = new TokenResponse()
             {
-                AccessToken = tokenResponse.AccessToken,
-                ExpiresIn = tokenResponse.ExpiresIn
+                AccessToken = tokenResponse,
+                RefreshToken = "",
+                ExpiresIn = 0,
+                TokenType = "pre-auth",
+                Scope = ""
             }
         });
     }
