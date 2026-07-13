@@ -1,3 +1,4 @@
+using System.Text;
 using Account.Application.Features.Account.Register;
 using Account.Domain.Extensions;
 using Account.Infrastructure.Configuration;
@@ -12,7 +13,9 @@ using Account.Infrastructure.Services;
 using AccountApi.Authorization;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
 
 namespace AccountApi.Extensions;
@@ -36,13 +39,15 @@ public static class ServicesExtensions
         return services;
     }
 
-    public static void AddJwtAuthentication(this IServiceCollection services,
-        IConfiguration configuration)
+    public static void AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
+        var keycloakSettings = configuration.GetSection("Authentication:Schemes:Bearer");
+        var preAuthKey = configuration["Authentication:PreAuth:SigningKey"]!; // отдельный секрет, только ваш
+
         services.AddAuthentication("Bearer")
+            //Keycloak - main authentication scheme, for all endpoints except /verify-otp
             .AddJwtBearer("Bearer", options =>
             {
-                var keycloakSettings = configuration.GetSection("Authentication:Schemes:Bearer");
                 options.Authority = keycloakSettings["Authority"];
                 options.Audience = keycloakSettings["ValidAudience"];
                 options.RequireHttpsMetadata = false;
@@ -50,31 +55,63 @@ public static class ServicesExtensions
 #if DEBUG
                 options.Events = new JwtBearerEvents
                 {
-                    OnTokenValidated = ctx =>
-                    {
-                        var acr = ctx.Principal?.FindFirst("acr")?.Value;
-                        Console.WriteLine($"Token OK, acr={acr}");
-                        return Task.CompletedTask;
-                    },
                     OnAuthenticationFailed = ctx =>
                     {
-                        Console.WriteLine($"Auth FAILED: {ctx.Exception.Message}");
-                        return Task.CompletedTask;
-                    },
-                    OnForbidden = ctx =>
-                    {
-                        var claims = string.Join(", ", ctx.HttpContext.User.Claims.Select(c => $"{c.Type}={c.Value}"));
-                        Console.WriteLine($"Forbidden, claims: {claims}");
+                        Console.WriteLine($"Bearer auth FAILED: {ctx.Exception.Message}");
                         return Task.CompletedTask;
                     }
                 };
 #endif
-            }).AddScheme<ApiKeyAuthSchemeOptions, ApiKeyAuthHandler>(AuthPolicies.ApiKeyOnly, _ => { });
+            })
+            //PreAuth - second authentication scheme, for /verify-otp
+            .AddJwtBearer("PreAuth", options =>
+            {
+                options.MapInboundClaims = false;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = "account-api-preauth", 
+                    ValidateAudience = true,
+                    ValidAudience = "account-api-preauth",
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(preAuthKey)),
+                    ClockSkew = TimeSpan.FromMinutes(5)
+                };
+#if DEBUG
+                options.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = ctx =>
+                    {
+                        Console.WriteLine($"PreAuth FAILED: {ctx.Exception.Message}");
+                        return Task.CompletedTask;
+                    }
+                };
+#endif
+            })
+            .AddScheme<ApiKeyAuthSchemeOptions, ApiKeyAuthHandler>(AuthPolicies.ApiKeyOnly, _ => { });
 
         services.AddAuthorizationBuilder()
-            .AddPolicy(AuthPolicies.ApiKeyOnly, policy => policy  
+            .AddPolicy(AuthPolicies.ApiKeyOnly, policy => policy
                 .AddAuthenticationSchemes(AuthPolicies.ApiKeyOnly)
-                .RequireAuthenticatedUser());
+                .RequireAuthenticatedUser())
+
+            //for /verify-otp
+            .AddPolicy(AuthPolicies.PreAuthOnly, policy => policy
+                .AddAuthenticationSchemes("PreAuth")
+                .RequireAuthenticatedUser()
+                .RequireClaim("purpose",
+                    "otp_pending")) 
+
+            //for all other endpoints, require full authentication through Keycloak
+            .AddPolicy(AuthPolicies.MfaRequired, policy => policy
+                .AddAuthenticationSchemes("Bearer")
+                .RequireAuthenticatedUser())
+
+            .SetDefaultPolicy(new AuthorizationPolicyBuilder()
+                .AddAuthenticationSchemes("Bearer")
+                .RequireAuthenticatedUser()
+                .Build());
     }
 
     public static IServiceCollection AddLifeTimeServices(this IServiceCollection services)

@@ -1,3 +1,6 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Infrastructure.Configuration;
@@ -7,6 +10,7 @@ using Google.Apis.Auth;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Account.Infrastructure.Services;
 
@@ -17,6 +21,7 @@ public class AuthService : IAuthService
     private readonly IDistributedCache _cache;
     private readonly ILogger<AuthService> _logger;
     private readonly IOptions<GoogleOptions> _googleOptions;
+    private readonly IOptions<AuthenticationOptions> _authenticationOptions;
 
     // ReSharper disable once ConvertToPrimaryConstructor
     public AuthService(
@@ -25,13 +30,15 @@ public class AuthService : IAuthService
         IOptions<GoogleOptions> googleOptions,
         IDistributedCache cache,
         ILogger<AuthService> logger,
-        ICryptography cryptographyService)
+        ICryptography cryptographyService,
+        IOptions<AuthenticationOptions> authenticationOptions)
     {
         _keycloakHttpClient = keycloakHttpClient;
         _keyCloakOptions = keyCloakOptions;
         _cache = cache;
         _logger = logger;
         _googleOptions = googleOptions;
+        _authenticationOptions = authenticationOptions;
     }
 
     public async Task<string?> GoogleRegisterAsync(string email)
@@ -82,8 +89,8 @@ public class AuthService : IAuthService
         ArgumentException.ThrowIfNullOrEmpty(email);
         return _keycloakHttpClient.LoginAsync(email, _keyCloakOptions.Value);
     }
-    
- 
+
+
     public async Task<TokenResponse?> LoginAsync(string email, string password)
     {
         if (!IsValidLoginRequest(email, password))
@@ -94,8 +101,7 @@ public class AuthService : IAuthService
 
     public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken)
     {
-        if (string.IsNullOrWhiteSpace(refreshToken))
-            return null;
+        ArgumentException.ThrowIfNullOrEmpty(refreshToken);
         return await _keycloakHttpClient.RefreshTokenAsync(refreshToken, _keyCloakOptions.Value);
     }
 
@@ -133,22 +139,41 @@ public class AuthService : IAuthService
         return _keycloakHttpClient.DeleteUserByEmailAsync(email, _keyCloakOptions.Value);
     }
 
+    public Task<Result> ChangePasswordByEmailAsync(string email, string newPassword)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(email);
+        ArgumentException.ThrowIfNullOrEmpty(newPassword);
+        return _keycloakHttpClient.ChangePasswordByEmailAsync(email, newPassword, _keyCloakOptions.Value);
+    }
+
+    public string GeneratePreAuthToken(string email)
+    {
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(_authenticationOptions.Value.PreAuth.SigningKey));
+
+        var claims = new[]
+        {
+            new Claim("sub", email),
+            new Claim("purpose", "otp_pending")
+        };
+        
+        var token = new JwtSecurityToken(
+            issuer: "account-api-preauth",
+            audience: "account-api-preauth",
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(5), //TTL OTP
+            signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
+        return  new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
     public async Task<bool> LogoutAsync(string refreshToken)
     {
-        if (string.IsNullOrWhiteSpace(refreshToken))
-        {
-            _logger.LogWarning("Logout attempt with empty refresh token");
-            return false;
-        }
-
+        ArgumentException.ThrowIfNullOrEmpty(refreshToken);
         return await _keycloakHttpClient.LogoutAsync(refreshToken, _keyCloakOptions.Value);
     }
 
     public async Task<Result<string>> RegisterUserAsync(string email, string? password, bool useCredentials = true)
     {
-        // if (!IsValidRegisterRequest(email, password))
-        //     return Result<string>.Error("Invalid credentials for registration");
-
         const string cacheKey = "keycloak_admin_token";
         var adminToken = await _cache.GetStringAsync(cacheKey);
 
@@ -178,24 +203,10 @@ public class AuthService : IAuthService
             _keyCloakOptions.Value, useCredentials);
     }
 
-
     private bool IsValidLoginRequest(string email, string password)
     {
         if (!string.IsNullOrWhiteSpace(email) && !string.IsNullOrWhiteSpace(password)) return true;
         _logger.LogWarning("Login attempt with empty credentials");
-        return false;
-    }
-
-    private bool IsValidRegisterRequest(string email, string password)
-    {
-        if (string.IsNullOrWhiteSpace(email) || !email.Contains("@"))
-        {
-            _logger.LogWarning($"Registration attempt with invalid email: {email}");
-            return false;
-        }
-
-        if (!string.IsNullOrWhiteSpace(password) && password.Length >= 8) return true;
-        _logger.LogWarning("Registration attempt with weak password");
         return false;
     }
 }

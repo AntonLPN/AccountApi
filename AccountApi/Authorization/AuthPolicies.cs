@@ -10,9 +10,9 @@ public static class AuthPolicies
 }
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public class AuthorizePreAuthOnlyAttribute : AuthorizeAttribute
+public class PreAuthOnlyAttribute : AuthorizeAttribute
 {
-    public AuthorizePreAuthOnlyAttribute() : base(AuthPolicies.PreAuthOnly)
+    public PreAuthOnlyAttribute() : base(AuthPolicies.PreAuthOnly)
     {
     }
 }

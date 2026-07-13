@@ -1,6 +1,7 @@
 using Account.Infrastructure.Configuration;
 using Account.Infrastructure.HttpClients;
 using Account.Infrastructure.Persistence;
+using AccountApi.Authorization;
 using AccountApi.Extensions;
 using AccountApi.Middleware;
 using Microsoft.AspNetCore.RateLimiting;
@@ -24,19 +25,32 @@ builder.Services.AddLifeTimeServices();
 
 builder.Services.AddRateLimiter(limiter =>
 {
-    limiter.AddFixedWindowLimiter("fixed", options =>
+    limiter.AddFixedWindowLimiter(RateLimiterPolices.Fixed, options =>
     {
         options.PermitLimit = 100;
         options.Window = TimeSpan.FromSeconds(1);
         options.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
         options.QueueLimit = 10;
     });
+    
+    limiter.AddFixedWindowLimiter(RateLimiterPolices.VerifyOtpPolicy, options =>
+    {
+        options.PermitLimit = 5;
+        options.Window = TimeSpan.FromMinutes(15);
+        options.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+        options.QueueLimit = 0;
+    });
+
+    limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
+
+
 builder.Services.Configure<KeycloakAdminOptions>(builder.Configuration.GetSection("KeycloakAdminClient"));
 builder.Services.Configure<GoogleOptions>(builder.Configuration.GetSection("Google"));
 builder.Services.Configure<CryptoOptions>(builder.Configuration.GetSection("Crypto"));
 builder.Services.Configure<ApiKeyOptions>(builder.Configuration.GetSection("ApiKey"));
 builder.Services.Configure<RedisOptions>(builder.Configuration.GetSection("Redis"));
+builder.Services.Configure<AuthenticationOptions>(builder.Configuration.GetSection("Authentication"));
 
 
 builder.Services.AddHttpClient<KeycloakHttpClient>()

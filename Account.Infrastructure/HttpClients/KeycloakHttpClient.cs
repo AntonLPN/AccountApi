@@ -339,6 +339,58 @@ public class KeycloakHttpClient
         }
     }
 
+    public async Task<Result> ChangePasswordAsync(string userId, string newPassword, string adminToken, KeycloakAdminOptions options)
+    {
+        try
+        {
+            var payload = new
+            {
+                type = "password",
+                value = newPassword,
+                temporary = false
+            };
+
+            var requestMessage = new HttpRequestMessage(HttpMethod.Put,
+                CombineUrls(options.BaseUrl, "admin/realms", options.Realm, "users", userId, "reset-password"))
+            {
+                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", adminToken) },
+                Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
+            };
+
+            var response = await _httpClient.SendAsync(requestMessage);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("Password changed successfully for user {UserId}", userId);
+                return Result.Success();
+            }
+
+            var errorContent = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Failed to change password for user {UserId}: {StatusCode} - {Error}",
+                userId, response.StatusCode, errorContent);
+
+            return Result.Error($"Failed to change password: {response.StatusCode} - {errorContent}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error changing password for user {UserId}", userId);
+            throw;
+        }
+    }
+
+    public async Task<Result> ChangePasswordByEmailAsync(string email, string newPassword, KeycloakAdminOptions options)
+    {
+        var adminToken = await GetAdminTokenAsync(options);
+        if (adminToken is null or { AccessToken: null })
+            return Result.Error("Failed to obtain admin token");
+
+        var userId = await GetUserIdByEmailAsync(email, options);
+        if (string.IsNullOrEmpty(userId))
+            return Result.Error($"User with email {email} not found");
+
+        return await ChangePasswordAsync(userId, newPassword, adminToken.AccessToken, options);
+    }
+
     public async Task<Result> DeleteUserByEmailAsync(string email, KeycloakAdminOptions options)
     {
         var adminToken = await GetAdminTokenAsync(options);

@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Account.Application.Features.Account.Login;
 using Account.Application.Features.Account.Logout;
 using Account.Application.Features.Account.OtpCodeVerification;
@@ -6,11 +5,13 @@ using Account.Application.Features.Account.ProviderLogin;
 using Account.Application.Features.Account.ProvidersRegister;
 using Account.Application.Features.Account.Register;
 using Account.Domain.Enums;
+using AccountApi.Authorization;
 using AccountApi.Helpers;
 using AccountApi.Models.RequestModels;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AccountApi.Controllers;
 
@@ -136,11 +137,11 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok();
     }
 
-    //TODO in release use authorization
-    [AllowAnonymous]
+    [PreAuthOnly]
     [HttpPost("otp-code-verification")]
     [ProducesResponseType(typeof(OtpConfirmationResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [EnableRateLimiting(RateLimiterPolices.VerifyOtpPolicy)]
     public async Task<IActionResult> OtpCodeVerification([FromBody] OtpCodeVerificationRequestModel model)
     {
         if (!ModelState.IsValid)
@@ -157,9 +158,33 @@ public class AuthController(IMediator mediator) : ControllerBase
 
         return Ok(res.Value);
     }
+    //TODO : Add change password
+    
+    
+    
+    [AllowAnonymous]
+    [HttpPost("change-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestModel model)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var emailClaim = User.FindFirst("email")?.Value;
+        if (string.IsNullOrWhiteSpace(emailClaim))
+            return BadRequest("User not found");
+
+        // var cmd = new ChangePasswordCommand(emailClaim, model.NewPassword);
+        // var res = await mediator.Send(cmd);
+        // if (!res.IsSuccess)
+        //     return BadRequest(res.Errors);
+
+        return Ok();
+    }
+    
     //TODO : Add forgot password
     //TODO : Add reset password
-    //TODO : Add change password
 
 
     private void SetRefreshTokenCookie(string? refreshToken)
