@@ -20,7 +20,7 @@ namespace AccountApi.Controllers;
 [Produces("application/json")]
 public class AuthController(IMediator mediator) : ControllerBase
 {
-    [AllowAnonymous]
+    [AuthorizeApiKeyOnly]
     [HttpPost("register")]
     [ProducesResponseType(typeof(RegisterUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -41,7 +41,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    [AllowAnonymous]
+    [AuthorizeApiKeyOnly]
     [HttpPost("google-register")]
     [ProducesResponseType(typeof(ProviderRegisterResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -62,7 +62,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    [AllowAnonymous]
+    [AuthorizeApiKeyOnly]
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -86,7 +86,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    [AllowAnonymous]
+    [AuthorizeApiKeyOnly]
     [HttpPost("google-login")]
     [ProducesResponseType(typeof(ProviderLoginResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -159,10 +159,27 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
     //TODO : Add change password
+
+    [AuthorizeApiKeyOnly]
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestModel model)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+        //TODO send otp code to user
+        //
+        // var cmd = new ForgotPasswordCommand(model.Email);
+        // var res = await mediator.Send(cmd);
+        // if (!res.IsSuccess)
+        //     return BadRequest(res.Errors);
+
+        return Ok();
+    }
     
     
-    
-    [AllowAnonymous]
+    [PreAuthOnly]
     [HttpPost("change-password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
