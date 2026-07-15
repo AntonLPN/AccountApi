@@ -150,20 +150,23 @@ public class AuthService : IAuthService
     {
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_authenticationOptions.Value.PreAuth.SigningKey));
-
+        int lifeTime = 5;
+#if DEBUG
+        lifeTime = 60; // For debugging purposes, extend the lifetime to 60 minutes
+#endif
         var claims = new[]
         {
-            new Claim("sub", email),
+            new Claim("email", email),
             new Claim("purpose", "otp_pending")
         };
-        
+
         var token = new JwtSecurityToken(
             issuer: "account-api-preauth",
             audience: "account-api-preauth",
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(5), //TTL OTP
+            expires: DateTime.UtcNow.AddMinutes(lifeTime), //TTL OTP
             signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
-        return  new JwtSecurityTokenHandler().WriteToken(token);
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
     public async Task<bool> LogoutAsync(string refreshToken)

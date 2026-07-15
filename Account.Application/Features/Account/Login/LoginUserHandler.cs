@@ -57,6 +57,7 @@ public class LoginUserHandler(
         CancellationToken cancellationToken)
     {
         var secretKey = Convert.FromBase64String(user.EncryptedTwoFactorSecret);
+
         var totp = new Totp(secretKey, step: 300, mode: OtpHashMode.Sha1, totpSize: 6);
         var otpCode = totp.ComputeTotp();
 

@@ -42,7 +42,7 @@ public class OtpCodeVerificationHandler(
                 logger.LogWarning("OTP session expired for user {UserId}", user.Id);
                 return Result<OtpConfirmationResult>.Conflict("OTP session expired");
             }
-
+            
             var secretKey = Convert.FromBase64String(user.EncryptedTwoFactorSecret);
             var totp = new Totp(secretKey, step: 300, mode: OtpHashMode.Sha1, totpSize: 6);
             bool isValid = totp.VerifyTotp(request.OtpCode, out long timeStepMatched,
