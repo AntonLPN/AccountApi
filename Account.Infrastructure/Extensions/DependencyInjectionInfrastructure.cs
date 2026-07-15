@@ -19,6 +19,7 @@ public static class DependencyInjectionInfrastructure
         services.AddScoped<IEmail, EmailService>();
         services.AddScoped<IProviderValidator, ProviderValidator>();
         services.AddScoped<IDataCache, RedisDataCache>();
+        services.AddScoped<ITwoFactorManager, TwoFactorService>();
         //Repository
         services.AddScoped<IUnitOfWork, UnitOfWorkAdapter>();
         services.AddScoped<IUserRepository, UserRepository>();
