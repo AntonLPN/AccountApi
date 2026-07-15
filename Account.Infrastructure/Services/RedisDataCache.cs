@@ -8,15 +8,13 @@ namespace Account.Infrastructure.Services;
 
 public class RedisDataCache : IDataCache
 {
-    private readonly IConnectionMultiplexer _redis;
     private readonly IDatabase _database;
-    private IOptions<RedisOptions> _redisOptions;
+    private readonly IOptions<RedisOptions> _redisOptions;
 
     public RedisDataCache(IConnectionMultiplexer redis, IOptions<RedisOptions> redisOptions)
     {
-        _redis = redis;
         _redisOptions = redisOptions;
-        _database = _redis.GetDatabase();
+        _database = redis.GetDatabase();
     }
 
     public async Task<T?> GetAsync<T>(string key) where T : class
