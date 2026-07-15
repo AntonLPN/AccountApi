@@ -17,6 +17,7 @@
       <PackageReference Include="MimeKit" Version="4.17.0" />
       <PackageReference Include="Polly" Version="8.6.6" />
       <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.3" />
+      <PackageReference Include="StackExchange.Redis" Version="3.0.0" />
     </ItemGroup>
 
     <ItemGroup>
