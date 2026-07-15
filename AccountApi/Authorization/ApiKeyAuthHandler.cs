@@ -1,12 +1,12 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using Account.Domain.Interfaces;
 using Account.Infrastructure.Configuration;
 using Account.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using StackExchange.Redis;
 
 namespace AccountApi.Authorization;
 
@@ -18,9 +18,8 @@ public class ApiKeyAuthHandler(
     IOptionsMonitor<ApiKeyAuthSchemeOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder,
-    IConnectionMultiplexer redis,
+    IDataCache dataCache,
     IOptions<ApiKeyOptions> apiKeyOptions,
-    IOptions<RedisOptions> redisOptions,
     AppDbContext dbContext)
     : AuthenticationHandler<ApiKeyAuthSchemeOptions>(options, logger, encoder)
 {
@@ -49,20 +48,11 @@ public class ApiKeyAuthHandler(
     private async Task<bool> IsAuthorizedAsync(string apiKey)
     {
         if (apiKey.Equals(_masterApiKey)) return true;
-
-        var cached = await GetFromCacheAsync(apiKey);
-        if (cached.HasValue) return cached.Value;
+        var key = await dataCache.GetAsync<CachedApiKeyInfo>(apiKey);
+        if (key != null)
+            return key.IsActive;
 
         return await ValidateFromDbAsync(apiKey);
-    }
-
-    private async Task<bool?> GetFromCacheAsync(string apiKey)
-    {
-        var raw = await redis.GetDatabase().StringGetAsync(apiKey);
-        if (raw.IsNullOrEmpty) return null;
-
-        var info = JsonSerializer.Deserialize<CachedApiKeyInfo>(raw!);
-        return info?.IsActive;
     }
 
     private async Task<bool> ValidateFromDbAsync(string apiKey)
@@ -80,8 +70,6 @@ public class ApiKeyAuthHandler(
     private async Task SetCacheAsync(string apiKey, bool isActive, string userId)
     {
         var payload = JsonSerializer.Serialize(new CachedApiKeyInfo(userId, isActive));
-        await redis.GetDatabase()
-            .StringSetAsync(apiKey, payload,
-                TimeSpan.FromMinutes(redisOptions.Value.CacheStorageTime));
+        await dataCache.SetAsync(apiKey, payload);
     }
 }

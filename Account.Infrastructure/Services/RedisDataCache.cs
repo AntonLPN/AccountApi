@@ -6,16 +6,10 @@ using StackExchange.Redis;
 
 namespace Account.Infrastructure.Services;
 
-public class RedisDataCache : IDataCache
+public class RedisDataCache(IConnectionMultiplexer redis, IOptions<RedisOptions> redisOptions)
+    : IDataCache
 {
-    private readonly IDatabase _database;
-    private readonly IOptions<RedisOptions> _redisOptions;
-
-    public RedisDataCache(IConnectionMultiplexer redis, IOptions<RedisOptions> redisOptions)
-    {
-        _redisOptions = redisOptions;
-        _database = redis.GetDatabase();
-    }
+    private readonly IDatabase _database = redis.GetDatabase();
 
     public async Task<T?> GetAsync<T>(string key) where T : class
     {
@@ -30,7 +24,7 @@ public class RedisDataCache : IDataCache
     {
         var payload = JsonSerializer.Serialize(value);
         if (expiration == TimeSpan.Zero)
-            expiration = TimeSpan.FromMinutes(_redisOptions.Value.CacheStorageTime);
+            expiration = TimeSpan.FromMinutes(redisOptions.Value.CacheStorageTime);
         await _database.StringSetAsync(key, payload, expiration);
     }
 
