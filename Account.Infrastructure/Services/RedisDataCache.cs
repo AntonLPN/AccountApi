@@ -10,10 +10,12 @@ public class RedisDataCache : IDataCache
 {
     private readonly IConnectionMultiplexer _redis;
     private readonly IDatabase _database;
+    private IOptions<RedisOptions> _redisOptions;
 
-    public RedisDataCache(IConnectionMultiplexer redis)
+    public RedisDataCache(IConnectionMultiplexer redis, IOptions<RedisOptions> redisOptions)
     {
         _redis = redis;
+        _redisOptions = redisOptions;
         _database = _redis.GetDatabase();
     }
 
@@ -29,6 +31,8 @@ public class RedisDataCache : IDataCache
     public async Task SetAsync<T>(string key, T value, TimeSpan expiration = default)
     {
         var payload = JsonSerializer.Serialize(value);
+        if (expiration == TimeSpan.Zero)
+            expiration = TimeSpan.FromMinutes(_redisOptions.Value.CacheStorageTime);
         await _database.StringSetAsync(key, payload, expiration);
     }
 
