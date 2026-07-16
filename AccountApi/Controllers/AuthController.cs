@@ -1,3 +1,4 @@
+using Account.Application.Features.Account.ChangePassword;
 using Account.Application.Features.Account.Login;
 using Account.Application.Features.Account.Logout;
 using Account.Application.Features.Account.OtpCodeVerification;
@@ -150,7 +151,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         var emailClaim = User.FindFirst("email")?.Value;
         if (string.IsNullOrWhiteSpace(emailClaim))
             return BadRequest("User not found");
-        
+
         var cmd = new OtpCodeVerificationCommand(emailClaim, model.OtpCode);
         var res = await mediator.Send(cmd);
         if (!res.IsSuccess)
@@ -158,27 +159,24 @@ public class AuthController(IMediator mediator) : ControllerBase
 
         return Ok(res.Value);
     }
-    //TODO : Add change password
-
+    
     [AuthorizeApiKeyOnly]
     [HttpPost("forgot-password")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ForgotPasswordResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestModel model)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
-        //TODO send otp code to user
-        //
-        // var cmd = new ForgotPasswordCommand(model.Email);
-        // var res = await mediator.Send(cmd);
-        // if (!res.IsSuccess)
-        //     return BadRequest(res.Errors);
+        var cmd = new ForgotPasswordCommand(model.Email);
+        var res = await mediator.Send(cmd);
+        if (!res.IsSuccess)
+            return BadRequest(res.Errors);
 
-        return Ok();
+        return Ok(res.Value);
     }
-    
-    
+
+    //TODO : Add change password
     [PreAuthOnly]
     [HttpPost("change-password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -191,7 +189,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         var emailClaim = User.FindFirst("email")?.Value;
         if (string.IsNullOrWhiteSpace(emailClaim))
             return BadRequest("User not found");
-
+        throw new NotImplementedException();
         // var cmd = new ChangePasswordCommand(emailClaim, model.NewPassword);
         // var res = await mediator.Send(cmd);
         // if (!res.IsSuccess)
@@ -200,10 +198,6 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok();
     }
     
-    //TODO : Add forgot password
-    //TODO : Add reset password
-
-
     private void SetRefreshTokenCookie(string? refreshToken)
     {
         if (string.IsNullOrEmpty(refreshToken))
