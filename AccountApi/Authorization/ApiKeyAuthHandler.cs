@@ -70,6 +70,6 @@ public class ApiKeyAuthHandler(
     private async Task SetCacheAsync(string apiKey, bool isActive, string userId)
     {
         var payload = JsonSerializer.Serialize(new CachedApiKeyInfo(userId, isActive));
-        await dataCache.SetAsync(apiKey, payload);
+        await dataCache.SetAsync(apiKey, payload,TimeSpan.FromMinutes(5));
     }
 }

@@ -20,6 +20,7 @@ public class LoginUserHandlerTests
     private readonly Mock<IApiKeyRepository> _apiKeyRepository = new();
     private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
     private readonly Mock<ITwoFactorManager> _twoFactorManager = new();
+    private readonly Mock<IPreAuthTokenService> _preAuthTokenService = new();
 
     private LoginUserHandler CreateSut()
     {
@@ -30,7 +31,8 @@ public class LoginUserHandlerTests
             _userRepository.Object,
             _apiKeyRepository.Object,
             _publishEndpoint.Object,
-            _twoFactorManager.Object);
+            _twoFactorManager.Object,
+            _preAuthTokenService.Object);
     }
 
     private static LoginCommand CreateCommand(
@@ -40,7 +42,7 @@ public class LoginUserHandlerTests
         string? userAgent = "Mozilla/5.0")
         => new(email, password, ipAddress, userAgent);
 
-    private static AppUser CreateUser(string id = "user123", string email = "test@mail.com")
+    private static AppUser CreateUser(string id = "user123", string email = "test@mail.com", bool isTwoFactorEnabled = false)
     {
         return new AppUser
         {
@@ -48,7 +50,8 @@ public class LoginUserHandlerTests
             Email = email,
             UserName = email,
             PasswordHash = "hash",
-            EmailConfirmed = true
+            EmailConfirmed = true,
+            IsTwoFactorEnabled = isTwoFactorEnabled
         };
     }
 
@@ -115,6 +118,7 @@ public class LoginUserHandlerTests
         _apiKeyRepository.Verify(x => x.GetApiKeyByUserIdAsync(It.IsAny<string>()), Times.Never);
         _publishEndpoint.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
         _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _twoFactorManager.Verify(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -123,7 +127,7 @@ public class LoginUserHandlerTests
         // Arrange
         var sut = CreateSut();
         var command = CreateCommand();
-        var user = CreateUser();
+        var user = CreateUser(isTwoFactorEnabled: false);
         var tokenResponse = CreateTokenResponse();
         const string apiKey = "api-key-123";
 
@@ -145,6 +149,7 @@ public class LoginUserHandlerTests
         // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(ResultStatus.Ok, result.Status);
+        Assert.False(result.Value.IsMfaRequired);
         Assert.Equal(apiKey, result.Value.ApiKey);
         Assert.Same(tokenResponse, result.Value.Token);
     }
@@ -155,7 +160,7 @@ public class LoginUserHandlerTests
         // Arrange
         var sut = CreateSut();
         var command = CreateCommand();
-        var user = CreateUser();
+        var user = CreateUser(isTwoFactorEnabled: false);
 
         _authService
             .Setup(x => x.LoginAsync(command.Email, command.Password))
@@ -175,6 +180,7 @@ public class LoginUserHandlerTests
         // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal("", result.Value.ApiKey);
+        Assert.False(result.Value.IsMfaRequired);
     }
 
     [Fact]
@@ -183,7 +189,7 @@ public class LoginUserHandlerTests
         // Arrange
         var sut = CreateSut();
         var command = CreateCommand();
-        var user = CreateUser();
+        var user = CreateUser(isTwoFactorEnabled: false);
 
         _authService
             .Setup(x => x.LoginAsync(command.Email, command.Password))
@@ -220,13 +226,115 @@ public class LoginUserHandlerTests
 
         _userRepository
             .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CreateUser());
+            .ReturnsAsync(CreateUser(isTwoFactorEnabled: false));
 
         // Act
         await sut.Handle(command, CancellationToken.None);
 
         // Assert
         _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserHasTwoFactorEnabled_ReturnsMfaRequiredWithPreAuthToken()
+    {
+        // Arrange
+        var sut = CreateSut();
+        var command = CreateCommand();
+        var user = CreateUser(isTwoFactorEnabled: true);
+        var tokenResponse = CreateTokenResponse();
+        const string preAuthToken = "pre-auth-token-123";
+
+        _authService
+            .Setup(x => x.LoginAsync(command.Email, command.Password))
+            .ReturnsAsync(tokenResponse);
+
+        _userRepository
+            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _preAuthTokenService
+            .Setup(x => x.GeneratePreAuthToken(command.Email))
+            .Returns(preAuthToken);
+
+        _twoFactorManager
+            .Setup(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("otp-session-id");
+
+        // Act
+        var result = await sut.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ResultStatus.Ok, result.Status);
+        Assert.True(result.Value.IsMfaRequired);
+        Assert.NotNull(result.Value.Token);
+        Assert.Equal(preAuthToken, result.Value.Token.AccessToken);
+        Assert.Equal("pre-auth", result.Value.Token.TokenType);
+        Assert.Equal("", result.Value.Token.RefreshToken);
+        Assert.Equal(0, result.Value.Token.ExpiresIn);
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserHasTwoFactorEnabled_InitiatesTwoFactorProcess()
+    {
+        // Arrange
+        var sut = CreateSut();
+        var command = CreateCommand();
+        var user = CreateUser(isTwoFactorEnabled: true);
+
+        _authService
+            .Setup(x => x.LoginAsync(command.Email, command.Password))
+            .ReturnsAsync(CreateTokenResponse());
+
+        _userRepository
+            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _preAuthTokenService
+            .Setup(x => x.GeneratePreAuthToken(command.Email))
+            .Returns("pre-auth-token");
+
+        _twoFactorManager
+            .Setup(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("otp-session-id");
+
+        // Act
+        await sut.Handle(command, CancellationToken.None);
+
+        // Assert
+        _twoFactorManager.Verify(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserHasTwoFactorEnabled_DoesNotPublishSagaEvent()
+    {
+        // Arrange
+        var sut = CreateSut();
+        var command = CreateCommand();
+        var user = CreateUser(isTwoFactorEnabled: true);
+
+        _authService
+            .Setup(x => x.LoginAsync(command.Email, command.Password))
+            .ReturnsAsync(CreateTokenResponse());
+
+        _userRepository
+            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _preAuthTokenService
+            .Setup(x => x.GeneratePreAuthToken(command.Email))
+            .Returns("pre-auth-token");
+
+        _twoFactorManager
+            .Setup(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("otp-session-id");
+
+        // Act
+        await sut.Handle(command, CancellationToken.None);
+
+        // Assert
+        _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserLoginSagaStartedIntegrationEvent>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -243,7 +351,7 @@ public class LoginUserHandlerTests
 
         _userRepository
             .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CreateUser());
+            .ReturnsAsync(CreateUser(isTwoFactorEnabled: false));
 
         // Act
         await sut.Handle(command, cts.Token);
@@ -252,5 +360,37 @@ public class LoginUserHandlerTests
         _userRepository.Verify(x => x.GetUserByEmailAsync(command.Email, cts.Token), Times.Once);
         _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserLoginSagaStartedIntegrationEvent>(), cts.Token), Times.Once);
         _unitOfWork.Verify(x => x.SaveChangesAsync(cts.Token), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenTwoFactorEnabled_PropagatesCancellationTokenToTwoFactorManager()
+    {
+        // Arrange
+        var sut = CreateSut();
+        var command = CreateCommand();
+        var user = CreateUser(isTwoFactorEnabled: true);
+        using var cts = new CancellationTokenSource();
+
+        _authService
+            .Setup(x => x.LoginAsync(command.Email, command.Password))
+            .ReturnsAsync(CreateTokenResponse());
+
+        _userRepository
+            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _preAuthTokenService
+            .Setup(x => x.GeneratePreAuthToken(command.Email))
+            .Returns("pre-auth-token");
+
+        _twoFactorManager
+            .Setup(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("otp-session-id");
+
+        // Act
+        await sut.Handle(command, cts.Token);
+
+        // Assert
+        _twoFactorManager.Verify(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), cts.Token), Times.Once);
     }
 }

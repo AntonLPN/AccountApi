@@ -6,6 +6,7 @@ using Account.Infrastructure.Persistence;
 using Account.Infrastructure.Repositories;
 using Account.Infrastructure.Services;
 using Account.Infrastructure.Services.Email;
+using Account.Infrastructure.Services.ExternalProviders;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Account.Infrastructure.Extensions;
@@ -20,6 +21,12 @@ public static class DependencyInjectionInfrastructure
         services.AddScoped<IProviderValidator, ProviderValidator>();
         services.AddScoped<IDataCache, RedisDataCache>();
         services.AddScoped<ITwoFactorManager, TwoFactorService>();
+        services.AddScoped<IPreAuthTokenService, PreAuthTokenService>();
+        //External Providers
+        services.AddScoped<IUserAccountService, KeycloakAccountService>();
+        services.AddScoped<IPasswordService, KeycloakPasswordService>();
+        services.AddScoped<IGoogleAuthService, GoogleService>();
+        
         //Repository
         services.AddScoped<IUnitOfWork, UnitOfWorkAdapter>();
         services.AddScoped<IUserRepository, UserRepository>();

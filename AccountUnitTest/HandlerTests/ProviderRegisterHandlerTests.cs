@@ -24,6 +24,7 @@ public class ProviderRegisterHandlerTests
     private readonly Mock<IAppDbTransaction> _tx = new();
     private readonly Mock<IProviderValidator> _providerValidator = new();
     private readonly Mock<ILoginAuditRepository> _loginAuditRepository = new();
+    private readonly Mock<IUserAccountService> _userAccountService = new();
 
     private ProviderRegisterHandler CreateSut()
     {
@@ -39,11 +40,12 @@ public class ProviderRegisterHandlerTests
             _apiKeyRepository.Object,
             _publishEndpoint.Object,
             _providerValidator.Object,
-            _loginAuditRepository.Object);
+            _loginAuditRepository.Object,
+            _userAccountService.Object);
     }
 
     private static ProviderRegisterCommand CreateCommand(string token = "google_token", string referrerCode = "REF123")
-        => new(token, referrerCode,AuthProviders.Google, "127.0.0.1", "userAgent");
+        => new(token, referrerCode, AuthProviders.Google, "127.0.0.1", "userAgent");
 
     private void SetupProviderValidate(string email = "test@gmail.com")
         => _providerValidator
@@ -68,7 +70,7 @@ public class ProviderRegisterHandlerTests
         Assert.Contains("User already exists", result.Errors);
 
         _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
-        _authService.Verify(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
+        _userAccountService.Verify(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
         _loginAuditRepository.Verify(x => x.AddLogin(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -93,7 +95,7 @@ public class ProviderRegisterHandlerTests
         _userRepository
             .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
-        _authService
+        _userAccountService
             .Setup(x => x.RegisterUserAsync(email, "", false))
             .ReturnsAsync(Result<string>.Success(userId));
         _authService
@@ -138,16 +140,16 @@ public class ProviderRegisterHandlerTests
         _userRepository
             .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
-        _authService
+        _userAccountService
             .Setup(x => x.RegisterUserAsync(email, "", false))
             .ThrowsAsync(new Exception("Keycloak unavailable"));
-        _authService
-            .Setup(x => x.DeleteUserByEmailAsync(email))
+        _userAccountService
+            .Setup(x => x.DeleteUserAsync(email))
             .ReturnsAsync(Result.Success());
 
         await Assert.ThrowsAsync<Exception>(() => sut.Handle(cmd, CancellationToken.None));
 
-        _authService.Verify(x => x.DeleteUserByEmailAsync(email), Times.Once);
+        _userAccountService.Verify(x => x.DeleteUserAsync(email), Times.Once);
         _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
         _loginAuditRepository.Verify(x => x.AddLogin(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -164,7 +166,7 @@ public class ProviderRegisterHandlerTests
         _userRepository
             .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
-        _authService
+        _userAccountService
             .Setup(x => x.RegisterUserAsync(email, "", false))
             .ReturnsAsync(Result<string>.Success("new-user-id"));
         _authService
@@ -188,5 +190,110 @@ public class ProviderRegisterHandlerTests
             a.Email == email &&
             a.IpAddress == cmd.IpAddress &&
             a.UserAgent == cmd.UserAgent), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenSuccess_PublishesSagaStartedEvent()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+        const string email = "test@gmail.com";
+        const string userId = "user-id-123";
+        const string apiKey = "api-key-abc";
+
+        SetupProviderValidate(email);
+        _userRepository
+            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AppUser?)null);
+        _userAccountService
+            .Setup(x => x.RegisterUserAsync(email, "", false))
+            .ReturnsAsync(Result<string>.Success(userId));
+        _authService
+            .Setup(x => x.LoginAsync(email))
+            .ReturnsAsync(new TokenResponse { AccessToken = "token" });
+        _userRepository
+            .Setup(x => x.FindByReferralCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AppUser?)null);
+        _apiKeyRepository
+            .Setup(x => x.CreateApiKey(It.IsAny<string>()))
+            .Returns(apiKey);
+        _loginAuditRepository.Setup(x => x.AddLogin(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()));
+
+        await sut.Handle(cmd, CancellationToken.None);
+
+        _publishEndpoint.Verify(x => x.Publish(
+            It.Is<UserRegisterSagaStartedIntegrationEvent>(e =>
+                e.CorrelationId != Guid.Empty &&
+                e.UserId != null &&
+                e.Email == email &&
+                e.ApiKey == apiKey),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenSuccess_BeginTransactionAndCommit()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+        const string email = "test@gmail.com";
+
+        SetupProviderValidate(email);
+        _userRepository
+            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AppUser?)null);
+        _userAccountService
+            .Setup(x => x.RegisterUserAsync(email, "", false))
+            .ReturnsAsync(Result<string>.Success("user-id"));
+        _authService
+            .Setup(x => x.LoginAsync(email))
+            .ReturnsAsync(new TokenResponse { AccessToken = "token" });
+        _userRepository
+            .Setup(x => x.FindByReferralCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AppUser?)null);
+        _apiKeyRepository
+            .Setup(x => x.CreateApiKey(It.IsAny<string>()))
+            .Returns("api-key");
+        _loginAuditRepository.Setup(x => x.AddLogin(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()));
+
+        await sut.Handle(cmd, CancellationToken.None);
+
+        _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _tx.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_PropagatesCancellationToken()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+        const string email = "test@gmail.com";
+        using var cts = new CancellationTokenSource();
+
+        SetupProviderValidate(email);
+        _userRepository
+            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AppUser?)null);
+        _userAccountService
+            .Setup(x => x.RegisterUserAsync(email, "", false))
+            .ReturnsAsync(Result<string>.Success("user-id"));
+        _authService
+            .Setup(x => x.LoginAsync(email))
+            .ReturnsAsync(new TokenResponse { AccessToken = "token" });
+        _userRepository
+            .Setup(x => x.FindByReferralCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AppUser?)null);
+        _apiKeyRepository
+            .Setup(x => x.CreateApiKey(It.IsAny<string>()))
+            .Returns("api-key");
+        _loginAuditRepository.Setup(x => x.AddLogin(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()));
+
+        await sut.Handle(cmd, cts.Token);
+
+        _userRepository.Verify(x => x.GetUserByEmailAsync(email, cts.Token), Times.Once);
+        _userRepository.Verify(x => x.FindByReferralCodeAsync(It.IsAny<string>(), cts.Token), Times.Once);
+        _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserRegisterSagaStartedIntegrationEvent>(), cts.Token), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(cts.Token), Times.Once);
+        _unitOfWork.Verify(x => x.BeginTransactionAsync(cts.Token), Times.Once);
+        _tx.Verify(x => x.CommitAsync(cts.Token), Times.Once);
     }
 }

@@ -22,7 +22,8 @@ public class ProviderRegisterHandler(
     IApiKeyRepository apiKeyRepository,
     IPublishEndpoint publishEndpoint,
     IProviderValidator providerValidator,
-    ILoginAuditRepository loginAuditRepository)
+    ILoginAuditRepository loginAuditRepository,
+    IUserAccountService userAccountService)
     : ICommandHandler<ProviderRegisterCommand, Result<ProviderRegisterResult>>
 {
     //TODO implement logic for save user device in db as trusted
@@ -37,7 +38,7 @@ public class ProviderRegisterHandler(
             if (await userRepository.GetUserByEmailAsync(email, cancellationToken) is not null)
                 return Result<ProviderRegisterResult>.Conflict("User already exists");
 
-            var registerResult = await authService.RegisterUserAsync(email, "", false);
+            var registerResult = await userAccountService.RegisterUserAsync(email, "", false);
             string userId = registerResult.Value;
 
             var userToken = await authService.LoginAsync(email);
@@ -88,7 +89,7 @@ public class ProviderRegisterHandler(
         {
             try
             {
-                await authService.DeleteUserByEmailAsync(email);
+                await userAccountService.DeleteUserAsync(email);
             }
             catch (Exception cleanupEx)
             {

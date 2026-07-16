@@ -10,7 +10,8 @@ public class ForgotPasswordHandler(
     ILogger<ForgotPasswordHandler> logger,
     IUserRepository userRepository,
     IAuthService authService,
-    ITwoFactorManager twoFactorManager)
+    ITwoFactorManager twoFactorManager,
+    IPreAuthTokenService preAuthTokenService)
     : ICommandHandler<ForgotPasswordCommand, Result<ForgotPasswordResult>>
 {
     public async Task<Result<ForgotPasswordResult>> Handle(ForgotPasswordCommand request,
@@ -24,12 +25,12 @@ public class ForgotPasswordHandler(
                 return Result<ForgotPasswordResult>.NotFound("User not found");
 
             await twoFactorManager.InitiateTwoFactorProcessAsync(user, cancellationToken);
-            var token = authService.GeneratePreAuthToken(request.Email);
-           // var pendingToken = 
+            var token = preAuthTokenService.GeneratePreAuthToken(request.Email);
+            var pendingToken = await preAuthTokenService.GeneratePendingTokenAsync(request.Email);
             return Result<ForgotPasswordResult>.Success(new ForgotPasswordResult()
             {
                 AccessToken = token,
-                PendingToken = "sxs-otp-pending"//TODO: generate a pending token for the user to use in the next step of the password reset process
+                PendingToken = pendingToken
             });
         }
         catch (Exception e)

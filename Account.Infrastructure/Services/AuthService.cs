@@ -78,7 +78,7 @@ public class AuthService : IAuthService
         return null;
     }
 
-    public Task<string?> GetUserIdByEmailAsync(string email)
+    public Task<string?> GetUserIdAsync(string email)
     {
         ArgumentException.ThrowIfNullOrEmpty(email);
         return _keycloakHttpClient.GetUserIdByEmailAsync(email, _keyCloakOptions.Value);
@@ -105,7 +105,7 @@ public class AuthService : IAuthService
         return await _keycloakHttpClient.RefreshTokenAsync(refreshToken, _keyCloakOptions.Value);
     }
 
-    public async Task<GooglePayload> GoogleValidateAsync(string googleToken)
+    public async Task<GooglePayload> ValidateTokenAsync(string googleToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(googleToken);
         var settings = new GoogleJsonWebSignature.ValidationSettings
@@ -133,13 +133,13 @@ public class AuthService : IAuthService
         }
     }
 
-    public Task<Result> DeleteUserByEmailAsync(string email)
+    public Task<Result> DeleteUserAsync(string email)
     {
         ArgumentException.ThrowIfNullOrEmpty(email);
         return _keycloakHttpClient.DeleteUserByEmailAsync(email, _keyCloakOptions.Value);
     }
 
-    public Task<Result> ChangePasswordByEmailAsync(string email, string newPassword)
+    public Task<Result> ChangePasswordAsync(string email, string newPassword)
     {
         ArgumentException.ThrowIfNullOrEmpty(email);
         ArgumentException.ThrowIfNullOrEmpty(newPassword);

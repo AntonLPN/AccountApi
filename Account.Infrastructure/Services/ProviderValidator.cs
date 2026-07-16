@@ -4,14 +4,14 @@ using Account.Domain.Interfaces;
 
 namespace Account.Infrastructure.Services;
 
-public class ProviderValidator(IAuthService authService):IProviderValidator
+public class ProviderValidator(IGoogleAuthService googleAuthService) : IProviderValidator
 {
     public async Task<string?> ValidateProviderTokenAndGetEmailAsync(AuthProviders provider, string token)
     {
         switch (provider)
         {
             case AuthProviders.Google:
-                var googlePayload = await authService.GoogleValidateAsync(token);
+                var googlePayload = await googleAuthService.ValidateTokenAsync(token);
                 return googlePayload.Email;
             case AuthProviders.Apple:
                 //TODO waiting for apple implementation
@@ -19,6 +19,7 @@ public class ProviderValidator(IAuthService authService):IProviderValidator
             default:
                 throw new ArgumentOutOfRangeException();
         }
+
         return null;
     }
 }

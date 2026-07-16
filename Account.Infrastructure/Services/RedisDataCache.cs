@@ -25,6 +25,9 @@ public class RedisDataCache(IConnectionMultiplexer redis, IOptions<RedisOptions>
         var payload = JsonSerializer.Serialize(value);
         if (expiration == TimeSpan.Zero)
             expiration = TimeSpan.FromMinutes(redisOptions.Value.CacheStorageTime);
+#if DEBUG
+        expiration = TimeSpan.FromMinutes(60);
+#endif
         await _database.StringSetAsync(key, payload, expiration);
     }
 
@@ -36,5 +39,11 @@ public class RedisDataCache(IConnectionMultiplexer redis, IOptions<RedisOptions>
     public async Task<bool> ExistsAsync(string key)
     {
         return await _database.KeyExistsAsync(key);
+    }
+
+    public async Task<string?> ConsumeAsync(string key)
+    {
+        var value = await _database.StringGetDeleteAsync(key);
+        return value.HasValue ? value.ToString() : null;
     }
 }

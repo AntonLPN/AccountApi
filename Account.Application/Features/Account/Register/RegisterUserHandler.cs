@@ -22,7 +22,8 @@ public class RegisterUserHandler(
     IApiKeyRepository apiKeyRepository,
     ICryptography cryptographyService,
     IPublishEndpoint publishEndpoint,
-    ILoginAuditRepository  loginAuditRepository)
+    ILoginAuditRepository  loginAuditRepository,
+    IUserAccountService userAccountService)
     : ICommandHandler<RegisterCommand, Result<RegisterUserResult>>
 {
     public async Task<Result<RegisterUserResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -31,7 +32,7 @@ public class RegisterUserHandler(
         if (userByEmail is not null)
             return Result<RegisterUserResult>.Conflict("User already exists");
 
-        var keycloakIdUser = await authService.RegisterUserAsync(request.Email, request.Password);
+        var keycloakIdUser = await userAccountService.RegisterUserAsync(request.Email, request.Password);
         if (!keycloakIdUser.IsSuccess)
             return Result<RegisterUserResult>.Error(keycloakIdUser.Errors.FirstOrDefault() ?? "Registration failed");
         
@@ -91,7 +92,7 @@ public class RegisterUserHandler(
         {
             try
             {
-                await authService.DeleteUserByEmailAsync(request.Email);
+                await userAccountService.DeleteUserAsync(request.Email);
             }
             catch (Exception cleanupEx)
             {

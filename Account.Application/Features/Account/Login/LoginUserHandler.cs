@@ -18,7 +18,8 @@ public class LoginUserHandler(
     IUserRepository userRepository,
     IApiKeyRepository apiKeyRepository,
     IPublishEndpoint publishEndpoint,
-    ITwoFactorManager twoFactorManager)
+    ITwoFactorManager twoFactorManager,
+    IPreAuthTokenService preAuthTokenService)
     : ICommandHandler<LoginCommand, Result<LoginUserResult>>
 {
     public async Task<Result<LoginUserResult>> Handle(LoginCommand request, CancellationToken cancellationToken)
@@ -35,7 +36,7 @@ public class LoginUserHandler(
 
             if (user.IsTwoFactorEnabled)
             {
-                var preAuthToken = authService.GeneratePreAuthToken(request.Email);
+                var preAuthToken = preAuthTokenService.GeneratePreAuthToken(request.Email);
                 return await TwoFactorProcess(user, preAuthToken, cancellationToken);
             }
 

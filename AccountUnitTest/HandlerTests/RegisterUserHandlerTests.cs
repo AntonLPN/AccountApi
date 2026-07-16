@@ -21,6 +21,7 @@ public class RegisterUserHandlerTests
     private readonly Mock<IAppDbTransaction> _tx = new();
     private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
     private readonly Mock<ILoginAuditRepository> _loginAuditRepository = new();
+    private readonly Mock<IUserAccountService> _userAccountService = new();
 
     private RegisterUserHandler CreateSut()
     {
@@ -36,7 +37,8 @@ public class RegisterUserHandlerTests
             _apiKeyRepository.Object,
             _cryptographyService.Object,
             _publishEndpoint.Object,
-            _loginAuditRepository.Object);
+            _loginAuditRepository.Object,
+            _userAccountService.Object);
     }
 
     private static RegisterCommand CreateCommand(string email = "test@mail.com",
@@ -70,7 +72,7 @@ public class RegisterUserHandlerTests
         //Arrange
         _userRepository.Setup(x => x.GetUserByEmailAsync(cmd.Email, It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
-        _authService.Setup(x => x.RegisterUserAsync(cmd.Email, cmd.Password,true))
+        _userAccountService.Setup(x => x.RegisterUserAsync(cmd.Email, cmd.Password, It.IsAny<bool>()))
             .ReturnsAsync(Result<string>.Error("Registration failed"));
         //Act
         var result = await sut.Handle(cmd, CancellationToken.None);
@@ -91,10 +93,13 @@ public class RegisterUserHandlerTests
         //Arrange
         _userRepository.Setup(x => x.GetUserByEmailAsync(cmd.Email, It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
-        _authService.Setup(x => x.RegisterUserAsync(cmd.Email, cmd.Password,true))
+        _userAccountService.Setup(x => x.RegisterUserAsync(cmd.Email, cmd.Password, It.IsAny<bool>()))
             .ReturnsAsync(Result<string>.Success("Registration Successful"));
         _userRepository.Setup(x => x.AddUser(It.IsAny<AppUser>()));
         _apiKeyRepository.Setup(x => x.CreateApiKey(It.IsAny<string>())).Returns("api_key");
+        _cryptographyService.Setup(x => x.Hash(cmd.Password)).Returns("password_hash");
+        _userRepository.Setup(x => x.FindByReferralCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AppUser?)null);
         _authService.Setup(x => x.LoginAsync(cmd.Email, cmd.Password))
             .ReturnsAsync(new TokenResponse
             {
