@@ -9,7 +9,6 @@ namespace Account.Application.Features.Account.ChangePassword;
 public class ForgotPasswordHandler(
     ILogger<ForgotPasswordHandler> logger,
     IUserRepository userRepository,
-    IAuthService authService,
     ITwoFactorManager twoFactorManager,
     IPreAuthTokenService preAuthTokenService)
     : ICommandHandler<ForgotPasswordCommand, Result<ForgotPasswordResult>>

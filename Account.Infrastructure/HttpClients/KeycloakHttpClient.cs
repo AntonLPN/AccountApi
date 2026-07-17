@@ -386,7 +386,7 @@ public class KeycloakHttpClient
 
         var userId = await GetUserIdByEmailAsync(email, options);
         if (string.IsNullOrEmpty(userId))
-            return Result.Error($"User with email {email} not found");
+            return Result.Error($"User with email {MaskedEmail.Create(email)} not found");
 
         return await ChangePasswordAsync(userId, newPassword, adminToken.AccessToken, options);
     }
