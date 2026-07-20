@@ -21,28 +21,30 @@ public class ChangePasswordHandler(
         ArgumentException.ThrowIfNullOrEmpty(request.Password, nameof(request.Password));
         ArgumentException.ThrowIfNullOrEmpty(request.PendingToken, nameof(request.PendingToken));
 
-        var user = await userRepository.GetUserByEmailAsync(request.Email, cancellationToken);
+        var normalizedEmail = Email.Create(request.Email);
+        var user = await userRepository.GetUserByEmailAsync(normalizedEmail, cancellationToken);
         if (user == null)
         {
             logger.LogWarning(
-                $"For change password operation, User not found with email: {MaskedEmail.Create(request.Email)}");
+                "For change password operation, User not found with email: {MaskedEmail}", MaskedEmail.Create(normalizedEmail));
             return Result<ChangePasswordResult>.Conflict("");
         }
 
-        var isValidToken = await preAuthTokenService.ValidatePendingTokenAsync(request.PendingToken, request.Email);
+        var isValidToken = await preAuthTokenService.ValidatePendingTokenAsync(request.PendingToken, normalizedEmail);
         if (!isValidToken)
             return Result<ChangePasswordResult>.Conflict("Invalid token");
 
         try
         {
-            var providerRes = await passwordService.ChangePasswordAsync(request.Email, request.Password);
+            var providerRes = await passwordService.ChangePasswordAsync(normalizedEmail, request.Password);
             if (!providerRes.IsSuccess)
                 return Result<ChangePasswordResult>.Conflict(providerRes.Errors.FirstOrDefault());
-            
+            //TODO implement logic
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            logger.LogError(e, "Error occurred while handling ChangePasswordCommand for email {Email}",
+                MaskedEmail.Create(normalizedEmail));
             throw;
         }
 

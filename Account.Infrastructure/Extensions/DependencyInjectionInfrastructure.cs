@@ -20,7 +20,7 @@ public static class DependencyInjectionInfrastructure
         services.AddScoped<IEmail, EmailService>();
         services.AddScoped<IProviderValidator, ProviderValidator>();
         services.AddScoped<IDataCache, RedisDataCache>();
-        services.AddScoped<ITwoFactorManager, TwoFactorService>();
+        services.AddScoped<IMfaManager, MfaService>();
         services.AddScoped<IPreAuthTokenService, PreAuthTokenService>();
         //External Providers
         services.AddScoped<IUserAccountService, KeycloakAccountService>();

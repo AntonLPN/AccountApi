@@ -10,7 +10,7 @@ namespace AccountUnitTest.HandlerTests;
 public class ForgotPasswordHandlerTests
 {
     private readonly Mock<IUserRepository> _userRepositoryMock = new Mock<IUserRepository>();
-    private readonly Mock<ITwoFactorManager> _twoFactorManagerMock = new Mock<ITwoFactorManager>();
+    private readonly Mock<IMfaManager> _twoFactorManagerMock = new Mock<IMfaManager>();
     private readonly Mock<IPreAuthTokenService> _preAuthTokenServiceMock = new Mock<IPreAuthTokenService>();
     private readonly ForgotPasswordHandler _forgotPasswordHandler;
 

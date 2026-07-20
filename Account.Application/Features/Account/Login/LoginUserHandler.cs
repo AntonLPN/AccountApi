@@ -18,35 +18,34 @@ public class LoginUserHandler(
     IUserRepository userRepository,
     IApiKeyRepository apiKeyRepository,
     IPublishEndpoint publishEndpoint,
-    ITwoFactorManager twoFactorManager,
+    IMfaManager mfaManager,
     IPreAuthTokenService preAuthTokenService)
     : ICommandHandler<LoginCommand, Result<LoginUserResult>>
 {
     public async Task<Result<LoginUserResult>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
+            var normalizedEmail = Email.Create(request.Email);
         try
         {
-            TokenResponse? tokenResponse = await authService.LoginAsync(request.Email, request.Password);
+            TokenResponse? tokenResponse = await authService.LoginAsync(normalizedEmail, request.Password);
             if (tokenResponse is null)
                 return Result<LoginUserResult>.Unauthorized();
 
-            var user = await userRepository.GetUserByEmailAsync(request.Email, cancellationToken);
+            var user = await userRepository.GetUserByEmailAsync(normalizedEmail, cancellationToken);
             if (user is null)
                 return Result<LoginUserResult>.Unauthorized();
 
-            if (user.IsTwoFactorEnabled)
-            {
-                var preAuthToken = preAuthTokenService.GeneratePreAuthToken(request.Email);
-                return await TwoFactorProcess(user, preAuthToken, cancellationToken);
-            }
+            if (!user.IsTwoFactorEnabled)
+                return await LoginProcess(user, request.IpAddress, request.UserAgent, tokenResponse,
+                    cancellationToken);
+            var preAuthToken = preAuthTokenService.GeneratePreAuthToken(normalizedEmail);
+            return await TwoFactorProcess(user, preAuthToken, cancellationToken);
 
-            return await LoginProcess(user, request.IpAddress, request.UserAgent, tokenResponse,
-                cancellationToken);
         }
         catch (Exception e)
         {
             logger.LogError(e, "Error occurred while handling LoginCommand for email {Email}",
-                MaskedEmail.Create(request.Email));
+                MaskedEmail.Create(normalizedEmail));
             throw;
         }
     }
@@ -54,7 +53,7 @@ public class LoginUserHandler(
     private async Task<LoginUserResult> TwoFactorProcess(AppUser user, string tokenResponse,
         CancellationToken cancellationToken)
     {
-        await twoFactorManager.InitiateTwoFactorProcessAsync(user, cancellationToken);
+        await mfaManager.InitiateTwoFactorProcessAsync(user, cancellationToken);
         //give user temporal access to the app for confirmation otp
         return Result<LoginUserResult>.Success(new LoginUserResult()
         {

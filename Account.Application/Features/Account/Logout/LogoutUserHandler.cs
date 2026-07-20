@@ -19,7 +19,8 @@ public class LogoutUserHandler(
 {
     public async Task<Result> Handle(LogoutCommand request, CancellationToken cancellationToken)
     {
-        var user = await userRepository.GetUserByEmailAsync(request.Email, cancellationToken);
+        var normalizedEmail = Email.Create(request.Email);
+        var user = await userRepository.GetUserByEmailAsync(normalizedEmail, cancellationToken);
         if (user is null)
             return Result.Unauthorized();
 
@@ -38,7 +39,7 @@ public class LogoutUserHandler(
 
         await unitOfWork.SaveChangesAsync(cancellationToken); //need for saga
 
-        logger.LogInformation("User {Email} logged out, logout saga started", MaskedEmail.Create(request.Email));
+        logger.LogInformation("User {Email} logged out, logout saga started", MaskedEmail.Create(normalizedEmail));
 
         return Result.Success();
     }

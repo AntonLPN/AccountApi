@@ -8,11 +8,11 @@ using OtpNet;
 
 namespace Account.Infrastructure.Services;
 
-public class TwoFactorService(
+public class MfaService(
     ICryptography cryptographyService,
     IOtpSessionRepository otpSessionsRepository,
     IPublishEndpoint publishEndpoint,
-    IUnitOfWork unitOfWork) : ITwoFactorManager
+    IUnitOfWork unitOfWork) : IMfaManager
 {
     public string GenerateOtpCode(AppUser user)
     {
@@ -40,6 +40,7 @@ public class TwoFactorService(
         var otpSessionCreateParams =
             new OtpSessionCreateParams(cryptographyService.Hash(otpCode), user.Id, correlationId);
         var otpSession = OtpSessions.Create(otpSessionCreateParams);
+        await otpSessionsRepository.InvalidateActiveSessionsAsync(user.Id, cancellationToken);
         otpSessionsRepository.AddOtpSession(otpSession);
 
         await publishEndpoint.Publish(new TwoFactorSagaStartedIntegrationEvent

@@ -69,6 +69,10 @@ public class AppDbContext : DbContext
                 .WithMany(u => u.ApiKeys)
                 .HasForeignKey(a => a.UserId)
                 .HasConstraintName("FK_AppUser_ApiKeys");
+            
+            entity.HasIndex(a => a.ApiKeyValue)
+                .IsUnique()
+                .HasDatabaseName("UX_ApiKey_Key");
         });
 
         builder.Entity<UserRegistrationSagaState>(entity =>
@@ -173,7 +177,13 @@ public class AppDbContext : DbContext
             entity.Property(a => a.ExpiresAt).HasColumnName("ExpiresAt");
             entity.Property(a => a.UsedAt).HasColumnName("UsedAt");
             
-            entity.HasIndex(a => a.UserId);
+            entity.HasIndex(a => a.CorrelationId)
+                .IsUnique()
+                .HasDatabaseName("UX_OtpSessions_CorrelationId");
+            
+            entity.HasIndex(a => a.UserId)
+                .IsUnique()
+                .HasDatabaseName("UX_OtpSessions_ActiveUserId");
         });
     }
 }

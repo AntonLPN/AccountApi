@@ -12,6 +12,7 @@ public class OtpSessions
     public DateTime CreatedAt { get; set; }
     public DateTime ExpiresAt { get; set; }
     public DateTime? UsedAt { get; set; } = null;
+    public DateTime? InvalidatedAt { get; set; }
     public required string UserId { get; set;}
     [ForeignKey(nameof(UserId))] public AppUser AppUser { get; set; }
 

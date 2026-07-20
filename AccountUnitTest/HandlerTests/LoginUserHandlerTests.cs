@@ -19,7 +19,7 @@ public class LoginUserHandlerTests
     private readonly Mock<IUserRepository> _userRepository = new();
     private readonly Mock<IApiKeyRepository> _apiKeyRepository = new();
     private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
-    private readonly Mock<ITwoFactorManager> _twoFactorManager = new();
+    private readonly Mock<IMfaManager> _twoFactorManager = new();
     private readonly Mock<IPreAuthTokenService> _preAuthTokenService = new();
 
     private LoginUserHandler CreateSut()

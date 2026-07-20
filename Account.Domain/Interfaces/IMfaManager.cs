@@ -2,7 +2,7 @@ using Account.Domain.Entities;
 
 namespace Account.Domain.Interfaces;
 
-public interface ITwoFactorManager
+public interface IMfaManager
 {
     string GenerateOtpCode(AppUser user);
     bool VerifyOtpCode(AppUser user, string otpCode);

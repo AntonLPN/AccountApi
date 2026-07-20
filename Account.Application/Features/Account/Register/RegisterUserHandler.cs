@@ -28,11 +28,12 @@ public class RegisterUserHandler(
 {
     public async Task<Result<RegisterUserResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
-        var userByEmail = await userRepository.GetUserByEmailAsync(request.Email, cancellationToken);
+        Email normalizedEmail = Email.Create(request.Email);
+        var userByEmail = await userRepository.GetUserByEmailAsync(normalizedEmail, cancellationToken);
         if (userByEmail is not null)
             return Result<RegisterUserResult>.Conflict("User already exists");
 
-        var keycloakIdUser = await userAccountService.RegisterUserAsync(request.Email, request.Password);
+        var keycloakIdUser = await userAccountService.RegisterUserAsync(normalizedEmail, request.Password);
         if (!keycloakIdUser.IsSuccess)
             return Result<RegisterUserResult>.Error(keycloakIdUser.Errors.FirstOrDefault() ?? "Registration failed");
         
@@ -41,7 +42,7 @@ public class RegisterUserHandler(
         {
             var whoInvited = await userRepository.FindByReferralCodeAsync(request.ReferrerCode, cancellationToken);
             var passwordHash = cryptographyService.Hash(request.Password);
-            var user = AppUser.Create(new AppUserCreateParams(keycloakIdUser.Value, request.Email, passwordHash,
+            var user = AppUser.Create(new AppUserCreateParams(keycloakIdUser.Value, normalizedEmail, passwordHash,
                 whoInvited?.Id, false, nameof(AuthProviders.LocalProvider)));
 
             userRepository.AddUser(user);
@@ -50,7 +51,7 @@ public class RegisterUserHandler(
             var loginAuditDto = new CreateLoginAuditDto
             {
                 UserId = user.Id,
-                Email = request.Email,
+                Email = normalizedEmail,
                 IpAddress = request.IpAddress,
                 UserAgent = request.UserAgent,
                 IsSuspicious = false, 
@@ -74,7 +75,7 @@ public class RegisterUserHandler(
             await unitOfWork.SaveChangesAsync(cancellationToken);
             await tx.CommitAsync(cancellationToken);
 
-            TokenResponse? tokenResponse = await authService.LoginAsync(request.Email, request.Password);
+            TokenResponse? tokenResponse = await authService.LoginAsync(normalizedEmail, request.Password);
             if (tokenResponse is null)
                 return Result<RegisterUserResult>.Error("Login failed after registration for user");
             return Result<RegisterUserResult>.Success(new RegisterUserResult
@@ -92,15 +93,14 @@ public class RegisterUserHandler(
         {
             try
             {
-                await userAccountService.DeleteUserAsync(request.Email);
+                await userAccountService.DeleteUserAsync(normalizedEmail);
             }
             catch (Exception cleanupEx)
             {
                 logger.LogWarning(cleanupEx, "Failed to rollback external user creation");
             }
 
-            var safeEmail = MaskedEmail.Create(request.Email);
-            logger.LogError(e, "Unhandled error while registering user {Email}", safeEmail);
+            logger.LogError(e, "Unhandled error while registering user {Email}", MaskedEmail.Create(normalizedEmail));
             throw; //rethrow to middleware handle exception
         }
     }

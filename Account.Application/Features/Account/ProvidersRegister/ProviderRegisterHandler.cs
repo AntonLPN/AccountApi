@@ -26,7 +26,6 @@ public class ProviderRegisterHandler(
     IUserAccountService userAccountService)
     : ICommandHandler<ProviderRegisterCommand, Result<ProviderRegisterResult>>
 {
-    //TODO implement logic for save user device in db as trusted
     public async Task<Result<ProviderRegisterResult>> Handle(ProviderRegisterCommand request,
         CancellationToken cancellationToken)
     {

@@ -26,9 +26,10 @@ public class OtpCodeVerificationHandler(
     {
         ArgumentException.ThrowIfNullOrEmpty(request.OtpCode, nameof(request.OtpCode));
 
+        var normalizedEmail = Email.Create(request.Email);
         try
         {
-            var user = await userRepository.GetUserByEmailAsync(request.Email, cancellationToken);
+            var user = await userRepository.GetUserByEmailAsync(normalizedEmail, cancellationToken);
             if (user is null)
                 return Result<OtpConfirmationResult>.NotFound("User not found");
 
@@ -54,7 +55,7 @@ public class OtpCodeVerificationHandler(
                 return Result<OtpConfirmationResult>.Conflict("Invalid OTP code");
             }
 
-            TokenResponse? tokenResponse = await authService.LoginAsync(request.Email);
+            TokenResponse? tokenResponse = await authService.LoginAsync(normalizedEmail);
             if (tokenResponse is null)
                 return Result<OtpConfirmationResult>.Unauthorized("Login failed after OTP verification");
 
@@ -78,7 +79,7 @@ public class OtpCodeVerificationHandler(
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Error during OTP verification for email {Email}", MaskedEmail.Create(request.Email));
+            logger.LogError(e, "Error during OTP verification for email {Email}", MaskedEmail.Create(normalizedEmail));
             throw; //rethrow to middleware handle exception
         }
     }
