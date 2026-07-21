@@ -1,12 +1,17 @@
 using Account.Domain.Entities;
+using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
 using Account.Infrastructure.Persistence;
+using Ardalis.Result;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Account.Infrastructure.Repositories;
 
-public sealed class UserRepository(AppDbContext dbContext, ILogger<UserRepository> logger) : IUserRepository
+public sealed class UserRepository(
+    AppDbContext dbContext,
+    ILogger<UserRepository> logger,
+    ICryptography cryptographyService) : IUserRepository
 {
     public Task<AppUser?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
@@ -77,5 +82,20 @@ public sealed class UserRepository(AppDbContext dbContext, ILogger<UserRepositor
             logger.LogError(e, "Failed to find user by referral code={ReferralCode}", referralCode);
             throw;
         }
+    }
+
+    public async Task<Result> ChangePasswordAsync(string userId, string newPassword,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(newPassword);
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+        var hashedPassword = cryptographyService.Hash(newPassword);
+
+        var affectedRows = await dbContext.AppUsers
+            .Where(u => u.Id == userId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(u => u.PasswordHash, hashedPassword), cancellationToken);
+
+        return affectedRows > 0 ? Result.Success() : Result.NotFound();
     }
 }

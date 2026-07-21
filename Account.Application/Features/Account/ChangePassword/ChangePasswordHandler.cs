@@ -38,7 +38,11 @@ public class ChangePasswordHandler(
         {
             var providerRes = await passwordService.ChangePasswordAsync(normalizedEmail, request.Password);
             if (!providerRes.IsSuccess)
+            {
+                
+                
                 return Result<ChangePasswordResult>.Conflict(providerRes.Errors.FirstOrDefault());
+            }
             //TODO implement logic
         }
         catch (Exception e)
