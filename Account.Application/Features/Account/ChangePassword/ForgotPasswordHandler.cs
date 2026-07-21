@@ -24,13 +24,16 @@ public class ForgotPasswordHandler(
             if (user is null)
                 return Result<ForgotPasswordResult>.NotFound("User not found");
 
-            await mfaManager.InitiateTwoFactorProcessAsync(user, cancellationToken);
+            var code = await mfaManager.InitiateTwoFactorProcessAsync(user, cancellationToken);
             var token = preAuthTokenService.GeneratePreAuthToken(normalizedEmail);
             var pendingToken = await preAuthTokenService.GeneratePendingTokenAsync(normalizedEmail);
             return Result<ForgotPasswordResult>.Success(new ForgotPasswordResult()
             {
                 AccessToken = token,
-                PendingToken = pendingToken
+                PendingToken = pendingToken,
+#if DEBUG
+                Message = code
+#endif
             });
         }
         catch (Exception e)

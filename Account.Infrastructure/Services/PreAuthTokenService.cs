@@ -38,7 +38,8 @@ public class PreAuthTokenService(IOptions<AuthenticationOptions> authenticationO
     public async Task<string> GeneratePendingTokenAsync(string email)
     {
         var pendingToken = Guid.NewGuid().ToString("N");
-        await dataCache.SetAsync($":{KeyNamePrefix+pendingToken}", email, TimeSpan.FromMinutes(5));
+   
+        await dataCache.SetStringAsync($"{KeyNamePrefix+pendingToken}", email, TimeSpan.FromMinutes(5));
         return pendingToken;
     }
 
@@ -49,6 +50,6 @@ public class PreAuthTokenService(IOptions<AuthenticationOptions> authenticationO
         {
             return false;
         }
-        return res.Equals(email, StringComparison.OrdinalIgnoreCase);
+        return res.Equals(email, StringComparison.OrdinalIgnoreCase);;
     }
 }

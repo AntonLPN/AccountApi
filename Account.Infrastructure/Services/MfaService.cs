@@ -36,11 +36,11 @@ public class MfaService(
         var correlationId = Guid.NewGuid();
 
         await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
+        await otpSessionsRepository.InvalidateActiveSessionsAsync(user.Id, cancellationToken);
 
         var otpSessionCreateParams =
             new OtpSessionCreateParams(cryptographyService.Hash(otpCode), user.Id, correlationId);
         var otpSession = OtpSessions.Create(otpSessionCreateParams);
-        await otpSessionsRepository.InvalidateActiveSessionsAsync(user.Id, cancellationToken);
         otpSessionsRepository.AddOtpSession(otpSession);
 
         await publishEndpoint.Publish(new TwoFactorSagaStartedIntegrationEvent

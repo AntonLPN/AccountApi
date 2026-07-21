@@ -339,7 +339,7 @@ public class KeycloakHttpClient
         }
     }
 
-    public async Task<Result> ChangePasswordAsync(string userId, string newPassword, string adminToken, KeycloakAdminOptions options)
+    private async Task<Result> ChangePasswordAsync(string userId, string newPassword, string adminToken, KeycloakAdminOptions options)
     {
         try
         {

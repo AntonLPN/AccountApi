@@ -182,7 +182,6 @@ public class AppDbContext : DbContext
                 .HasDatabaseName("UX_OtpSessions_CorrelationId");
             
             entity.HasIndex(a => a.UserId)
-                .IsUnique()
                 .HasDatabaseName("UX_OtpSessions_ActiveUserId");
         });
     }
