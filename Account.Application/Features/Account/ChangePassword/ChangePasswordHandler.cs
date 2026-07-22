@@ -26,7 +26,8 @@ public class ChangePasswordHandler(
         if (user == null)
         {
             logger.LogWarning(
-                "For change password operation, User not found with email: {MaskedEmail}", MaskedEmail.Create(normalizedEmail));
+                "For change password operation, User not found with email: {MaskedEmail}",
+                MaskedEmail.Create(normalizedEmail));
             return Result<ChangePasswordResult>.Conflict("");
         }
 
@@ -39,11 +40,17 @@ public class ChangePasswordHandler(
             var providerRes = await passwordService.ChangePasswordAsync(normalizedEmail, request.Password);
             if (!providerRes.IsSuccess)
             {
-                
-                
+                logger.LogWarning(
+                    "For change password operation, failed to change password for email: {MaskedEmail}. Error: {Error}",
+                    MaskedEmail.Create(normalizedEmail), providerRes.Errors.FirstOrDefault());
                 return Result<ChangePasswordResult>.Conflict(providerRes.Errors.FirstOrDefault());
             }
             //TODO implement logic
+            // 1 invalidate pending token 
+            // 2 change password in db 
+            // 3 push to rabbit mq message  
+            // 4 consumer catch from rabbit message and send email to user with info about password change 
+            // 5 return token model to user with new token and api key
         }
         catch (Exception e)
         {

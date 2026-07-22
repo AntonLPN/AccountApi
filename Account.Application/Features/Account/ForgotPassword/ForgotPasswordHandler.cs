@@ -1,3 +1,4 @@
+using Account.Application.Features.Account.ChangePassword;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
 using Account.Domain.ValueObjects;
@@ -5,7 +6,7 @@ using Ardalis.Result;
 using Ardalis.SharedKernel;
 using Microsoft.Extensions.Logging;
 
-namespace Account.Application.Features.Account.ChangePassword;
+namespace Account.Application.Features.Account.ForgotPassword;
 
 public class ForgotPasswordHandler(
     ILogger<ForgotPasswordHandler> logger,

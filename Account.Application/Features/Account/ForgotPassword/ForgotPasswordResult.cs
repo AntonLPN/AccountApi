@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Account.Application.Features.Account.ChangePassword;
+namespace Account.Application.Features.Account.ForgotPassword;
 
 public class ForgotPasswordResult
 {

@@ -1,4 +1,5 @@
 using Account.Application.Features.Account.ChangePassword;
+using Account.Application.Features.Account.ForgotPassword;
 using Account.Application.Features.Account.Login;
 using Account.Application.Features.Account.Logout;
 using Account.Application.Features.Account.OtpCodeVerification;
@@ -21,7 +22,8 @@ namespace AccountApi.Controllers;
 [Produces("application/json")]
 public class AuthController(IMediator mediator) : ControllerBase
 {
-    [AuthorizeApiKeyOnly]
+    //[AuthorizeApiKeyOnly]
+    [AllowAnonymous]
     [HttpPost("register")]
     [ProducesResponseType(typeof(RegisterUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -159,8 +161,9 @@ public class AuthController(IMediator mediator) : ControllerBase
 
         return Ok(res.Value);
     }
-    
-    [AuthorizeApiKeyOnly]
+
+    //[AuthorizeApiKeyOnly]
+    [AllowAnonymous]
     [HttpPost("forgot-password")]
     [ProducesResponseType(typeof(ForgotPasswordResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -177,7 +180,8 @@ public class AuthController(IMediator mediator) : ControllerBase
     }
 
     //TODO : Add change password
-    [PreAuthOnly]
+    //[PreAuthOnly]
+    [AllowAnonymous]
     [HttpPost("change-password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -186,9 +190,11 @@ public class AuthController(IMediator mediator) : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var emailClaim = User.FindFirst("email")?.Value;
-        if (string.IsNullOrWhiteSpace(emailClaim))
-            return BadRequest("User not found");
+        // var emailClaim = User.FindFirst("email")?.Value;
+        // if (string.IsNullOrWhiteSpace(emailClaim))
+        //     return BadRequest("User not found");
+        var cmd = new ChangePasswordCommand("user@example.com", model.NewPassword, model.PendingToken, model.OtpCode);
+        var res = await mediator.Send(cmd);
         throw new NotImplementedException();
         // var cmd = new ChangePasswordCommand(emailClaim, model.NewPassword);
         // var res = await mediator.Send(cmd);
@@ -197,7 +203,7 @@ public class AuthController(IMediator mediator) : ControllerBase
 
         return Ok();
     }
-    
+
     private void SetRefreshTokenCookie(string? refreshToken)
     {
         if (string.IsNullOrEmpty(refreshToken))

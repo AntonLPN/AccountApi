@@ -1,4 +1,5 @@
 using Account.Application.Features.Account.ChangePassword;
+using Account.Application.Features.Account.ForgotPassword;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
