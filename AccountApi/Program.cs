@@ -21,6 +21,7 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddMassTransitMessaging(builder.Configuration);
 builder.Services.AddRedis(builder.Configuration);
 builder.Services.AddLifeTimeServices();
+builder.Services.AddObservabilityMetrics();
 
 
 builder.Services.AddRateLimiter(limiter =>
@@ -99,6 +100,8 @@ using (var scope = app.Services.CreateScope())
         throw;
     }
 }
+
+app.MapPrometheusScrapingEndpoint();
 
 app.UseAuthentication();
 app.UseAuthorization();
