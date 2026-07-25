@@ -109,7 +109,6 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
 
     private async Task<bool> SendMessageSmtp(MimeMessage message, CancellationToken cancellationToken = default)
     {
-        ValidateConfiguration();
         var socketOptions = _emailConfig.Port == 25
             ? MailKit.Security.SecureSocketOptions.None
             : MailKit.Security.SecureSocketOptions.Auto;
