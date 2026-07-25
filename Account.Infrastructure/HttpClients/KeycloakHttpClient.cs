@@ -186,8 +186,7 @@ public class KeycloakHttpClient
             throw; //throw to middleware handle exception
         }
     }
-
-
+    
     public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken, KeycloakAdminOptions options)
     {
         try

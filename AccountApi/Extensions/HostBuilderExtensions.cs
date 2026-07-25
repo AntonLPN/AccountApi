@@ -16,7 +16,8 @@ public static class HostBuilderExtensions
         builder.UseSerilog((context, loggerConfig) =>
         {
             var env = context.HostingEnvironment;
-
+            
+            var seqUrl = context.Configuration["Seq:ServerUrl"] ?? "http://localhost:5341";
             loggerConfig
                 .Enrich.FromLogContext()
                 .Enrich.WithProperty("Environment", env.EnvironmentName)
@@ -37,6 +38,7 @@ public static class HostBuilderExtensions
                 rollingInterval: RollingInterval.Day,
                 retainedFileCountLimit: 30);
 
+            loggerConfig.WriteTo.Seq(seqUrl);
             if (env.IsDevelopment())
             {
                 loggerConfig.MinimumLevel.Debug();

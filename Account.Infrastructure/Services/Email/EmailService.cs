@@ -21,7 +21,9 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
     {
         ArgumentException.ThrowIfNullOrEmpty(_emailConfig.HostName, nameof(_emailConfig.HostName));
         ArgumentException.ThrowIfNullOrEmpty(_emailConfig.Email, nameof(_emailConfig.Email));
+#if Release
         ArgumentException.ThrowIfNullOrEmpty(_emailConfig.Password, nameof(_emailConfig.Password));
+#endif
     }
 
     private async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody,
@@ -103,27 +105,24 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
             "Otp code - " + _emailConfig.OwnerName,
             body
         ));
-
     }
 
     private async Task<bool> SendMessageSmtp(MimeMessage message, CancellationToken cancellationToken = default)
     {
         ValidateConfiguration();
+        var socketOptions = _emailConfig.Port == 25
+            ? MailKit.Security.SecureSocketOptions.None
+            : MailKit.Security.SecureSocketOptions.Auto;
         using var client = new SmtpClient();
-        try
+        await client.ConnectAsync(_emailConfig.HostName!, _emailConfig.Port, socketOptions, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(_emailConfig.Password))
         {
-            await client.ConnectAsync(_emailConfig.HostName!, _emailConfig.Port,
-                MailKit.Security.SecureSocketOptions.StartTls, cancellationToken);
             await client.AuthenticateAsync(_emailConfig.Email!, _emailConfig.Password!, cancellationToken);
-            await client.SendAsync(message, cancellationToken);
-            await client.DisconnectAsync(true, cancellationToken);
-            return true;
         }
-        catch (Exception e)
-        {
-            logger.LogError(e, "SMTP error");
-            throw; // Polly will catch this and handle retries
-        }
+
+        await client.SendAsync(message, cancellationToken);
+        await client.DisconnectAsync(true, cancellationToken);
+        return true;
     }
 
     private static string GetEmailTemplateAsync(string templateName)

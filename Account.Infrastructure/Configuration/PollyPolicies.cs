@@ -8,7 +8,7 @@ public static class PollyPolicies
     {
         return Policy
             .Handle<Exception>()
-            .OrResult<bool>(r => !r) // retry если вернул false
+            .OrResult<bool>(r => !r) // retry if the result is false
             .WaitAndRetryAsync(
                 retryCount: 3,
                 sleepDurationProvider: attempt => 
