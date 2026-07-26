@@ -102,7 +102,7 @@ public class ProviderRegisterHandlerTests
             .Setup(x => x.LoginAsync(email))
             .ReturnsAsync(token);
         _userRepository
-            .Setup(x => x.FindByReferralCodeAsync(cmd.ReferrerCode, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetUserByReferralCodeAsReadOnlyAsync(cmd.ReferrerCode, It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
         _apiKeyRepository
             .Setup(x => x.CreateApiKey(It.IsAny<string>()))
@@ -173,7 +173,7 @@ public class ProviderRegisterHandlerTests
             .Setup(x => x.LoginAsync(email))
             .ReturnsAsync(new TokenResponse { AccessToken = "token" });
         _userRepository
-            .Setup(x => x.FindByReferralCodeAsync("VALID_REF", It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetUserByReferralCodeAsReadOnlyAsync("VALID_REF", It.IsAny<CancellationToken>()))
             .ReturnsAsync(referrer);
         _apiKeyRepository
             .Setup(x => x.CreateApiKey(It.IsAny<string>()))
@@ -183,7 +183,7 @@ public class ProviderRegisterHandlerTests
         var result = await sut.Handle(cmd, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        _userRepository.Verify(x => x.FindByReferralCodeAsync("VALID_REF", It.IsAny<CancellationToken>()), Times.Once);
+        _userRepository.Verify(x => x.GetUserByReferralCodeAsReadOnlyAsync("VALID_REF", It.IsAny<CancellationToken>()), Times.Once);
         _userRepository.Verify(x => x.AddUser(It.Is<AppUser>(u => u.ReferrerId == referrer.Id)), Times.Once);
         _loginAuditRepository.Verify(x => x.AddLogin(It.Is<LoginAudit>(a =>
             a.UserId == "new-user-id" &&
@@ -212,7 +212,7 @@ public class ProviderRegisterHandlerTests
             .Setup(x => x.LoginAsync(email))
             .ReturnsAsync(new TokenResponse { AccessToken = "token" });
         _userRepository
-            .Setup(x => x.FindByReferralCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetUserByReferralCodeAsReadOnlyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
         _apiKeyRepository
             .Setup(x => x.CreateApiKey(It.IsAny<string>()))
@@ -248,7 +248,7 @@ public class ProviderRegisterHandlerTests
             .Setup(x => x.LoginAsync(email))
             .ReturnsAsync(new TokenResponse { AccessToken = "token" });
         _userRepository
-            .Setup(x => x.FindByReferralCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetUserByReferralCodeAsReadOnlyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
         _apiKeyRepository
             .Setup(x => x.CreateApiKey(It.IsAny<string>()))
@@ -280,7 +280,7 @@ public class ProviderRegisterHandlerTests
             .Setup(x => x.LoginAsync(email))
             .ReturnsAsync(new TokenResponse { AccessToken = "token" });
         _userRepository
-            .Setup(x => x.FindByReferralCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetUserByReferralCodeAsReadOnlyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
         _apiKeyRepository
             .Setup(x => x.CreateApiKey(It.IsAny<string>()))
@@ -290,7 +290,7 @@ public class ProviderRegisterHandlerTests
         await sut.Handle(cmd, cts.Token);
 
         _userRepository.Verify(x => x.GetUserByEmailAsync(email, cts.Token), Times.Once);
-        _userRepository.Verify(x => x.FindByReferralCodeAsync(It.IsAny<string>(), cts.Token), Times.Once);
+        _userRepository.Verify(x => x.GetUserByReferralCodeAsReadOnlyAsync(It.IsAny<string>(), cts.Token), Times.Once);
         _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserRegisterSagaStartedIntegrationEvent>(), cts.Token), Times.Once);
         _unitOfWork.Verify(x => x.SaveChangesAsync(cts.Token), Times.Once);
         _unitOfWork.Verify(x => x.BeginTransactionAsync(cts.Token), Times.Once);

@@ -13,7 +13,7 @@ public class OtpSessions
     public DateTime ExpiresAt { get; set; }
     public DateTime? UsedAt { get; set; } = null;
     public DateTime? InvalidatedAt { get; set; }
-    public required string UserId { get; set;}
+    public required string UserId { get; set; }
     [ForeignKey(nameof(UserId))] public AppUser AppUser { get; set; }
 
     public static OtpSessions Create(OtpSessionCreateParams createParams)
@@ -27,5 +27,11 @@ public class OtpSessions
             CorrelationId = createParams.CorrelationId
         };
         return session;
+    }
+
+    public void Invalidate()
+    {
+        if (UsedAt == null && InvalidatedAt == null)
+            InvalidatedAt ??= DateTime.UtcNow;
     }
 }

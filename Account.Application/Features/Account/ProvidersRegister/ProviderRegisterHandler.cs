@@ -43,7 +43,7 @@ public class ProviderRegisterHandler(
             var userToken = await authService.LoginAsync(email);
             ArgumentNullException.ThrowIfNull(userToken);
 
-            var whoInvited = await userRepository.FindByReferralCodeAsync(request.ReferrerCode, cancellationToken);
+            var whoInvited = await userRepository.GetUserByReferralCodeAsReadOnlyAsync(request.ReferrerCode, cancellationToken);
             //Save to DB
             await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
             var user = AppUser.Create(new AppUserCreateParams(userId, email, null, whoInvited?.Id, true,

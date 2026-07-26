@@ -42,8 +42,8 @@ public class PreAuthTokenService(IOptions<AuthenticationOptions> authenticationO
         await dataCache.SetStringAsync($"{KeyNamePrefix+pendingToken}", email, TimeSpan.FromMinutes(5));
         return pendingToken;
     }
-
-    public async Task<bool> ValidatePendingTokenAsync(string pendingToken,string email)
+    
+    public async Task<bool> ValidateAndConsumePendingTokenAsync(string pendingToken,string email)
     {
         var res = await dataCache.ConsumeAsync($"{KeyNamePrefix+pendingToken}");
         if (string.IsNullOrEmpty(res))

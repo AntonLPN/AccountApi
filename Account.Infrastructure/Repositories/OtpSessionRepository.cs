@@ -17,19 +17,14 @@ public class OtpSessionRepository(AppDbContext dbContext, ICryptography cryptogr
         dbContext.OptSessions.Add(createParams);
     }
 
-    public async Task InvalidateActiveSessionsAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OtpSessions>> GetActiveSessionsAsync(string userId, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrEmpty(userId, nameof(userId));
+        ArgumentException.ThrowIfNullOrEmpty(userId);
 
-        var activeSessions = await dbContext.OptSessions
+        return await dbContext.OptSessions
             .Where(s => s.UserId == userId && s.UsedAt == null && s.InvalidatedAt == null)
             .ToListAsync(cancellationToken);
 
-        var now = DateTime.UtcNow;
-        foreach (var session in activeSessions)
-        {
-            session.InvalidatedAt = now;
-        }
     }
 
     public Task<OtpSessions?> GetActiveOtpSessionAsync(string userId, string otpCode,

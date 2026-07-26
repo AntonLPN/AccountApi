@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
 using Account.Domain.ValueObjects;
@@ -11,7 +12,9 @@ public class ChangePasswordHandler(
     IUserRepository userRepository,
     IPreAuthTokenService preAuthTokenService,
     ILogger<ChangePasswordHandler> logger,
-    IPasswordService passwordService)
+    IPasswordService passwordService,
+    IUnitOfWork unitOfWork,
+    ICryptography cryptographyService)
     : ICommandHandler<ChangePasswordCommand, Result<ChangePasswordResult>>
 {
     public async Task<Result<ChangePasswordResult>> Handle(ChangePasswordCommand request,
@@ -31,7 +34,8 @@ public class ChangePasswordHandler(
             return Result<ChangePasswordResult>.Conflict("");
         }
 
-        var isValidToken = await preAuthTokenService.ValidatePendingTokenAsync(request.PendingToken, normalizedEmail);
+        var isValidToken =
+            await preAuthTokenService.ValidateAndConsumePendingTokenAsync(request.PendingToken, normalizedEmail);
         if (!isValidToken)
             return Result<ChangePasswordResult>.Conflict("Invalid token");
 
@@ -45,12 +49,19 @@ public class ChangePasswordHandler(
                     MaskedEmail.Create(normalizedEmail), providerRes.Errors.FirstOrDefault());
                 return Result<ChangePasswordResult>.Conflict(providerRes.Errors.FirstOrDefault());
             }
+
             //TODO implement logic
-            // 1 invalidate pending token 
-            // 2 change password in db 
+            user.ChangePassword(cryptographyService.Hash(request.Password));
+            await unitOfWork.SaveChangesAsync(cancellationToken);
             // 3 push to rabbit mq message  
+            
             // 4 consumer catch from rabbit message and send email to user with info about password change 
             // 5 return token model to user with new token and api key
+        }
+        catch (DbException dbException)
+        {
+            logger.LogInformation(dbException, "db exception");
+            throw;
         }
         catch (Exception e)
         {

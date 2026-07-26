@@ -98,7 +98,7 @@ public class RegisterUserHandlerTests
         _userRepository.Setup(x => x.AddUser(It.IsAny<AppUser>()));
         _apiKeyRepository.Setup(x => x.CreateApiKey(It.IsAny<string>())).Returns("api_key");
         _cryptographyService.Setup(x => x.Hash(cmd.Password)).Returns("password_hash");
-        _userRepository.Setup(x => x.FindByReferralCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _userRepository.Setup(x => x.GetUserByReferralCodeAsReadOnlyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
         _authService.Setup(x => x.LoginAsync(cmd.Email, cmd.Password))
             .ReturnsAsync(new TokenResponse

@@ -53,7 +53,6 @@ builder.Services.Configure<ApiKeyOptions>(builder.Configuration.GetSection("ApiK
 builder.Services.Configure<RedisOptions>(builder.Configuration.GetSection("Redis"));
 builder.Services.Configure<AuthenticationOptions>(builder.Configuration.GetSection("Authentication"));
 
-
 builder.Services.AddHttpClient<KeycloakHttpClient>()
     .AddStandardResilienceHandler(options =>
     {
@@ -102,7 +101,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapPrometheusScrapingEndpoint();
-
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -6,7 +6,7 @@ namespace Account.Domain.Repositories;
 public interface IOtpSessionRepository
 {
     public void AddOtpSession(OtpSessions createParams);
-    Task InvalidateActiveSessionsAsync(string userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<OtpSessions>> GetActiveSessionsAsync(string userId, CancellationToken cancellationToken = default);
 
     public Task<OtpSessions?> GetActiveOtpSessionAsync(string userId, string otpCode,
         CancellationToken cancellationToken = default);

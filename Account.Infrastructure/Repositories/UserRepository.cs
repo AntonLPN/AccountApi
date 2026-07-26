@@ -1,8 +1,6 @@
 using Account.Domain.Entities;
-using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
 using Account.Infrastructure.Persistence;
-using Ardalis.Result;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -10,8 +8,7 @@ namespace Account.Infrastructure.Repositories;
 
 public sealed class UserRepository(
     AppDbContext dbContext,
-    ILogger<UserRepository> logger,
-    ICryptography cryptographyService) : IUserRepository
+    ILogger<UserRepository> logger) : IUserRepository
 {
     public Task<AppUser?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
@@ -27,47 +24,7 @@ public sealed class UserRepository(
         dbContext.Add(user);
     }
 
-    public async Task<bool> UpdateLastLoginAsync(string userId, DateTime loggedInAt,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var user = await dbContext.AppUsers.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
-            if (user is null)
-                return false;
-
-            user.LastLoginAt = loggedInAt;
-            await dbContext.SaveChangesAsync(cancellationToken);
-            return true;
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to update last login for UserId={UserId}", userId);
-            throw;
-        }
-    }
-
-    public async Task<bool> UpdateLastLogoutAsync(string userId, DateTime loggedOutAt,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var user = await dbContext.AppUsers.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
-            if (user is null)
-                return false;
-
-            user.LastLogoutAt = loggedOutAt;
-            await dbContext.SaveChangesAsync(cancellationToken);
-            return true;
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to update last logout for UserId={UserId}", userId);
-            throw;
-        }
-    }
-
-    public async Task<AppUser?> FindByReferralCodeAsync(string referralCode,
+    public async Task<AppUser?> GetUserByReferralCodeAsReadOnlyAsync(string referralCode,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(referralCode))
@@ -82,20 +39,5 @@ public sealed class UserRepository(
             logger.LogError(e, "Failed to find user by referral code={ReferralCode}", referralCode);
             throw;
         }
-    }
-
-    public async Task<Result> ChangePasswordAsync(string userId, string newPassword,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(newPassword);
-        ArgumentException.ThrowIfNullOrEmpty(userId);
-        var hashedPassword = cryptographyService.Hash(newPassword);
-
-        var affectedRows = await dbContext.AppUsers
-            .Where(u => u.Id == userId)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(u => u.PasswordHash, hashedPassword), cancellationToken);
-
-        return affectedRows > 0 ? Result.Success() : Result.NotFound();
     }
 }

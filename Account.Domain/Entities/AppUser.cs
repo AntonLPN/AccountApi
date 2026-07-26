@@ -64,4 +64,13 @@ public class AppUser
 
         return new string(result);
     }
+    
+    public void UpdateLastLogoutAt() => LastLogoutAt = DateTime.UtcNow;
+    public void UpdateLastLoginAt() => LastLoginAt = DateTime.UtcNow;
+
+    public void ChangePassword(string newHashPassword)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(newHashPassword);
+        PasswordHash = newHashPassword; // In a real application, you would hash the password before storing it
+    }
 }

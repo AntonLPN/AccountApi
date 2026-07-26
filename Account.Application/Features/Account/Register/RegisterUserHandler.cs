@@ -40,7 +40,7 @@ public class RegisterUserHandler(
         await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
-            var whoInvited = await userRepository.FindByReferralCodeAsync(request.ReferrerCode, cancellationToken);
+            var whoInvited = await userRepository.GetUserByReferralCodeAsReadOnlyAsync(request.ReferrerCode, cancellationToken);
             var passwordHash = cryptographyService.Hash(request.Password);
             var user = AppUser.Create(new AppUserCreateParams(keycloakIdUser.Value, normalizedEmail, passwordHash,
                 whoInvited?.Id, false, nameof(AuthProviders.LocalProvider)));
