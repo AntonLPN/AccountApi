@@ -1,8 +1,6 @@
 services:
   # ---------------------------------------------------------------------------
-  # Keycloak + its own Postgres. Realm "account-api" is imported on first start
-  # from deploy/keycloak/realm-export.json (client, audience mapper and the
-  # service-account roles needed by GetAdminTokenAsync are configured there).
+  # Keycloak + Postgres
   # ---------------------------------------------------------------------------
   keycloak-db:
     image: postgres:16-alpine
@@ -28,7 +26,6 @@ services:
     container_name: keycloak
     command: start-dev --import-realm
     environment:
-      # Master-realm admin console: http://localhost:8080  (admin / admin)
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_DB: postgres
@@ -43,6 +40,11 @@ services:
       - "8080:8080"
     volumes:
       - ./deploy/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q '200 OK'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     depends_on:
       keycloak-db:
         condition: service_healthy
@@ -50,7 +52,7 @@ services:
       - account-net
 
   # ---------------------------------------------------------------------------
-  # Redis (distributed cache — see commented AddStackExchangeRedisCache in Program.cs)
+  # Redis
   # ---------------------------------------------------------------------------
   redis:
     image: redis:7-alpine
@@ -69,8 +71,7 @@ services:
       - account-net
 
   # ---------------------------------------------------------------------------
-  # RabbitMQ (matches Messaging:RabbitMq in appsettings — guest/guest, vhost "/")
-  # Management UI: http://localhost:15672
+  # RabbitMQ
   # ---------------------------------------------------------------------------
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -93,8 +94,7 @@ services:
       - account-net
 
   # ---------------------------------------------------------------------------
-  # MySQL for the app DB (DbConfig:ConnectionString). Not requested explicitly,
-  # but the API needs it to run — remove this block if you host MySQL elsewhere.
+  # MySQL
   # ---------------------------------------------------------------------------
   mysql:
     image: mysql:8.0
@@ -115,9 +115,7 @@ services:
       - account-net
 
   # ---------------------------------------------------------------------------
-  # The Account API itself (built from ./Dockerfile). Host-specific addresses
-  # from appsettings.json are overridden here to point at the other containers.
-  # Swagger: http://localhost:5001/swagger
+  # Account API
   # ---------------------------------------------------------------------------
   api:
     build:
@@ -127,23 +125,21 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: "http://+:8080"
-      # App database
       DbConfig__ConnectionString: "server=mysql;port=3306;user=root;password=123456;database=AccountDb;"
-      # JWT validation — must match the issuer of tokens minted via Keycloak below
       Authentication__Schemes__Bearer__Authority: "http://keycloak:8080/realms/account-api"
       Authentication__Schemes__Bearer__MetadataAddress: "http://keycloak:8080/realms/account-api/.well-known/openid-configuration"
       Authentication__Schemes__Bearer__ValidAudience: "account-api"
-      # Keycloak admin client (service account) used for register/login/logout
       KeycloakAdminClient__BaseUrl: "http://keycloak:8080/"
       KeycloakAdminClient__Realm: "account-api"
       KeycloakAdminClient__ClientId: "account-api"
       KeycloakAdminClient__ClientSecret: "l3OVF0TX1w9VME5rFrlqlDayfCUMt8ZL"
-      # Messaging
       Messaging__UseRabbitMq: "true"
       Messaging__RabbitMq__Host: "rabbitmq"
       RABBITMQ_HOST: "rabbitmq"
-      # Redis (used once AddStackExchangeRedisCache is enabled in Program.cs)
       ConnectionStrings__Redis: "redis:6379"
+      # Настройка Serilog внутри Docker (отправка логов на контейнер dev-seq)
+      Serilog__WriteTo__0__Name: "Seq"
+      Serilog__WriteTo__0__Args__serverUrl: "http://seq:5341"
     ports:
       - "5001:8080"
     depends_on:
@@ -152,13 +148,12 @@ services:
       rabbitmq:
         condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
     networks:
       - account-net
 
   # ---------------------------------------------------------------------------
-  # Prometheus (Scrapes metrics from account-api:8080/metrics)
-  # UI: http://localhost:9090
+  # Prometheus
   # ---------------------------------------------------------------------------
   prometheus:
     image: prom/prometheus:latest
@@ -173,8 +168,7 @@ services:
       - account-net
 
   # ---------------------------------------------------------------------------
-  # Grafana (Dashboards & Visualization)
-  # UI: http://localhost:3000 (admin / admin)
+  # Grafana
   # ---------------------------------------------------------------------------
   grafana:
     image: grafana/grafana-oss:latest
@@ -185,6 +179,35 @@ services:
       - grafana-data:/var/lib/grafana
     depends_on:
       - prometheus
+    networks:
+      - account-net
+
+  # ---------------------------------------------------------------------------
+  # Papercut (SMTP Dev Server)
+  # UI: http://localhost:8082
+  # ---------------------------------------------------------------------------
+  papercut:
+    image: jijiechen/papercut:latest
+    container_name: dev-papercut
+    ports:
+      - "3025:25"
+      - "8082:80"  # Изменено с 8080 на 8082 из-за конфликта с Keycloak
+    networks:
+      - account-net
+
+  # ---------------------------------------------------------------------------
+  # Seq (Log aggregation)
+  # UI: http://localhost:8081
+  # ---------------------------------------------------------------------------
+  seq:
+    image: datalust/seq:latest
+    container_name: dev-seq
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_NOAUTHENTICATION=true
+    ports:
+      - "5341:5341" # Вход для Serilog
+      - "8081:80"   # Веб-интерфейс Seq
     networks:
       - account-net
 

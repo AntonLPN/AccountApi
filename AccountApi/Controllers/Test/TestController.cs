@@ -8,12 +8,13 @@ namespace AccountApi.Controllers.Test;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-public class TestController(IAuthService authService) : ControllerBase
+public class TestController(IAuthService authService, ILogger<TestController> logger) : ControllerBase
 {
     [AllowAnonymous]
     [HttpGet("test")]
     public async Task<IActionResult> Index()
     {
+        logger.LogInformation("Test endpoint called");
         return Ok();
     }
     
