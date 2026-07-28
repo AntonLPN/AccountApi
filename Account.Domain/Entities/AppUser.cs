@@ -1,12 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
+using Account.Domain.Events;
 using Account.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using OtpNet;
 
 namespace Account.Domain.Entities;
 
-public class AppUser
+public class AppUser : AggregateRoot
 {
     [Key] public string Id { get; set; } = "";
     public string? UserName { get; set; }
@@ -48,6 +49,7 @@ public class AppUser
             EmailConfirmed = createParams.EmailConfirmed,
             EncryptedTwoFactorSecret = Convert.ToBase64String(KeyGeneration.GenerateRandomKey(20))
         };
+        user.AddDomainEvent(new UserCreatedDomainEvent(user.Id, user.Email));
         return user;
     }
 
@@ -64,7 +66,7 @@ public class AppUser
 
         return new string(result);
     }
-    
+
     public void UpdateLastLogoutAt() => LastLogoutAt = DateTime.UtcNow;
     public void UpdateLastLoginAt() => LastLoginAt = DateTime.UtcNow;
 
