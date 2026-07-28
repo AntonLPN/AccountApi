@@ -72,7 +72,7 @@ public class LoginUserHandler(
     private async Task<LoginUserResult> LoginProcess(AppUser user, string? ipAddress, string? userAgent,
         TokenResponse tokenResponse, CancellationToken cancellationToken)
     {
-        var apiKey = await apiKeyRepository.GetApiKeyByUserIdAsync(user.Id);
+        var apiKey = await apiKeyRepository.GetApiKeyAsync(user.Id, cancellationToken);
 
         await publishEndpoint.Publish(new UserLoginSagaStartedIntegrationEvent
         {

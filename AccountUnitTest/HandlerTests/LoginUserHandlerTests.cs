@@ -115,7 +115,7 @@ public class LoginUserHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultStatus.Unauthorized, result.Status);
-        _apiKeyRepository.Verify(x => x.GetApiKeyByUserIdAsync(It.IsAny<string>()), Times.Never);
+        _apiKeyRepository.Verify(x => x.GetApiKeyAsync(It.IsAny<string>(),It.IsAny<CancellationToken>()), Times.Never);
         _publishEndpoint.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
         _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         _twoFactorManager.Verify(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -140,7 +140,7 @@ public class LoginUserHandlerTests
             .ReturnsAsync(user);
 
         _apiKeyRepository
-            .Setup(x => x.GetApiKeyByUserIdAsync(user.Id))
+            .Setup(x => x.GetApiKeyAsync(user.Id,It.IsAny<CancellationToken>()))
             .ReturnsAsync(apiKey);
 
         // Act
@@ -171,7 +171,7 @@ public class LoginUserHandlerTests
             .ReturnsAsync(user);
 
         _apiKeyRepository
-            .Setup(x => x.GetApiKeyByUserIdAsync(user.Id))
+            .Setup(x => x.GetApiKeyAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync((string?)null);
 
         // Act

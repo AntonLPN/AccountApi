@@ -1,20 +1,24 @@
-using System.Data.Common;
+using Account.Contracts.Events;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
+using MassTransit;
 using Microsoft.Extensions.Logging;
 
 namespace Account.Application.Features.Account.ChangePassword;
 
 public class ChangePasswordHandler(
+    ILogger<ChangePasswordHandler> logger,
     IUserRepository userRepository,
     IPreAuthTokenService preAuthTokenService,
-    ILogger<ChangePasswordHandler> logger,
     IPasswordService passwordService,
-    IUnitOfWork unitOfWork,
-    ICryptography cryptographyService)
+    ICryptography cryptographyService,
+    IPublishEndpoint publishEndpoint, 
+    IAuthService authService,
+    IApiKeyRepository apiKeyRepository,
+    IUnitOfWork unitOfWork)
     : ICommandHandler<ChangePasswordCommand, Result<ChangePasswordResult>>
 {
     public async Task<Result<ChangePasswordResult>> Handle(ChangePasswordCommand request,
@@ -50,18 +54,23 @@ public class ChangePasswordHandler(
                 return Result<ChangePasswordResult>.Conflict(providerRes.Errors.FirstOrDefault());
             }
 
-            //TODO implement logic
             user.ChangePassword(cryptographyService.Hash(request.Password));
+            //push to rabbit mq message  
+            await publishEndpoint.Publish(new ChangePasswordIntegrationEvent
+            {
+                CorrelationId = Guid.NewGuid(),
+                UserId = user.Id
+            }, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
-            // 3 push to rabbit mq message  
+            var tokenResponse = await authService.LoginAsync(normalizedEmail, request.Password);
+            if (tokenResponse is null)
+                return Result<ChangePasswordResult>.Unauthorized();
             
-            // 4 consumer catch from rabbit message and send email to user with info about password change 
-            // 5 return token model to user with new token and api key
-        }
-        catch (DbException dbException)
-        {
-            logger.LogInformation(dbException, "db exception");
-            throw;
+            return Result<ChangePasswordResult>.Success(new ChangePasswordResult
+            {
+                Token = tokenResponse,
+                ApiKey = await apiKeyRepository.GetApiKeyAsync(user.Id, cancellationToken)
+            });
         }
         catch (Exception e)
         {
@@ -69,7 +78,5 @@ public class ChangePasswordHandler(
                 MaskedEmail.Create(normalizedEmail));
             throw;
         }
-
-        throw new NotImplementedException();
     }
 }

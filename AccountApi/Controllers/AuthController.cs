@@ -196,10 +196,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         var cmd = new ChangePasswordCommand("user@example.com", model.NewPassword, model.PendingToken, model.OtpCode);
         var res = await mediator.Send(cmd);
         throw new NotImplementedException();
-        // var cmd = new ChangePasswordCommand(emailClaim, model.NewPassword);
-        // var res = await mediator.Send(cmd);
-        // if (!res.IsSuccess)
-        //     return BadRequest(res.Errors);
+      
 
         return Ok();
     }

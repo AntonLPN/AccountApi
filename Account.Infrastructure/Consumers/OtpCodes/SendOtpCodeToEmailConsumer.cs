@@ -4,7 +4,7 @@ using Account.Domain.Interfaces;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
-namespace Account.Infrastructure.Consumers.TwoFactor;
+namespace Account.Infrastructure.Consumers.OtpCodes;
 
 public class SendOtpCodeToEmailConsumer(ILogger<SendOtpCodeToEmailConsumer> logger, IEmail emailService)
     : IConsumer<SendOtpCodeIntegrationCommand>

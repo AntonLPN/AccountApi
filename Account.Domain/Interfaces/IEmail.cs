@@ -13,4 +13,5 @@ public interface IEmail
     Task<bool> SendLogoutNotificationEmail(LogoutNotification logoutNotification,
         CancellationToken cancellationToken = default);
     Task<bool> SendOtpCodeAsync(string toEmail,string otpCode, CancellationToken cancellationToken = default);
- }
+    Task<bool> SendPasswordChangedEmailAsync(string toEmail, CancellationToken cancellationToken = default);
+}

@@ -1,7 +1,7 @@
-using Account.Contracts.SagaEvents.UserLoginSagaEvents.Models;
+using Account.Application.Features.Account.Models;
 
 namespace Account.Application.Features.Account.ChangePassword;
 
-public class ChangePasswordResult : BaseLoginModel
+public class ChangePasswordResult : BaseAuthResponse
 {
 }

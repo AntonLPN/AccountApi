@@ -15,6 +15,12 @@ public sealed class UserRepository(
         return dbContext.AppUsers.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
     }
 
+    public Task<AppUser?> GetUserByIdAsync(string id, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        return dbContext.AppUsers.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+    }
+
     public void AddUser(AppUser user)
     {
         ArgumentException.ThrowIfNullOrEmpty(user.Email, nameof(user.Email));

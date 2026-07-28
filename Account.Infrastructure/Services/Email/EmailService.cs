@@ -107,6 +107,18 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
         ));
     }
 
+    public async Task<bool> SendPasswordChangedEmailAsync(string toEmail, CancellationToken cancellationToken = default)
+    {
+        var htmlTemplate = GetEmailTemplateAsync("PasswordChangedTemplate.html");
+        ArgumentException.ThrowIfNullOrEmpty(htmlTemplate);
+        await SendEmailAsync(toEmail, "Password changed - " + _emailConfig.OwnerName, htmlTemplate, cancellationToken);
+        
+        return await _emailRetryPolicy.ExecuteAsync(async () => await SendEmailAsync(
+            toEmail,
+            "Password changed - " + _emailConfig.OwnerName,
+            htmlTemplate, cancellationToken));
+    }
+
     private async Task<bool> SendMessageSmtp(MimeMessage message, CancellationToken cancellationToken = default)
     {
         var socketOptions = _emailConfig.Port == 25

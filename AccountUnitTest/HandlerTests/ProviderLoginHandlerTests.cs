@@ -160,7 +160,7 @@ public class ProviderLoginHandlerTests
             .ReturnsAsync(tokenResponse);
 
         _apiKeyRepository
-            .Setup(x => x.GetApiKeyByUserIdAsync(user.Id))
+            .Setup(x => x.GetApiKeyAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(apiKey);
 
         // Act
@@ -196,7 +196,7 @@ public class ProviderLoginHandlerTests
             .ReturnsAsync(tokenResponse);
 
         _apiKeyRepository
-            .Setup(x => x.GetApiKeyByUserIdAsync(user.Id))
+            .Setup(x => x.GetApiKeyAsync(user.Id,It.IsAny<CancellationToken>()))
             .ReturnsAsync((string?)null);
 
         // Act

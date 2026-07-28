@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Account.Infrastructure.Persistence;
 
+// ReSharper disable once ClassNeverInstantiated.Global
 public class UnitOfWorkAdapter(AppDbContext dbContext, IPublisher publisher) : IUnitOfWork
 {
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken)

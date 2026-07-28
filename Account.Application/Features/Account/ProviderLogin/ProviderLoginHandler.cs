@@ -31,7 +31,7 @@ public class ProviderLoginHandler(
             var user = await userRepository.GetUserByEmailAsync(email, cancellationToken);
             if (user is null)
                 return Result<ProviderLoginResult>.Unauthorized();
-            var apiKey = await apiKeyRepository.GetApiKeyByUserIdAsync(user.Id);
+            var apiKey = await apiKeyRepository.GetApiKeyAsync(user.Id, cancellationToken);
 
             var userToken = await authService.LoginAsync(email);
             ArgumentNullException.ThrowIfNull(userToken);

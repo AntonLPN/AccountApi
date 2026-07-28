@@ -21,10 +21,10 @@ public sealed class ApiKeyRepository(AppDbContext dbContext) : IApiKeyRepository
         return value;    
     }
 
-    public async Task<string?> GetApiKeyByUserIdAsync(string userId)
+    public async Task<string?> GetApiKeyAsync(string userId, CancellationToken cancellationToken = default)
     {
         var apiKey = await dbContext.ApiKeys.AsNoTracking().Where(k => k.UserId == userId && k.IsAuthorize)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
         return apiKey?.ApiKeyValue;
     }
 }
