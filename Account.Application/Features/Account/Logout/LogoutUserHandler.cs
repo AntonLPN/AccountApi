@@ -1,6 +1,8 @@
 using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Events;
+using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
+using Account.Domain.Specifications;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
@@ -13,14 +15,14 @@ public class LogoutUserHandler(
     ILogger<LogoutUserHandler> logger,
     IAuthService authService,
     IUnitOfWork unitOfWork,
-    IUserRepository userRepository,
+    IRepository<AppUser> userRepository,
     IPublishEndpoint publishEndpoint)
     : ICommandHandler<LogoutCommand, Result>
 {
     public async Task<Result> Handle(LogoutCommand request, CancellationToken cancellationToken)
     {
         var normalizedEmail = Email.Create(request.Email);
-        var user = await userRepository.GetUserByEmailAsync(normalizedEmail, cancellationToken);
+        var user = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(normalizedEmail), cancellationToken);
         if (user is null)
             return Result.Unauthorized();
 

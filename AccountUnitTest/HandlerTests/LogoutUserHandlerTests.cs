@@ -3,7 +3,10 @@ using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Events;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
+using Account.Domain.Specifications;
 using Ardalis.Result;
+using Ardalis.SharedKernel;
+using Ardalis.Specification;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -15,7 +18,7 @@ public class LogoutUserHandlerTests
     private readonly Mock<ILogger<LogoutUserHandler>> _logger = new();
     private readonly Mock<IAuthService> _authService = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
-    private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<IRepository<AppUser>> _userRepository = new();
     private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
 
     private LogoutUserHandler CreateSut()
@@ -55,7 +58,7 @@ public class LogoutUserHandlerTests
         var command = CreateCommand();
 
         _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .Setup(x => x.FirstOrDefaultAsync(new UserByEmailSpec(command.Email), It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
 
         // Act
@@ -74,9 +77,10 @@ public class LogoutUserHandlerTests
         // Arrange
         var sut = CreateSut();
         var command = CreateCommand();
-
         _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .Setup(x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateUser());
 
         _authService
@@ -101,7 +105,9 @@ public class LogoutUserHandlerTests
         var command = CreateCommand();
 
         _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .Setup(x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateUser());
 
         _authService
@@ -125,7 +131,9 @@ public class LogoutUserHandlerTests
         var user = CreateUser();
 
         _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .Setup(x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         _authService
@@ -154,7 +162,9 @@ public class LogoutUserHandlerTests
         var command = CreateCommand();
 
         _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .Setup(x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateUser());
 
         _authService
@@ -177,7 +187,9 @@ public class LogoutUserHandlerTests
         using var cts = new CancellationTokenSource();
 
         _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .Setup(x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateUser());
 
         _authService
@@ -188,8 +200,14 @@ public class LogoutUserHandlerTests
         await sut.Handle(command, cts.Token);
 
         // Assert
-        _userRepository.Verify(x => x.GetUserByEmailAsync(command.Email, cts.Token), Times.Once);
-        _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserLogoutSagaStartedIntegrationEvent>(), cts.Token), Times.Once);
-        _unitOfWork.Verify(x => x.SaveChangesAsync(cts.Token), Times.Once);
+        _userRepository.Verify(
+            x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        _publishEndpoint.Verify(
+            x => x.Publish(It.IsAny<UserLogoutSagaStartedIntegrationEvent>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }
