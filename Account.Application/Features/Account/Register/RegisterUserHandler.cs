@@ -21,9 +21,9 @@ public class RegisterUserHandler(
     IUnitOfWork unitOfWork,
     IRepository<AppUser> userRepository,
     IRepository<ApiKey> apiKeyRepository,
+    ILoginAuditRepository  loginAuditRepository,
     ICryptography cryptographyService,
     IPublishEndpoint publishEndpoint,
-    ILoginAuditRepository  loginAuditRepository,
     IUserAccountService userAccountService)
     : ICommandHandler<RegisterCommand, Result<RegisterUserResult>>
 {
@@ -83,7 +83,7 @@ public class RegisterUserHandler(
                 return Result<RegisterUserResult>.Error("Login failed after registration for user");
             return Result<RegisterUserResult>.Success(new RegisterUserResult
             {
-                ApiKey = apiKey,
+                ApiKey = apiKey.ApiKeyValue,
                 Token = tokenResponse,
             });
         }
