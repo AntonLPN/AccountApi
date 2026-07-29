@@ -51,7 +51,7 @@ public class ProviderRegisterHandler(
             userRepository.AddUser(user);
             var apiKey = apiKeyRepository.CreateApiKey(user.Id);
             
-            var loginAudit = LoginAudit.Create(new CreateLoginAuditDto
+            var loginAudit = LoginAudit.Create(new CreateLoginAuditParams
             {
                 UserId = user.Id,
                 Email = email,

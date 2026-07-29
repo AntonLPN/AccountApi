@@ -12,18 +12,18 @@ public class LoginAudit
     public bool IsSuspicious { get; set; }
     public DateTime LoggedInAt { get; set; }
 
-    public static LoginAudit Create(CreateLoginAuditDto dto)
+    public static LoginAudit Create(CreateLoginAuditParams @params)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(dto.UserId, nameof(dto.UserId));
-        ArgumentException.ThrowIfNullOrWhiteSpace(dto.Email, nameof(dto.Email));
+        ArgumentException.ThrowIfNullOrWhiteSpace(@params.UserId, nameof(@params.UserId));
+        ArgumentException.ThrowIfNullOrWhiteSpace(@params.Email, nameof(@params.Email));
         return new LoginAudit
         {
-            UserId = dto.UserId,
-            Email = dto.Email,
-            IpAddress = dto.IpAddress,
-            UserAgent = dto.UserAgent,
-            IsSuspicious = dto.IsSuspicious,
-            LoggedInAt = dto.LoggedInAt
+            UserId = @params.UserId,
+            Email = @params.Email,
+            IpAddress = @params.IpAddress,
+            UserAgent = @params.UserAgent,
+            IsSuspicious = @params.IsSuspicious,
+            LoggedInAt = @params.LoggedInAt
         };
         
     }

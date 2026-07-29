@@ -6,6 +6,7 @@ using Account.Domain.Enums;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Domain.Repositories;
+using Account.Domain.Specifications;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
@@ -18,8 +19,8 @@ public class RegisterUserHandler(
     ILogger<RegisterUserHandler> logger,
     IAuthService authService,
     IUnitOfWork unitOfWork,
-    IUserRepository userRepository,
-    IApiKeyRepository apiKeyRepository,
+    IRepository<AppUser> userRepository,
+    IRepository<ApiKey> apiKeyRepository,
     ICryptography cryptographyService,
     IPublishEndpoint publishEndpoint,
     ILoginAuditRepository  loginAuditRepository,
@@ -29,7 +30,7 @@ public class RegisterUserHandler(
     public async Task<Result<RegisterUserResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         Email normalizedEmail = Email.Create(request.Email);
-        var userByEmail = await userRepository.GetUserByEmailAsync(normalizedEmail, cancellationToken);
+        var userByEmail = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(normalizedEmail), cancellationToken);
         if (userByEmail is not null)
             return Result<RegisterUserResult>.Conflict("User already exists");
 
@@ -40,15 +41,17 @@ public class RegisterUserHandler(
         await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
-            var whoInvited = await userRepository.GetUserByReferralCodeAsReadOnlyAsync(request.ReferrerCode, cancellationToken);
+            var whoInvited = await userRepository.FirstOrDefaultAsync(new UserByReferralCodeSpec(request.ReferrerCode), cancellationToken);
+            
             var passwordHash = cryptographyService.Hash(request.Password);
             var user = AppUser.Create(new AppUserCreateParams(keycloakIdUser.Value, normalizedEmail, passwordHash,
                 whoInvited?.Id, false, nameof(AuthProviders.LocalProvider)));
-
-            userRepository.AddUser(user);
-            var apiKey = apiKeyRepository.CreateApiKey(user.Id);
+            await userRepository.AddAsync(user, cancellationToken);
+            
+            var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id, true));
+            await apiKeyRepository.AddAsync(apiKey, cancellationToken);
             //this is currently ned create here, because whe need to be sure the user exists in DB
-            var loginAuditDto = new CreateLoginAuditDto
+            var loginAuditDto = new CreateLoginAuditParams
             {
                 UserId = user.Id,
                 Email = normalizedEmail,
@@ -66,13 +69,13 @@ public class RegisterUserHandler(
                 CorrelationId = Guid.NewGuid(),
                 UserId = user.Id,
                 Email = user.Email,
-                ApiKey = apiKey,
+                ApiKey = apiKey.ApiKeyValue,
                 IsActive = true,
                 ReferralCode = user.ReferralCode,
                 EmailConfirmed = user.EmailConfirmed
             }, cancellationToken);
 
-            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);//need for saga
             await tx.CommitAsync(cancellationToken);
 
             TokenResponse? tokenResponse = await authService.LoginAsync(normalizedEmail, request.Password);

@@ -7,6 +7,8 @@ using Account.Infrastructure.Repositories;
 using Account.Infrastructure.Services;
 using Account.Infrastructure.Services.Email;
 using Account.Infrastructure.Services.ExternalProviders;
+using Ardalis.SharedKernel;
+using Ardalis.Specification.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Account.Infrastructure.Extensions;
@@ -28,6 +30,8 @@ public static class DependencyInjectionInfrastructure
         services.AddScoped<IGoogleAuthService, GoogleService>();
         
         //Repository
+        services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+        
         services.AddScoped<IUnitOfWork, UnitOfWorkAdapter>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IApiKeyRepository, ApiKeyRepository>();

@@ -49,8 +49,8 @@ public class ChangePasswordHandler(
             if (!providerRes.IsSuccess)
             {
                 logger.LogWarning(
-                    "For change password operation, failed to change password for email: {MaskedEmail}. Error: {Error}",
-                    MaskedEmail.Create(normalizedEmail), providerRes.Errors.FirstOrDefault());
+                    "For change password operation, failed to change password for userid : {UserId}. Error: {Error}",
+                    user.Id, providerRes.Errors.FirstOrDefault());
                 return Result<ChangePasswordResult>.Conflict(providerRes.Errors.FirstOrDefault());
             }
 

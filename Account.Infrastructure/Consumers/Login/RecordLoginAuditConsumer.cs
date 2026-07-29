@@ -19,7 +19,7 @@ public class RecordLoginAuditConsumer(
         var message = context.Message;
         try
         {
-            var loginAuditDto = new CreateLoginAuditDto
+            var loginAuditDto = new CreateLoginAuditParams
             {
                 UserId = message.UserId,
                 Email = message.Email,

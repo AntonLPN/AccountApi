@@ -1,9 +1,10 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using Ardalis.SharedKernel;
 using MediatR;
 
 namespace Account.Domain;
 
-public class AggregateRoot
+public class AggregateRoot : IAggregateRoot
 {
     private readonly List<INotification> _domainEvents = new();
 

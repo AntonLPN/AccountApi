@@ -8,6 +8,6 @@ public class LoginAuditMapper : Profile
 {
    public LoginAuditMapper()
    {
-      CreateMap<CreateLoginAuditDto, LoginAudit>();
+      CreateMap<CreateLoginAuditParams, LoginAudit>();
    }
 }
