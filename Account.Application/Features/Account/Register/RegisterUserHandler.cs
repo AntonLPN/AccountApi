@@ -30,24 +30,26 @@ public class RegisterUserHandler(
     public async Task<Result<RegisterUserResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         Email normalizedEmail = Email.Create(request.Email);
-        var userByEmail = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(normalizedEmail), cancellationToken);
+        var userByEmail =
+            await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(normalizedEmail), cancellationToken);
         if (userByEmail is not null)
             return Result<RegisterUserResult>.Conflict("User already exists");
 
         var keycloakIdUser = await userAccountService.RegisterUserAsync(normalizedEmail, request.Password);
         if (!keycloakIdUser.IsSuccess)
             return Result<RegisterUserResult>.Error(keycloakIdUser.Errors.FirstOrDefault() ?? "Registration failed");
-        
+
         await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
-            var whoInvited = await userRepository.FirstOrDefaultAsync(new UserByReferralCodeSpec(request.ReferrerCode), cancellationToken);
-            
+            var whoInvited = await userRepository.FirstOrDefaultAsync(new UserByReferralCodeSpec(request.ReferrerCode),
+                cancellationToken);
+
             var passwordHash = cryptographyService.Hash(request.Password);
             var user = AppUser.Create(new AppUserCreateParams(keycloakIdUser.Value, normalizedEmail, passwordHash,
                 whoInvited?.Id, false, nameof(AuthProviders.LocalProvider)));
             await userRepository.AddAsync(user, cancellationToken);
-            
+
             var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id, true));
             await apiKeyRepository.AddAsync(apiKey, cancellationToken);
             //this is currently ned create here because whe need to be sure the user exists in DB
@@ -57,12 +59,12 @@ public class RegisterUserHandler(
                 Email = normalizedEmail,
                 IpAddress = request.IpAddress,
                 UserAgent = request.UserAgent,
-                IsSuspicious = false, 
+                IsSuspicious = false,
                 LoggedInAt = DateTime.UtcNow
             };
             var loginAudit = LoginAudit.Create(loginAuditDto);
             await loginAuditRepository.AddAsync(loginAudit, cancellationToken);
-            
+
             //Start Saga
             await publishEndpoint.Publish(new UserRegisterSagaStartedIntegrationEvent
             {
@@ -75,17 +77,19 @@ public class RegisterUserHandler(
                 EmailConfirmed = user.EmailConfirmed
             }, cancellationToken);
 
-            await unitOfWork.SaveChangesAsync(cancellationToken);//need for saga
+            await unitOfWork.SaveChangesAsync(cancellationToken); //need for saga
             await tx.CommitAsync(cancellationToken);
 
             TokenResponse? tokenResponse = await authService.LoginAsync(normalizedEmail, request.Password);
-            if (tokenResponse is null)
-                return Result<RegisterUserResult>.Error("Login failed after registration for user");
-            return Result<RegisterUserResult>.Success(new RegisterUserResult
-            {
-                ApiKey = apiKey.ApiKeyValue,
-                Token = tokenResponse,
-            });
+            if (tokenResponse is not null)
+                return Result<RegisterUserResult>.Success(new RegisterUserResult
+                {
+                    ApiKey = apiKey.ApiKeyValue,
+                    Token = tokenResponse,
+                });
+
+            logger.LogError("Login in external service was failed for user {UserId}", user.Id);
+            return Result<RegisterUserResult>.Error("Login failed after registration for user");
         }
         catch (DbException e)
         {

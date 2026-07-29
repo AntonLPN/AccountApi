@@ -5,7 +5,7 @@ namespace Account.Domain.Entities;
 
 public class ApiKey : AggregateRoot
 {
-    [Key] public int Id { get; init; }
+    [Key] public int Id { get; set; }
     [Column("Key")] public required string ApiKeyValue { get; init; }
     public bool IsAuthorize { get; set; } = true;
     public DateTime CreatedAt { get; init; }

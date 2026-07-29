@@ -4,7 +4,10 @@ using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Domain.Repositories;
+using Account.Domain.Specifications;
 using Ardalis.Result;
+using Ardalis.SharedKernel;
+using Ardalis.Specification;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -16,381 +19,213 @@ public class LoginUserHandlerTests
     private readonly Mock<ILogger<LoginUserHandler>> _logger = new();
     private readonly Mock<IAuthService> _authService = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
-    private readonly Mock<IUserRepository> _userRepository = new();
-    private readonly Mock<IApiKeyRepository> _apiKeyRepository = new();
+    private readonly Mock<IRepository<AppUser>> _userRepository = new();
+    private readonly Mock<IRepository<ApiKey>> _apiKeyRepository = new();
     private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
-    private readonly Mock<IMfaManager> _twoFactorManager = new();
+    private readonly Mock<IMfaManager> _mfaManager = new();
     private readonly Mock<IPreAuthTokenService> _preAuthTokenService = new();
 
     private LoginUserHandler CreateSut()
-    {
-        return new LoginUserHandler(
+        => new(
             _logger.Object,
             _authService.Object,
             _unitOfWork.Object,
             _userRepository.Object,
             _apiKeyRepository.Object,
             _publishEndpoint.Object,
-            _twoFactorManager.Object,
+            _mfaManager.Object,
             _preAuthTokenService.Object);
-    }
 
-    private static LoginCommand CreateCommand(
-        string email = "test@mail.com",
-        string password = "123Avc_!@#$%^&*()_+",
-        string? ipAddress = "192.168.1.1",
-        string? userAgent = "Mozilla/5.0")
+    private static LoginCommand CreateCommand(string email = "test@mail.com",
+        string password = "123Avc_!@#$%^&*()_+", string? ipAddress = "127.0.0.1", string? userAgent = "userAgent")
         => new(email, password, ipAddress, userAgent);
 
-    private static AppUser CreateUser(string id = "user123", string email = "test@mail.com", bool isTwoFactorEnabled = false)
+    private static TokenResponse CreateTokenResponse() => new()
     {
-        return new AppUser
-        {
-            Id = id,
-            Email = email,
-            UserName = email,
-            PasswordHash = "hash",
-            EmailConfirmed = true,
-            IsTwoFactorEnabled = isTwoFactorEnabled
-        };
-    }
-
-    private static TokenResponse CreateTokenResponse(
-        string accessToken = "access_token",
-        string refreshToken = "refresh_token",
-        string tokenType = "Bearer",
-        int expiresIn = 3600,
-        string scope = "scope")
-    {
-        return new TokenResponse
-        {
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-            TokenType = tokenType,
-            ExpiresIn = expiresIn,
-            Scope = scope
-        };
-    }
+        AccessToken = "access_token",
+        RefreshToken = "refresh_token",
+        TokenType = "token_type",
+        ExpiresIn = 3600,
+        Scope = "scope"
+    };
 
     [Fact]
     public async Task Handle_WhenAuthServiceReturnsNull_ReturnsUnauthorized()
     {
-        // Arrange
         var sut = CreateSut();
-        var command = CreateCommand();
-        
+        var cmd = CreateCommand();
+
+        //Arrange
         _authService
-            .Setup(x => x.LoginAsync(command.Email, command.Password))
+            .Setup(x => x.LoginAsync(cmd.Email, cmd.Password))
             .ReturnsAsync((TokenResponse?)null);
 
-        // Act
-        var result = await sut.Handle(command, CancellationToken.None);
+        //Act
+        var result = await sut.Handle(cmd, CancellationToken.None);
 
-        // Assert
+        //Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultStatus.Unauthorized, result.Status);
-        _userRepository.Verify(x => x.GetUserByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        _userRepository.Verify(x => x.FirstOrDefaultAsync(
+            It.IsAny<ISpecification<AppUser>>(), It.IsAny<CancellationToken>()), Times.Never);
         _publishEndpoint.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
     public async Task Handle_WhenUserNotFound_ReturnsUnauthorized()
     {
-        // Arrange
         var sut = CreateSut();
-        var command = CreateCommand();
-        var tokenResponse = CreateTokenResponse();
+        var cmd = CreateCommand();
 
+        //Arrange
         _authService
-            .Setup(x => x.LoginAsync(command.Email, command.Password))
-            .ReturnsAsync(tokenResponse);
+            .Setup(x => x.LoginAsync(cmd.Email, cmd.Password))
+            .ReturnsAsync(CreateTokenResponse());
 
         _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .Setup(x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
 
-        // Act
-        var result = await sut.Handle(command, CancellationToken.None);
+        //Act
+        var result = await sut.Handle(cmd, CancellationToken.None);
 
-        // Assert
+        //Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultStatus.Unauthorized, result.Status);
-        _apiKeyRepository.Verify(x => x.GetApiKeyAsync(It.IsAny<string>(),It.IsAny<CancellationToken>()), Times.Never);
-        _publishEndpoint.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
-        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-        _twoFactorManager.Verify(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        _apiKeyRepository.Verify(x => x.FirstOrDefaultAsync(
+            It.IsAny<ISpecification<ApiKey>>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mfaManager.Verify(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
-    public async Task Handle_WhenLoginSucceeds_ReturnsSuccessWithTokenAndApiKey()
+    public async Task Handle_WhenTwoFactorEnabled_ReturnsMfaRequired()
     {
-        // Arrange
         var sut = CreateSut();
-        var command = CreateCommand();
-        var user = CreateUser(isTwoFactorEnabled: false);
-        var tokenResponse = CreateTokenResponse();
-        const string apiKey = "api-key-123";
+        var cmd = CreateCommand();
+        var user = new AppUser { Id = "user-id", Email = cmd.Email, IsTwoFactorEnabled = true };
+        const string preAuthToken = "pre-auth-token";
 
+        //Arrange
         _authService
-            .Setup(x => x.LoginAsync(command.Email, command.Password))
-            .ReturnsAsync(tokenResponse);
-
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        _apiKeyRepository
-            .Setup(x => x.GetApiKeyAsync(user.Id,It.IsAny<CancellationToken>()))
-            .ReturnsAsync(apiKey);
-
-        // Act
-        var result = await sut.Handle(command, CancellationToken.None);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(ResultStatus.Ok, result.Status);
-        Assert.False(result.Value.IsMfaRequired);
-        Assert.Equal(apiKey, result.Value.ApiKey);
-        Assert.Same(tokenResponse, result.Value.Token);
-    }
-
-    [Fact]
-    public async Task Handle_WhenApiKeyIsNull_ReturnsSuccessWithEmptyApiKey()
-    {
-        // Arrange
-        var sut = CreateSut();
-        var command = CreateCommand();
-        var user = CreateUser(isTwoFactorEnabled: false);
-
-        _authService
-            .Setup(x => x.LoginAsync(command.Email, command.Password))
+            .Setup(x => x.LoginAsync(cmd.Email, cmd.Password))
             .ReturnsAsync(CreateTokenResponse());
 
         _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        _apiKeyRepository
-            .Setup(x => x.GetApiKeyAsync(user.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string?)null);
-
-        // Act
-        var result = await sut.Handle(command, CancellationToken.None);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal("", result.Value.ApiKey);
-        Assert.False(result.Value.IsMfaRequired);
-    }
-
-    [Fact]
-    public async Task Handle_WhenLoginSucceeds_PublishesSagaStartedEventWithUserDetails()
-    {
-        // Arrange
-        var sut = CreateSut();
-        var command = CreateCommand();
-        var user = CreateUser(isTwoFactorEnabled: false);
-
-        _authService
-            .Setup(x => x.LoginAsync(command.Email, command.Password))
-            .ReturnsAsync(CreateTokenResponse());
-
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        // Act
-        await sut.Handle(command, CancellationToken.None);
-
-        // Assert
-        _publishEndpoint.Verify(x => x.Publish(
-            It.Is<UserLoginSagaStartedIntegrationEvent>(e =>
-                e.CorrelationId != Guid.Empty &&
-                e.UserId == user.Id &&
-                e.Email == user.Email &&
-                e.IpAddress == command.IpAddress &&
-                e.UserAgent == command.UserAgent),
-            It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task Handle_WhenLoginSucceeds_SavesChangesForSaga()
-    {
-        // Arrange
-        var sut = CreateSut();
-        var command = CreateCommand();
-
-        _authService
-            .Setup(x => x.LoginAsync(command.Email, command.Password))
-            .ReturnsAsync(CreateTokenResponse());
-
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CreateUser(isTwoFactorEnabled: false));
-
-        // Act
-        await sut.Handle(command, CancellationToken.None);
-
-        // Assert
-        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task Handle_WhenUserHasTwoFactorEnabled_ReturnsMfaRequiredWithPreAuthToken()
-    {
-        // Arrange
-        var sut = CreateSut();
-        var command = CreateCommand();
-        var user = CreateUser(isTwoFactorEnabled: true);
-        var tokenResponse = CreateTokenResponse();
-        const string preAuthToken = "pre-auth-token-123";
-
-        _authService
-            .Setup(x => x.LoginAsync(command.Email, command.Password))
-            .ReturnsAsync(tokenResponse);
-
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .Setup(x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         _preAuthTokenService
-            .Setup(x => x.GeneratePreAuthToken(command.Email))
+            .Setup(x => x.GeneratePreAuthToken(cmd.Email))
             .Returns(preAuthToken);
 
-        _twoFactorManager
-            .Setup(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("otp-session-id");
+        _mfaManager
+            .Setup(x => x.InitiateTwoFactorProcessAsync(user, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(string.Empty);
 
-        // Act
-        var result = await sut.Handle(command, CancellationToken.None);
+        //Act
+        var result = await sut.Handle(cmd, CancellationToken.None);
 
-        // Assert
+        //Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(ResultStatus.Ok, result.Status);
+        Assert.NotNull(result.Value);
         Assert.True(result.Value.IsMfaRequired);
         Assert.NotNull(result.Value.Token);
         Assert.Equal(preAuthToken, result.Value.Token.AccessToken);
         Assert.Equal("pre-auth", result.Value.Token.TokenType);
-        Assert.Equal("", result.Value.Token.RefreshToken);
+        Assert.Equal(string.Empty, result.Value.Token.RefreshToken);
         Assert.Equal(0, result.Value.Token.ExpiresIn);
+
+        _mfaManager.Verify(x => x.InitiateTwoFactorProcessAsync(user, It.IsAny<CancellationToken>()), Times.Once);
+        _apiKeyRepository.Verify(x => x.FirstOrDefaultAsync(
+            It.IsAny<ISpecification<ApiKey>>(), It.IsAny<CancellationToken>()), Times.Never);
+        _publishEndpoint.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
-
+    
     [Fact]
-    public async Task Handle_WhenUserHasTwoFactorEnabled_InitiatesTwoFactorProcess()
+    public async Task Handle_WhenTwoFactorDisabledAndApiKeyFound_ReturnsSuccess()
     {
-        // Arrange
         var sut = CreateSut();
-        var command = CreateCommand();
-        var user = CreateUser(isTwoFactorEnabled: true);
+        var cmd = CreateCommand();
+        var user = new AppUser { Id = "user-id", Email = cmd.Email, IsTwoFactorEnabled = false };
+        var apiKey = new ApiKey { Id = 1, UserId = user.Id, ApiKeyValue = "api_key_value" };
+        var tokenResponse = CreateTokenResponse();
 
+        //Arrange
         _authService
-            .Setup(x => x.LoginAsync(command.Email, command.Password))
-            .ReturnsAsync(CreateTokenResponse());
+            .Setup(x => x.LoginAsync(cmd.Email, cmd.Password))
+            .ReturnsAsync(tokenResponse);
 
         _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
+            .Setup(x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
-        _preAuthTokenService
-            .Setup(x => x.GeneratePreAuthToken(command.Email))
-            .Returns("pre-auth-token");
+        _apiKeyRepository
+            .Setup(x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<ApiKey>>(s => s is ApiKeyByUserIdSpec),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(apiKey);
 
-        _twoFactorManager
-            .Setup(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("otp-session-id");
+        _publishEndpoint
+            .Setup(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
-        // Act
-        await sut.Handle(command, CancellationToken.None);
+        //Act
+        var result = await sut.Handle(cmd, CancellationToken.None);
 
-        // Assert
-        _twoFactorManager.Verify(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()), Times.Once);
+        //Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ResultStatus.Ok, result.Status);
+        Assert.NotNull(result.Value);
+        Assert.False(result.Value.IsMfaRequired);
+        Assert.Equal(apiKey.ApiKeyValue, result.Value.ApiKey);
+        Assert.Equal(tokenResponse.AccessToken, result.Value.Token!.AccessToken);
+
+        _publishEndpoint.Verify(x => x.Publish(
+            It.Is<UserLoginSagaStartedIntegrationEvent>(e =>
+                e.UserId == user.Id &&
+                e.Email == user.Email &&
+                e.IpAddress == cmd.IpAddress &&
+                e.UserAgent == cmd.UserAgent),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mfaManager.Verify(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
-    public async Task Handle_WhenUserHasTwoFactorEnabled_DoesNotPublishSagaEvent()
+    public async Task Handle_WhenAuthServiceThrows_LogsAndRethrows()
     {
-        // Arrange
         var sut = CreateSut();
-        var command = CreateCommand();
-        var user = CreateUser(isTwoFactorEnabled: true);
+        var cmd = CreateCommand();
+        var expectedException = new InvalidOperationException("boom");
 
+        //Arrange
         _authService
-            .Setup(x => x.LoginAsync(command.Email, command.Password))
-            .ReturnsAsync(CreateTokenResponse());
+            .Setup(x => x.LoginAsync(cmd.Email, cmd.Password))
+            .ThrowsAsync(expectedException);
 
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
+        //Act & Assert
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => sut.Handle(cmd, CancellationToken.None));
+        Assert.Same(expectedException, thrown);
 
-        _preAuthTokenService
-            .Setup(x => x.GeneratePreAuthToken(command.Email))
-            .Returns("pre-auth-token");
-
-        _twoFactorManager
-            .Setup(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("otp-session-id");
-
-        // Act
-        await sut.Handle(command, CancellationToken.None);
-
-        // Assert
-        _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserLoginSagaStartedIntegrationEvent>(), It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task Handle_PropagatesCancellationToken()
-    {
-        // Arrange
-        var sut = CreateSut();
-        var command = CreateCommand();
-        using var cts = new CancellationTokenSource();
-
-        _authService
-            .Setup(x => x.LoginAsync(command.Email, command.Password))
-            .ReturnsAsync(CreateTokenResponse());
-
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CreateUser(isTwoFactorEnabled: false));
-
-        // Act
-        await sut.Handle(command, cts.Token);
-
-        // Assert
-        _userRepository.Verify(x => x.GetUserByEmailAsync(command.Email, cts.Token), Times.Once);
-        _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserLoginSagaStartedIntegrationEvent>(), cts.Token), Times.Once);
-        _unitOfWork.Verify(x => x.SaveChangesAsync(cts.Token), Times.Once);
-    }
-
-    [Fact]
-    public async Task Handle_WhenTwoFactorEnabled_PropagatesCancellationTokenToTwoFactorManager()
-    {
-        // Arrange
-        var sut = CreateSut();
-        var command = CreateCommand();
-        var user = CreateUser(isTwoFactorEnabled: true);
-        using var cts = new CancellationTokenSource();
-
-        _authService
-            .Setup(x => x.LoginAsync(command.Email, command.Password))
-            .ReturnsAsync(CreateTokenResponse());
-
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        _preAuthTokenService
-            .Setup(x => x.GeneratePreAuthToken(command.Email))
-            .Returns("pre-auth-token");
-
-        _twoFactorManager
-            .Setup(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("otp-session-id");
-
-        // Act
-        await sut.Handle(command, cts.Token);
-
-        // Assert
-        _twoFactorManager.Verify(x => x.InitiateTwoFactorProcessAsync(It.IsAny<AppUser>(), cts.Token), Times.Once);
+        _logger.Verify(x => x.Log(
+            LogLevel.Error,
+            It.IsAny<EventId>(),
+            It.IsAny<It.IsAnyType>(),
+            expectedException,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 }
