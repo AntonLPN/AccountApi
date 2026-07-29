@@ -5,14 +5,14 @@ namespace Account.Domain.Entities;
 
 public class ApiKey : AggregateRoot
 {
-    [Key] public int Id { get; set; }
-    [Column("Key")] public required string ApiKeyValue { get; set; }
+    [Key] public int Id { get; init; }
+    [Column("Key")] public required string ApiKeyValue { get; init; }
     public bool IsAuthorize { get; set; } = true;
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; init; }
 
     public DateTime ExpiredAt { get; set; }
 
-    public required string UserId { get; set; }
+    public required string UserId { get; init; }
     [ForeignKey(nameof(UserId))] public AppUser AppUser { get; set; }
 
     public static ApiKey Create(ApiKeyCreateParams createParams)
@@ -23,7 +23,7 @@ public class ApiKey : AggregateRoot
         {
             ApiKeyValue = value,
             CreatedAt = DateTime.UtcNow,
-            ExpiredAt = DateTime.UtcNow.AddDays(30),
+            ExpiredAt = DateTime.UtcNow.AddYears(99),
             IsAuthorize = createParams.IsAuthorize,
             UserId = createParams.UserId
         };

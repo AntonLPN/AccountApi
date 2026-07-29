@@ -21,7 +21,7 @@ public class RegisterUserHandler(
     IUnitOfWork unitOfWork,
     IRepository<AppUser> userRepository,
     IRepository<ApiKey> apiKeyRepository,
-    ILoginAuditRepository  loginAuditRepository,
+    IRepository<LoginAudit> loginAuditRepository,
     ICryptography cryptographyService,
     IPublishEndpoint publishEndpoint,
     IUserAccountService userAccountService)
@@ -50,7 +50,7 @@ public class RegisterUserHandler(
             
             var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id, true));
             await apiKeyRepository.AddAsync(apiKey, cancellationToken);
-            //this is currently ned create here, because whe need to be sure the user exists in DB
+            //this is currently ned create here because whe need to be sure the user exists in DB
             var loginAuditDto = new CreateLoginAuditParams
             {
                 UserId = user.Id,
@@ -61,7 +61,7 @@ public class RegisterUserHandler(
                 LoggedInAt = DateTime.UtcNow
             };
             var loginAudit = LoginAudit.Create(loginAuditDto);
-            loginAuditRepository.AddLogin(loginAudit, cancellationToken);
+            await loginAuditRepository.AddAsync(loginAudit, cancellationToken);
             
             //Start Saga
             await publishEndpoint.Publish(new UserRegisterSagaStartedIntegrationEvent

@@ -2,7 +2,7 @@ using Account.Domain.DTOs;
 
 namespace Account.Domain.Entities;
 
-public class LoginAudit
+public class LoginAudit : AggregateRoot
 {
     public long Id { get; set; }
     public string UserId { get; set; } = "";
@@ -25,6 +25,5 @@ public class LoginAudit
             IsSuspicious = @params.IsSuspicious,
             LoggedInAt = @params.LoggedInAt
         };
-        
     }
 }
