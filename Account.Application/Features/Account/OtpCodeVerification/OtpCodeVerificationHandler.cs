@@ -1,7 +1,9 @@
 using Account.Contracts.Saga.TwoFactor.Events;
+using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Domain.Repositories;
+using Account.Domain.Specifications;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
@@ -13,7 +15,7 @@ namespace Account.Application.Features.Account.OtpCodeVerification;
 
 public class OtpCodeVerificationHandler(
     ILogger<OtpCodeVerificationHandler> logger,
-    IUserRepository userRepository,
+    IRepository<AppUser> userRepository,
     IOtpSessionRepository otpSessionRepository,
     IUnitOfWork unitOfWork,
     IAuthService authService,
@@ -29,11 +31,13 @@ public class OtpCodeVerificationHandler(
         var normalizedEmail = Email.Create(request.Email);
         try
         {
-            var user = await userRepository.GetUserByEmailAsync(normalizedEmail, cancellationToken);
+            var user = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(normalizedEmail),
+                cancellationToken);
             if (user is null)
                 return Result<OtpConfirmationResult>.NotFound("User not found");
 
-            var otpActiveSession = await otpSessionRepository.GetActiveOtpSessionAsync(user.Id,request.OtpCode, cancellationToken);
+            var otpActiveSession =
+                await otpSessionRepository.GetActiveOtpSessionAsync(user.Id, request.OtpCode, cancellationToken);
             if (otpActiveSession == null || otpActiveSession.UsedAt != null)
                 return Result<OtpConfirmationResult>.NotFound(
                     "No active OTP session found for the user or OTP already used");
@@ -43,7 +47,7 @@ public class OtpCodeVerificationHandler(
                 logger.LogWarning("OTP session expired for user {UserId}", user.Id);
                 return Result<OtpConfirmationResult>.Conflict("OTP session expired");
             }
-            
+
             var secretKey = Convert.FromBase64String(user.EncryptedTwoFactorSecret);
             var totp = new Totp(secretKey, step: 300, mode: OtpHashMode.Sha1, totpSize: 6);
             bool isValid = totp.VerifyTotp(request.OtpCode, out long timeStepMatched,
@@ -67,7 +71,6 @@ public class OtpCodeVerificationHandler(
                 CorrelationId = otpActiveSession.CorrelationId,
                 UserId = user.Id,
                 IsValid = true,
-
             }, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             logger.LogInformation("OTP verification successful for user {UserId}", user.Id);

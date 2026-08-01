@@ -3,7 +3,7 @@ using Account.Infrastructure.HttpClients;
 using Account.Infrastructure.Persistence;
 using AccountApi.Authorization;
 using AccountApi.Extensions;
-using AccountApi.Middleware;
+using AccountApi.Middlewares;
 using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);

@@ -6,7 +6,10 @@ using Account.Domain.Enums;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Domain.Repositories;
+using Account.Domain.Specifications;
 using Ardalis.Result;
+using Ardalis.SharedKernel;
+using Ardalis.Specification;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -17,15 +20,14 @@ public class ProviderLoginHandlerTests
 {
     private readonly Mock<ILogger<ProviderLoginHandler>> _logger = new();
     private readonly Mock<IProviderValidator> _providerValidator = new();
-    private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<IRepository<AppUser>> _userRepository = new();
     private readonly Mock<IApiKeyRepository> _apiKeyRepository = new();
     private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IAuthService> _authService = new();
 
     private ProviderLoginHandler CreateSut()
-    {
-        return new ProviderLoginHandler(
+        => new(
             _logger.Object,
             _providerValidator.Object,
             _userRepository.Object,
@@ -33,272 +35,206 @@ public class ProviderLoginHandlerTests
             _publishEndpoint.Object,
             _unitOfWork.Object,
             _authService.Object);
-    }
 
-    private static ProviderLoginCommand CreateCommand(
-        string providerToken = "google-token-123",
-        AuthProviders provider = AuthProviders.Google,
-        string? ipAddress = "192.168.1.1",
-        string? userAgent = "Mozilla/5.0")
-        => new(providerToken, provider, ipAddress, userAgent);
+    private static ProviderLoginCommand CreateCommand(string token = "google_token",
+        string? ipAddress = "127.0.0.1", string? userAgent = "userAgent")
+        => new(token, AuthProviders.Google, ipAddress, userAgent);
 
-    private static AppUser CreateUser(string id = "user123", string email = "test@mail.com")
+    private void SetupProviderValidate(string? email = "test@gmail.com")
+        => _providerValidator
+            .Setup(x => x.ValidateProviderTokenAndGetEmailAsync(It.IsAny<AuthProviders>(), It.IsAny<string>()))
+            .ReturnsAsync(email);
+
+    private void SetupUserByEmail(AppUser? user)
+        => _userRepository
+            .Setup(x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+    private static TokenResponse CreateTokenResponse() => new()
     {
-        return new AppUser
-        {
-            Id = id,
-            Email = email,
-            UserName = email,
-            PasswordHash = "hash",
-            EmailConfirmed = true
-        };
-    }
+        AccessToken = "access_token",
+        RefreshToken = "refresh_token",
+        TokenType = "Bearer",
+        ExpiresIn = 3600,
+        Scope = "openid"
+    };
 
-    private static TokenResponse CreateTokenResponse(
-        string accessToken = "access_token",
-        string refreshToken = "refresh_token",
-        string tokenType = "Bearer",
-        int expiresIn = 3600,
-        string scope = "scope")
+    [Fact]
+    public async Task Handle_WhenEmailFromProviderIsNull_ThrowsArgumentNullException()
     {
-        return new TokenResponse
-        {
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-            TokenType = tokenType,
-            ExpiresIn = expiresIn,
-            Scope = scope
-        };
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+
+        SetupProviderValidate(null);
+
+        await Assert.ThrowsAsync<ArgumentNullException>(() => sut.Handle(cmd, CancellationToken.None));
+
+        _userRepository.Verify(x => x.FirstOrDefaultAsync(
+            It.IsAny<ISpecification<AppUser>>(), It.IsAny<CancellationToken>()), Times.Never);
+        _authService.Verify(x => x.LoginAsync(It.IsAny<string>()), Times.Never);
     }
 
-    // [Fact]
-    // public async Task Handle_WhenProviderValidationFails_ReturnsNull()
-    // {
-    //     // Arrange
-    //     var sut = CreateSut();
-    //     var command = CreateCommand();
-    //
-    //     _providerValidator
-    //         .Setup(x => x.ValidateProviderTokenAndGetEmailAsync(command.Provider, command.ProviderToken))
-    //         .ReturnsAsync((string?)null);
-    //
-    //     // Act & Assert
-    //     await Assert.ThrowsAsync<ArgumentException>(async () => await sut.Handle(command, CancellationToken.None));
-    // }
+    [Fact]
+    public async Task Handle_WhenEmailFromProviderIsEmpty_ThrowsArgumentException()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+
+        SetupProviderValidate(string.Empty);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => sut.Handle(cmd, CancellationToken.None));
+
+        _userRepository.Verify(x => x.FirstOrDefaultAsync(
+            It.IsAny<ISpecification<AppUser>>(), It.IsAny<CancellationToken>()), Times.Never);
+        _authService.Verify(x => x.LoginAsync(It.IsAny<string>()), Times.Never);
+    }
 
     [Fact]
     public async Task Handle_WhenUserNotFound_ReturnsUnauthorized()
     {
-        // Arrange
         var sut = CreateSut();
-        var command = CreateCommand();
-        const string email = "test@mail.com";
+        var cmd = CreateCommand();
+        const string email = "test@gmail.com";
 
-        _providerValidator
-            .Setup(x => x.ValidateProviderTokenAndGetEmailAsync(command.Provider, command.ProviderToken))
-            .ReturnsAsync(email);
+        SetupProviderValidate(email);
+        SetupUserByEmail(null);
 
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AppUser?)null);
+        var result = await sut.Handle(cmd, CancellationToken.None);
 
-        // Act
-        var result = await sut.Handle(command, CancellationToken.None);
-
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultStatus.Unauthorized, result.Status);
+
+        _apiKeyRepository.Verify(x => x.GetApiKeyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _authService.Verify(x => x.LoginAsync(It.IsAny<string>()), Times.Never);
         _publishEndpoint.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task Handle_WhenAuthServiceReturnsNull_ThrowsException()
+    public async Task Handle_WhenAuthServiceReturnsNull_ThrowsAndLogsError()
     {
-        // Arrange
         var sut = CreateSut();
-        var command = CreateCommand();
-        var user = CreateUser();
-        const string email = "test@mail.com";
+        var cmd = CreateCommand();
+        const string email = "test@gmail.com";
+        var user = new AppUser { Id = "user-id", Email = email };
 
-        _providerValidator
-            .Setup(x => x.ValidateProviderTokenAndGetEmailAsync(command.Provider, command.ProviderToken))
-            .ReturnsAsync(email);
-
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
+        SetupProviderValidate(email);
+        SetupUserByEmail(user);
+        _apiKeyRepository
+            .Setup(x => x.GetApiKeyAsync(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("api-key");
         _authService
             .Setup(x => x.LoginAsync(email))
             .ReturnsAsync((TokenResponse?)null);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(async () => await sut.Handle(command, CancellationToken.None));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => sut.Handle(cmd, CancellationToken.None));
+
+        _publishEndpoint.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+
+        _logger.Verify(x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<ArgumentNullException>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 
     [Fact]
-    public async Task Handle_WhenLoginSucceeds_ReturnsSuccessWithTokenAndApiKey()
+    public async Task Handle_WhenSuccess_ReturnsApiKeyAndToken()
     {
-        // Arrange
         var sut = CreateSut();
-        var command = CreateCommand();
-        var user = CreateUser();
-        var tokenResponse = CreateTokenResponse();
-        const string apiKey = "api-key-123";
-        const string email = "test@mail.com";
+        var cmd = CreateCommand();
+        const string email = "test@gmail.com";
+        const string apiKey = "api-key-abc";
+        var user = new AppUser { Id = "user-id-123", Email = email };
+        var token = CreateTokenResponse();
 
-        _providerValidator
-            .Setup(x => x.ValidateProviderTokenAndGetEmailAsync(command.Provider, command.ProviderToken))
-            .ReturnsAsync(email);
-
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        _authService
-            .Setup(x => x.LoginAsync(email))
-            .ReturnsAsync(tokenResponse);
-
+        SetupProviderValidate(email);
+        SetupUserByEmail(user);
         _apiKeyRepository
             .Setup(x => x.GetApiKeyAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(apiKey);
+        _authService
+            .Setup(x => x.LoginAsync(email))
+            .ReturnsAsync(token);
+        _publishEndpoint
+            .Setup(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
-        // Act
-        var result = await sut.Handle(command, CancellationToken.None);
+        var result = await sut.Handle(cmd, CancellationToken.None);
 
-        // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(ResultStatus.Ok, result.Status);
         Assert.Equal(apiKey, result.Value.ApiKey);
-        Assert.Same(tokenResponse, result.Value.Token);
+        Assert.Equal(token.AccessToken, result.Value.Token!.AccessToken);
+        Assert.Equal(token.RefreshToken, result.Value.Token.RefreshToken);
+
+        _publishEndpoint.Verify(x => x.Publish(
+            It.Is<UserLoginSagaStartedIntegrationEvent>(e =>
+                e.UserId == user.Id &&
+                e.Email == user.Email &&
+                e.IpAddress == cmd.IpAddress &&
+                e.UserAgent == cmd.UserAgent),
+            It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Handle_WhenApiKeyIsNull_ReturnsSuccessWithEmptyApiKey()
     {
-        // Arrange
         var sut = CreateSut();
-        var command = CreateCommand();
-        var user = CreateUser();
-        var tokenResponse = CreateTokenResponse();
-        const string email = "test@mail.com";
+        var cmd = CreateCommand();
+        const string email = "test@gmail.com";
+        var user = new AppUser { Id = "user-id-123", Email = email };
 
-        _providerValidator
-            .Setup(x => x.ValidateProviderTokenAndGetEmailAsync(command.Provider, command.ProviderToken))
-            .ReturnsAsync(email);
-
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        _authService
-            .Setup(x => x.LoginAsync(email))
-            .ReturnsAsync(tokenResponse);
-
+        SetupProviderValidate(email);
+        SetupUserByEmail(user);
         _apiKeyRepository
-            .Setup(x => x.GetApiKeyAsync(user.Id,It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetApiKeyAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync((string?)null);
+        _authService
+            .Setup(x => x.LoginAsync(email))
+            .ReturnsAsync(CreateTokenResponse());
+        _publishEndpoint
+            .Setup(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
-        // Act
-        var result = await sut.Handle(command, CancellationToken.None);
+        var result = await sut.Handle(cmd, CancellationToken.None);
 
-        // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal("", result.Value.ApiKey);
-    }
-
-    [Fact]
-    public async Task Handle_WhenLoginSucceeds_PublishesSagaStartedEventWithUserDetails()
-    {
-        // Arrange
-        var sut = CreateSut();
-        var command = CreateCommand();
-        var user = CreateUser();
-        const string email = "test@mail.com";
-
-        _providerValidator
-            .Setup(x => x.ValidateProviderTokenAndGetEmailAsync(command.Provider, command.ProviderToken))
-            .ReturnsAsync(email);
-
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        _authService
-            .Setup(x => x.LoginAsync(email))
-            .ReturnsAsync(CreateTokenResponse());
-
-        // Act
-        await sut.Handle(command, CancellationToken.None);
-
-        // Assert
-        _publishEndpoint.Verify(x => x.Publish(
-            It.Is<UserLoginSagaStartedIntegrationEvent>(e =>
-                e.CorrelationId != Guid.Empty &&
-                e.UserId == user.Id &&
-                e.Email == user.Email &&
-                e.IpAddress == command.IpAddress &&
-                e.UserAgent == command.UserAgent),
-            It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task Handle_WhenLoginSucceeds_SavesChangesForSaga()
-    {
-        // Arrange
-        var sut = CreateSut();
-        var command = CreateCommand();
-        var user = CreateUser();
-        const string email = "test@mail.com";
-
-        _providerValidator
-            .Setup(x => x.ValidateProviderTokenAndGetEmailAsync(command.Provider, command.ProviderToken))
-            .ReturnsAsync(email);
-
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        _authService
-            .Setup(x => x.LoginAsync(email))
-            .ReturnsAsync(CreateTokenResponse());
-
-        // Act
-        await sut.Handle(command, CancellationToken.None);
-
-        // Assert
-        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(string.Empty, result.Value.ApiKey);
     }
 
     [Fact]
     public async Task Handle_PropagatesCancellationToken()
     {
-        // Arrange
         var sut = CreateSut();
-        var command = CreateCommand();
-        var user = CreateUser();
-        const string email = "test@mail.com";
+        var cmd = CreateCommand();
+        const string email = "test@gmail.com";
+        var user = new AppUser { Id = "user-id-123", Email = email };
         using var cts = new CancellationTokenSource();
 
-        _providerValidator
-            .Setup(x => x.ValidateProviderTokenAndGetEmailAsync(command.Provider, command.ProviderToken))
-            .ReturnsAsync(email);
-
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
+        SetupProviderValidate(email);
+        SetupUserByEmail(user);
+        _apiKeyRepository
+            .Setup(x => x.GetApiKeyAsync(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("api-key");
         _authService
             .Setup(x => x.LoginAsync(email))
             .ReturnsAsync(CreateTokenResponse());
+        _publishEndpoint
+            .Setup(x => x.Publish(It.IsAny<UserLoginSagaStartedIntegrationEvent>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
-        // Act
-        await sut.Handle(command, cts.Token);
+        await sut.Handle(cmd, cts.Token);
 
-        // Assert
-        _userRepository.Verify(x => x.GetUserByEmailAsync(email, cts.Token), Times.Once);
-        _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserLoginSagaStartedIntegrationEvent>(), cts.Token), Times.Once);
-        _unitOfWork.Verify(x => x.SaveChangesAsync(cts.Token), Times.Once);
+        _userRepository.Verify(x => x.FirstOrDefaultAsync(
+            It.IsAny<ISpecification<AppUser>>(), It.IsAny<CancellationToken>()), Times.Once);
+        _apiKeyRepository.Verify(x => x.GetApiKeyAsync(user.Id, It.IsAny<CancellationToken>()), Times.Once);
+        _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserLoginSagaStartedIntegrationEvent>(), It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }
-

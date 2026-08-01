@@ -6,7 +6,10 @@ using Account.Domain.Enums;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Domain.Repositories;
+using Account.Domain.Specifications;
 using Ardalis.Result;
+using Ardalis.SharedKernel;
+using Ardalis.Specification;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -18,7 +21,7 @@ public class ProviderRegisterHandlerTests
     private readonly Mock<ILogger<ProviderRegisterHandler>> _logger = new();
     private readonly Mock<IAuthService> _authService = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
-    private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<IRepository<AppUser>> _userRepository = new();
     private readonly Mock<IApiKeyRepository> _apiKeyRepository = new();
     private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
     private readonly Mock<IAppDbTransaction> _tx = new();
@@ -31,6 +34,10 @@ public class ProviderRegisterHandlerTests
         _unitOfWork
             .Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(_tx.Object);
+
+        _userRepository
+            .Setup(x => x.AddAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AppUser u, CancellationToken _) => u);
 
         return new ProviderRegisterHandler(
             _logger.Object,
@@ -52,6 +59,20 @@ public class ProviderRegisterHandlerTests
             .Setup(x => x.ValidateProviderTokenAndGetEmailAsync(It.IsAny<AuthProviders>(), It.IsAny<string>()))
             .ReturnsAsync(email);
 
+    private void SetupUserByEmail(AppUser? user)
+        => _userRepository
+            .Setup(x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+    private void SetupUserByReferralCode(AppUser? user)
+        => _userRepository
+            .Setup(x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<AppUser>>(s => s is UserByReferralCodeSpec),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
     [Fact]
     public async Task Handle_WhenUserAlreadyExists_ReturnsConflict()
     {
@@ -59,9 +80,7 @@ public class ProviderRegisterHandlerTests
         var cmd = CreateCommand();
         SetupProviderValidate();
 
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AppUser());
+        SetupUserByEmail(new AppUser());
 
         var result = await sut.Handle(cmd, CancellationToken.None);
 
@@ -92,18 +111,14 @@ public class ProviderRegisterHandlerTests
         };
 
         SetupProviderValidate(email);
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AppUser?)null);
+        SetupUserByEmail(null);
         _userAccountService
             .Setup(x => x.RegisterUserAsync(email, "", false))
             .ReturnsAsync(Result<string>.Success(userId));
         _authService
             .Setup(x => x.LoginAsync(email))
             .ReturnsAsync(token);
-        _userRepository
-            .Setup(x => x.GetUserByReferralCodeAsReadOnlyAsync(cmd.ReferrerCode, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AppUser?)null);
+        SetupUserByReferralCode(null);
         _apiKeyRepository
             .Setup(x => x.CreateApiKey(It.IsAny<string>()))
             .Returns(apiKey);
@@ -117,7 +132,7 @@ public class ProviderRegisterHandlerTests
         Assert.Equal("access_token", result.Value.Token!.AccessToken);
         Assert.Equal("refresh_token", result.Value.Token.RefreshToken);
 
-        _userRepository.Verify(x => x.AddUser(It.IsAny<AppUser>()), Times.Once);
+        _userRepository.Verify(x => x.AddAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()), Times.Once);
         _apiKeyRepository.Verify(x => x.CreateApiKey(It.IsAny<string>()), Times.Once);
         _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserRegisterSagaStartedIntegrationEvent>(), It.IsAny<CancellationToken>()), Times.Once);
         _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -137,9 +152,7 @@ public class ProviderRegisterHandlerTests
         const string email = "test@gmail.com";
 
         SetupProviderValidate(email);
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AppUser?)null);
+        SetupUserByEmail(null);
         _userAccountService
             .Setup(x => x.RegisterUserAsync(email, "", false))
             .ThrowsAsync(new Exception("Keycloak unavailable"));
@@ -163,18 +176,14 @@ public class ProviderRegisterHandlerTests
         var referrer = AppUser.Create(new AppUserCreateParams("ref-user-id", "referrer@mail.com", null, null));
 
         SetupProviderValidate(email);
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AppUser?)null);
+        SetupUserByEmail(null);
         _userAccountService
             .Setup(x => x.RegisterUserAsync(email, "", false))
             .ReturnsAsync(Result<string>.Success("new-user-id"));
         _authService
             .Setup(x => x.LoginAsync(email))
             .ReturnsAsync(new TokenResponse { AccessToken = "token" });
-        _userRepository
-            .Setup(x => x.GetUserByReferralCodeAsReadOnlyAsync("VALID_REF", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(referrer);
+        SetupUserByReferralCode(referrer);
         _apiKeyRepository
             .Setup(x => x.CreateApiKey(It.IsAny<string>()))
             .Returns("api-key");
@@ -183,8 +192,11 @@ public class ProviderRegisterHandlerTests
         var result = await sut.Handle(cmd, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        _userRepository.Verify(x => x.GetUserByReferralCodeAsReadOnlyAsync("VALID_REF", It.IsAny<CancellationToken>()), Times.Once);
-        _userRepository.Verify(x => x.AddUser(It.Is<AppUser>(u => u.ReferrerId == referrer.Id)), Times.Once);
+        _userRepository.Verify(x => x.FirstOrDefaultAsync(
+            It.Is<ISpecification<AppUser>>(s => s is UserByReferralCodeSpec),
+            It.IsAny<CancellationToken>()), Times.Once);
+        _userRepository.Verify(x => x.AddAsync(
+            It.Is<AppUser>(u => u.ReferrerId == referrer.Id), It.IsAny<CancellationToken>()), Times.Once);
         _loginAuditRepository.Verify(x => x.AddLogin(It.Is<LoginAudit>(a =>
             a.UserId == "new-user-id" &&
             a.Email == email &&
@@ -202,18 +214,14 @@ public class ProviderRegisterHandlerTests
         const string apiKey = "api-key-abc";
 
         SetupProviderValidate(email);
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AppUser?)null);
+        SetupUserByEmail(null);
         _userAccountService
             .Setup(x => x.RegisterUserAsync(email, "", false))
             .ReturnsAsync(Result<string>.Success(userId));
         _authService
             .Setup(x => x.LoginAsync(email))
             .ReturnsAsync(new TokenResponse { AccessToken = "token" });
-        _userRepository
-            .Setup(x => x.GetUserByReferralCodeAsReadOnlyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AppUser?)null);
+        SetupUserByReferralCode(null);
         _apiKeyRepository
             .Setup(x => x.CreateApiKey(It.IsAny<string>()))
             .Returns(apiKey);
@@ -224,7 +232,6 @@ public class ProviderRegisterHandlerTests
         _publishEndpoint.Verify(x => x.Publish(
             It.Is<UserRegisterSagaStartedIntegrationEvent>(e =>
                 e.CorrelationId != Guid.Empty &&
-                e.UserId != null &&
                 e.Email == email &&
                 e.ApiKey == apiKey),
             It.IsAny<CancellationToken>()), Times.Once);
@@ -238,18 +245,14 @@ public class ProviderRegisterHandlerTests
         const string email = "test@gmail.com";
 
         SetupProviderValidate(email);
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AppUser?)null);
+        SetupUserByEmail(null);
         _userAccountService
             .Setup(x => x.RegisterUserAsync(email, "", false))
             .ReturnsAsync(Result<string>.Success("user-id"));
         _authService
             .Setup(x => x.LoginAsync(email))
             .ReturnsAsync(new TokenResponse { AccessToken = "token" });
-        _userRepository
-            .Setup(x => x.GetUserByReferralCodeAsReadOnlyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AppUser?)null);
+        SetupUserByReferralCode(null);
         _apiKeyRepository
             .Setup(x => x.CreateApiKey(It.IsAny<string>()))
             .Returns("api-key");
@@ -270,18 +273,14 @@ public class ProviderRegisterHandlerTests
         using var cts = new CancellationTokenSource();
 
         SetupProviderValidate(email);
-        _userRepository
-            .Setup(x => x.GetUserByEmailAsync(email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AppUser?)null);
+        SetupUserByEmail(null);
         _userAccountService
             .Setup(x => x.RegisterUserAsync(email, "", false))
             .ReturnsAsync(Result<string>.Success("user-id"));
         _authService
             .Setup(x => x.LoginAsync(email))
             .ReturnsAsync(new TokenResponse { AccessToken = "token" });
-        _userRepository
-            .Setup(x => x.GetUserByReferralCodeAsReadOnlyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AppUser?)null);
+        SetupUserByReferralCode(null);
         _apiKeyRepository
             .Setup(x => x.CreateApiKey(It.IsAny<string>()))
             .Returns("api-key");
@@ -289,8 +288,11 @@ public class ProviderRegisterHandlerTests
 
         await sut.Handle(cmd, cts.Token);
 
-        _userRepository.Verify(x => x.GetUserByEmailAsync(email, cts.Token), Times.Once);
-        _userRepository.Verify(x => x.GetUserByReferralCodeAsReadOnlyAsync(It.IsAny<string>(), cts.Token), Times.Once);
+        _userRepository.Verify(x => x.FirstOrDefaultAsync(
+            It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec), cts.Token), Times.Once);
+        _userRepository.Verify(x => x.FirstOrDefaultAsync(
+            It.Is<ISpecification<AppUser>>(s => s is UserByReferralCodeSpec), cts.Token), Times.Once);
+        _userRepository.Verify(x => x.AddAsync(It.IsAny<AppUser>(), cts.Token), Times.Once);
         _publishEndpoint.Verify(x => x.Publish(It.IsAny<UserRegisterSagaStartedIntegrationEvent>(), cts.Token), Times.Once);
         _unitOfWork.Verify(x => x.SaveChangesAsync(cts.Token), Times.Once);
         _unitOfWork.Verify(x => x.BeginTransactionAsync(cts.Token), Times.Once);

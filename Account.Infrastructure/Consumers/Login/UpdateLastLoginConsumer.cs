@@ -1,6 +1,10 @@
 using Account.Contracts.Saga.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
+using Account.Domain.Entities;
 using Account.Domain.Repositories;
+using Account.Domain.Specifications;
+using Account.Domain.ValueObjects;
+using Ardalis.SharedKernel;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
@@ -8,17 +12,19 @@ namespace Account.Infrastructure.Consumers.Login;
 
 public class UpdateLastLoginConsumer(
     ILogger<UpdateLastLoginConsumer> logger,
-    IUserRepository userRepository,
+    IRepository<AppUser> userRepository,
     IUnitOfWork unitOfWork)
     : IConsumer<UpdateLastLoginIntegrationCommand>
 {
     public async Task Consume(ConsumeContext<UpdateLastLoginIntegrationCommand> context)
     {
         var message = context.Message;
+        var normalizedEmail = Email.Create(message.Email);
         logger.LogInformation("Updating last login for UserId={UserId}", message.UserId);
         try
         {
-            var user = await userRepository.GetUserByEmailAsync(message.Email, context.CancellationToken);
+            var user = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(normalizedEmail),
+                context.CancellationToken);
             if (user is null)
             {
                 await context.Publish(new UserLoginSagaFailedIntegrationEvent
@@ -29,10 +35,11 @@ public class UpdateLastLoginConsumer(
                 });
                 return;
             }
+
             user.UpdateLastLoginAt();
-            await unitOfWork.SaveChangesAsync(context.CancellationToken);  
+            await unitOfWork.SaveChangesAsync(context.CancellationToken);
             logger.LogInformation("Last login updated for UserId={UserId}", message.UserId);
-            
+
             await context.Publish(new LastLoginUpdatedIntegrationEvent
             {
                 CorrelationId = message.CorrelationId,
@@ -47,6 +54,5 @@ public class UpdateLastLoginConsumer(
             logger.LogError(e, "Failed to update last login for UserId={UserId}", message.UserId);
             throw;
         }
- 
     }
 }

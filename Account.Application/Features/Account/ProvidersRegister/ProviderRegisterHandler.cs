@@ -7,6 +7,7 @@ using Account.Domain.Enums;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Domain.Repositories;
+using Account.Domain.Specifications;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
 using MassTransit;
@@ -16,7 +17,7 @@ namespace Account.Application.Features.Account.ProvidersRegister;
 
 public class ProviderRegisterHandler(
     ILogger<ProviderRegisterHandler> logger,
-    IUserRepository userRepository,
+    IRepository<AppUser> userRepository,
     IAuthService authService,
     IUnitOfWork unitOfWork,
     IApiKeyRepository apiKeyRepository,
@@ -34,34 +35,38 @@ public class ProviderRegisterHandler(
         ArgumentException.ThrowIfNullOrEmpty(email);
         try
         {
-            if (await userRepository.GetUserByEmailAsync(email, cancellationToken) is not null)
+            if (await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(email), cancellationToken) is not null)
                 return Result<ProviderRegisterResult>.Conflict("User already exists");
 
             var registerResult = await userAccountService.RegisterUserAsync(email, "", false);
+            if(!registerResult.IsSuccess)
+                return Result<ProviderRegisterResult>.Error(registerResult.Errors.FirstOrDefault() ?? "Registration failed");
+            
             string userId = registerResult.Value;
 
             var userToken = await authService.LoginAsync(email);
             ArgumentNullException.ThrowIfNull(userToken);
 
-            var whoInvited = await userRepository.GetUserByReferralCodeAsReadOnlyAsync(request.ReferrerCode, cancellationToken);
+            var whoInvited = await userRepository.FirstOrDefaultAsync(new UserByReferralCodeSpec(request.ReferrerCode),
+                cancellationToken);
             //Save to DB
             await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
             var user = AppUser.Create(new AppUserCreateParams(userId, email, null, whoInvited?.Id, true,
                 nameof(AuthProviders.Google)));
-            userRepository.AddUser(user);
+            await userRepository.AddAsync(user, cancellationToken);
             var apiKey = apiKeyRepository.CreateApiKey(user.Id);
-            
+
             var loginAudit = LoginAudit.Create(new CreateLoginAuditParams
             {
                 UserId = user.Id,
                 Email = email,
                 IpAddress = request.IpAddress,
                 UserAgent = request.UserAgent,
-                IsSuspicious = false, 
+                IsSuspicious = false,
                 LoggedInAt = DateTime.UtcNow
             });
             loginAuditRepository.AddLogin(loginAudit, cancellationToken);
-            
+
             //Start Saga
             await publishEndpoint.Publish(new UserRegisterSagaStartedIntegrationEvent
             {

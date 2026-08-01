@@ -1,6 +1,6 @@
-using Account.Application.Features.Account.ChangePassword;
+using Account.Domain.Entities;
 using Account.Domain.Interfaces;
-using Account.Domain.Repositories;
+using Account.Domain.Specifications;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
@@ -10,7 +10,7 @@ namespace Account.Application.Features.Account.ForgotPassword;
 
 public class ForgotPasswordHandler(
     ILogger<ForgotPasswordHandler> logger,
-    IUserRepository userRepository,
+    IRepository<AppUser> userRepository,
     IMfaManager mfaManager,
     IPreAuthTokenService preAuthTokenService)
     : ICommandHandler<ForgotPasswordCommand, Result<ForgotPasswordResult>>
@@ -21,7 +21,8 @@ public class ForgotPasswordHandler(
         var normalizedEmail = Email.Create(request.Email);
         try
         {
-            var user = await userRepository.GetUserByEmailAsync(normalizedEmail, cancellationToken);
+            var user = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(normalizedEmail),
+                cancellationToken);
             if (user is null)
                 return Result<ForgotPasswordResult>.NotFound("User not found");
 

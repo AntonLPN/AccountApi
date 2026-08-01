@@ -50,7 +50,7 @@ public class RegisterUserHandler(
                 whoInvited?.Id, false, nameof(AuthProviders.LocalProvider)));
             await userRepository.AddAsync(user, cancellationToken);
 
-            var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id, true));
+            var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id));
             await apiKeyRepository.AddAsync(apiKey, cancellationToken);
             //this is currently ned create here because whe need to be sure the user exists in DB
             var loginAuditDto = new CreateLoginAuditParams

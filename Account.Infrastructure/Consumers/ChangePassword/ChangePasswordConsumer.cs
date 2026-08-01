@@ -1,6 +1,9 @@
 using Account.Contracts.Events;
+using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
+using Account.Domain.Specifications;
+using Ardalis.SharedKernel;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
@@ -8,7 +11,7 @@ namespace Account.Infrastructure.Consumers.ChangePassword;
 
 public class ChangePasswordConsumer(
     ILogger<ChangePasswordConsumer> logger,
-    IUserRepository userRepository,
+    IRepository<AppUser> userRepository,
     IEmail emailSender) : IConsumer<ChangePasswordIntegrationEvent>
 {
     public async Task Consume(ConsumeContext<ChangePasswordIntegrationEvent> context)
@@ -17,7 +20,7 @@ public class ChangePasswordConsumer(
         logger.LogInformation("Change Password Event Received");
         try
         {
-            var user = await userRepository.GetUserByIdAsync(message.UserId, context.CancellationToken);
+            var user = await userRepository.FirstOrDefaultAsync(new UserByIdSpec(message.UserId), context.CancellationToken);
             if (user is null)
             {
                 logger.LogError("User not found in the database for id:  {UserId} in ChangePasswordConsumer",

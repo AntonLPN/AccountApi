@@ -1,6 +1,8 @@
 using Account.Contracts.Events;
+using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
+using Account.Domain.Specifications;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
@@ -11,11 +13,11 @@ namespace Account.Application.Features.Account.ChangePassword;
 
 public class ChangePasswordHandler(
     ILogger<ChangePasswordHandler> logger,
-    IUserRepository userRepository,
+    IRepository<AppUser> userRepository,
     IPreAuthTokenService preAuthTokenService,
     IPasswordService passwordService,
     ICryptography cryptographyService,
-    IPublishEndpoint publishEndpoint, 
+    IPublishEndpoint publishEndpoint,
     IAuthService authService,
     IApiKeyRepository apiKeyRepository,
     IUnitOfWork unitOfWork)
@@ -29,7 +31,7 @@ public class ChangePasswordHandler(
         ArgumentException.ThrowIfNullOrEmpty(request.PendingToken, nameof(request.PendingToken));
 
         var normalizedEmail = Email.Create(request.Email);
-        var user = await userRepository.GetUserByEmailAsync(normalizedEmail, cancellationToken);
+        var user = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(normalizedEmail), cancellationToken);
         if (user == null)
         {
             logger.LogWarning(
@@ -65,7 +67,7 @@ public class ChangePasswordHandler(
             var tokenResponse = await authService.LoginAsync(normalizedEmail, request.Password);
             if (tokenResponse is null)
                 return Result<ChangePasswordResult>.Unauthorized();
-            
+
             return Result<ChangePasswordResult>.Success(new ChangePasswordResult
             {
                 Token = tokenResponse,

@@ -2,7 +2,7 @@ using System.Net;
 using System.Text;
 using FluentValidation;
 
-namespace AccountApi.Middleware;
+namespace AccountApi.Middlewares;
 
 public class ExceptionHandlingMiddleware(
     RequestDelegate next,

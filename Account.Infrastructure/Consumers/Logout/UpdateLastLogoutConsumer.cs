@@ -2,7 +2,11 @@ using Account.Contracts.Saga.UserLogoutSagaEvents.Commands;
 using Account.Contracts.Saga.UserLogoutSagaEvents.Events;
 using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Events;
+using Account.Domain.Entities;
 using Account.Domain.Repositories;
+using Account.Domain.Specifications;
+using Account.Domain.ValueObjects;
+using Ardalis.SharedKernel;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
@@ -10,17 +14,19 @@ namespace Account.Infrastructure.Consumers.Logout;
 
 public class UpdateLastLogoutConsumer(
     ILogger<UpdateLastLogoutConsumer> logger,
-    IUserRepository userRepository,
+    IRepository<AppUser> userRepository,
     IUnitOfWork unitOfWork)
     : IConsumer<UpdateLastLogoutIntegrationCommand>
 {
     public async Task Consume(ConsumeContext<UpdateLastLogoutIntegrationCommand> context)
     {
         var message = context.Message;
+        var normalizedEmail = Email.Create(message.Email);
         logger.LogInformation("Updating last logout for UserId={UserId}", message.UserId);
         try
         {
-            var user = await userRepository.GetUserByEmailAsync(message.Email, context.CancellationToken);
+            var user = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(normalizedEmail),
+                context.CancellationToken);
             if (user is null)
             {
                 await context.Publish(new UserLogoutSagaFailedIntegrationEvent

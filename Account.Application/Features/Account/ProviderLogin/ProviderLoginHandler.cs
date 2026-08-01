@@ -1,7 +1,9 @@
 using Account.Application.Interfaces;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
+using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
+using Account.Domain.Specifications;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
@@ -13,7 +15,7 @@ namespace Account.Application.Features.Account.ProviderLogin;
 public class ProviderLoginHandler(
     ILogger<ProviderLoginHandler> logger,
     IProviderValidator providerValidator,
-    IUserRepository userRepository,
+    IRepository<AppUser> userRepository,
     IApiKeyRepository apiKeyRepository,
     IPublishEndpoint publishEndpoint,
     IUnitOfWork unitOfWork,
@@ -28,7 +30,7 @@ public class ProviderLoginHandler(
         ArgumentException.ThrowIfNullOrEmpty(email);
         try
         {
-            var user = await userRepository.GetUserByEmailAsync(email, cancellationToken);
+            var user = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(email), cancellationToken);
             if (user is null)
                 return Result<ProviderLoginResult>.Unauthorized();
             var apiKey = await apiKeyRepository.GetApiKeyAsync(user.Id, cancellationToken);
@@ -57,7 +59,7 @@ public class ProviderLoginHandler(
         catch (Exception e)
         {
             logger.LogError(e, "Error occurred while handling GoogleLoginCommand");
-            throw;//rethrow to middleware handle exception
+            throw; //rethrow to middleware handle exception
         }
     }
 }

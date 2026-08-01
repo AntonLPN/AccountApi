@@ -28,12 +28,11 @@ public static class DependencyInjectionInfrastructure
         services.AddScoped<IUserAccountService, KeycloakAccountService>();
         services.AddScoped<IPasswordService, KeycloakPasswordService>();
         services.AddScoped<IGoogleAuthService, GoogleService>();
-        
+
         //Repository
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
-        
         services.AddScoped<IUnitOfWork, UnitOfWorkAdapter>();
-        services.AddScoped<IUserRepository, UserRepository>();
+        //TODO remove this when finish refactoring to IRepository and specs 
         services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
         services.AddScoped<ILoginAuditRepository, LoginAuditRepository>();
         services.AddScoped<ILogoutAuditRepository, LogoutAuditRepository>();
