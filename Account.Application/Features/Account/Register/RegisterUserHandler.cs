@@ -49,9 +49,8 @@ public class RegisterUserHandler(
             var user = AppUser.Create(new AppUserCreateParams(keycloakIdUser.Value, normalizedEmail, passwordHash,
                 whoInvited?.Id, false, nameof(AuthProviders.LocalProvider)));
             await userRepository.AddAsync(user, cancellationToken);
-
-            var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id));
-            await apiKeyRepository.AddAsync(apiKey, cancellationToken);
+            var apiKey =
+                await apiKeyRepository.AddAsync(ApiKey.Create(new ApiKeyCreateParams(user.Id)), cancellationToken);
             //this is currently ned create here because whe need to be sure the user exists in DB
             var loginAuditDto = new CreateLoginAuditParams
             {
@@ -84,7 +83,7 @@ public class RegisterUserHandler(
             if (tokenResponse is not null)
                 return Result<RegisterUserResult>.Success(new RegisterUserResult
                 {
-                    ApiKey = apiKey.ApiKeyValue,
+                    ApiKeys = [apiKey.ApiKeyValue],
                     Token = tokenResponse,
                 });
 

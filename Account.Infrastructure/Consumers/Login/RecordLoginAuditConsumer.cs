@@ -2,7 +2,7 @@ using Account.Contracts.Saga.UserLoginSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
 using Account.Domain.DTOs;
 using Account.Domain.Entities;
-using Account.Domain.Repositories;
+using Ardalis.SharedKernel;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
@@ -10,8 +10,7 @@ namespace Account.Infrastructure.Consumers.Login;
 
 public class RecordLoginAuditConsumer(
     ILogger<RecordLoginAuditConsumer> logger,
-    ILoginAuditRepository loginAuditRepository,
-    IUnitOfWork unitOfWork)
+    IRepository<LoginAudit> loginAuditRepository)
     : IConsumer<RecordLoginAuditIntegrationCommand>
 {
     public async Task Consume(ConsumeContext<RecordLoginAuditIntegrationCommand> context)
@@ -29,8 +28,7 @@ public class RecordLoginAuditConsumer(
                 LoggedInAt = DateTime.UtcNow
             };
             var loginAudit = LoginAudit.Create(loginAuditDto);
-            loginAuditRepository.AddLogin(loginAudit, context.CancellationToken);
-            await unitOfWork.SaveChangesAsync(context.CancellationToken);
+            await loginAuditRepository.AddAsync(loginAudit, context.CancellationToken);
         }
         catch (Exception e)
         {

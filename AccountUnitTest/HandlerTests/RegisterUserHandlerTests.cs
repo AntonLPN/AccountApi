@@ -170,7 +170,7 @@ public class RegisterUserHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Equal(ResultStatus.Ok, result.Status);
         Assert.NotNull(result.Value);
-        Assert.NotNull(result.Value.ApiKey);
+        Assert.NotNull(result.Value.ApiKeys);
         Assert.NotNull(result.Value.Token);
         Assert.Equal("access_token", result.Value.Token.AccessToken);
         Assert.Equal("refresh_token", result.Value.Token.RefreshToken);

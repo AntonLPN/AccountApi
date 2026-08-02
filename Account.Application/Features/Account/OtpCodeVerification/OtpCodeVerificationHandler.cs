@@ -19,7 +19,6 @@ public class OtpCodeVerificationHandler(
     IOtpSessionRepository otpSessionRepository,
     IUnitOfWork unitOfWork,
     IAuthService authService,
-    IApiKeyRepository apiKeyRepository,
     IPublishEndpoint publishEndpoint)
     : ICommandHandler<OtpCodeVerificationCommand, Result<OtpConfirmationResult>>
 {
@@ -31,7 +30,7 @@ public class OtpCodeVerificationHandler(
         var normalizedEmail = Email.Create(request.Email);
         try
         {
-            var user = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(normalizedEmail),
+            var user = await userRepository.FirstOrDefaultAsync(new UserByEmailWithAuthorizedApiKeysSpec(normalizedEmail),
                 cancellationToken);
             if (user is null)
                 return Result<OtpConfirmationResult>.NotFound("User not found");
@@ -76,7 +75,7 @@ public class OtpCodeVerificationHandler(
             logger.LogInformation("OTP verification successful for user {UserId}", user.Id);
             return Result<OtpConfirmationResult>.Success(new OtpConfirmationResult()
             {
-                ApiKey = await apiKeyRepository.GetApiKeyAsync(user.Id, cancellationToken),
+                ApiKeys = user.ApiKeys.Select(k => k.ApiKeyValue).ToList(),
                 Token = tokenResponse,
             });
         }

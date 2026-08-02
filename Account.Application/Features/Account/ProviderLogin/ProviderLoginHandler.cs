@@ -16,7 +16,6 @@ public class ProviderLoginHandler(
     ILogger<ProviderLoginHandler> logger,
     IProviderValidator providerValidator,
     IRepository<AppUser> userRepository,
-    IApiKeyRepository apiKeyRepository,
     IPublishEndpoint publishEndpoint,
     IUnitOfWork unitOfWork,
     IAuthService authService)
@@ -30,11 +29,9 @@ public class ProviderLoginHandler(
         ArgumentException.ThrowIfNullOrEmpty(email);
         try
         {
-            var user = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(email), cancellationToken);
+            var user = await userRepository.FirstOrDefaultAsync(new UserByEmailWithAuthorizedApiKeysSpec(email), cancellationToken);
             if (user is null)
                 return Result<ProviderLoginResult>.Unauthorized();
-            var apiKey = await apiKeyRepository.GetApiKeyAsync(user.Id, cancellationToken);
-
             var userToken = await authService.LoginAsync(email);
             ArgumentNullException.ThrowIfNull(userToken);
 
@@ -52,7 +49,7 @@ public class ProviderLoginHandler(
             logger.LogInformation("User {Email} logged in, login saga started", MaskedEmail.Create(email));
             return Result<ProviderLoginResult>.Success(new ProviderLoginResult
             {
-                ApiKey = apiKey ?? "",
+                ApiKeys = user.ApiKeys.Select(k => k.ApiKeyValue).ToList(),
                 Token = userToken
             });
         }

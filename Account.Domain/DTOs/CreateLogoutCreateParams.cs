@@ -1,6 +1,6 @@
 namespace Account.Domain.DTOs;
 
-public class CreateLogoutAuditDto
+public class CreateLogoutCreateParams
 {
     public string UserId { get; set; } = "";
     public string Email { get; set; } = "";

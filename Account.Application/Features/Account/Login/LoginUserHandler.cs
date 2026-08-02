@@ -17,7 +17,6 @@ public class LoginUserHandler(
     IAuthService authService,
     IUnitOfWork unitOfWork,
     IRepository<AppUser> userRepository,
-    IRepository<ApiKey> apiKeyRepository,
     IPublishEndpoint publishEndpoint,
     IMfaManager mfaManager,
     IPreAuthTokenService preAuthTokenService)
@@ -31,7 +30,7 @@ public class LoginUserHandler(
             TokenResponse? tokenResponse = await authService.LoginAsync(normalizedEmail, request.Password);
             if (tokenResponse is null)
                 return Result<LoginUserResult>.Unauthorized();
-            var user = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(normalizedEmail),
+            var user = await userRepository.FirstOrDefaultAsync(new UserByEmailWithAuthorizedApiKeysSpec(normalizedEmail),
                 cancellationToken);
             if (user is null)
                 return Result<LoginUserResult>.Unauthorized();
@@ -72,10 +71,6 @@ public class LoginUserHandler(
     private async Task<LoginUserResult> LoginProcess(AppUser user, string? ipAddress, string? userAgent,
         TokenResponse tokenResponse, CancellationToken cancellationToken)
     {
-        var apiKey = await apiKeyRepository.FirstOrDefaultAsync(new ApiKeyByUserIdSpec(user.Id), cancellationToken);
-        if (apiKey is null)
-            return Result<LoginUserResult>.Error("Failed to generate api key");
-
         await publishEndpoint.Publish(new UserLoginSagaStartedIntegrationEvent
         {
             CorrelationId = Guid.NewGuid(),
@@ -92,7 +87,7 @@ public class LoginUserHandler(
         return Result<LoginUserResult>.Success(new LoginUserResult
         {
             IsMfaRequired = false,
-            ApiKey = apiKey.ApiKeyValue,
+            ApiKeys = user.ApiKeys.Select(k => k.ApiKeyValue).ToList(),
             Token = tokenResponse
         });
     }

@@ -20,10 +20,10 @@ public class ProviderRegisterHandler(
     IRepository<AppUser> userRepository,
     IAuthService authService,
     IUnitOfWork unitOfWork,
-    IApiKeyRepository apiKeyRepository,
+    IRepository<ApiKey> apiKeyRepository,
     IPublishEndpoint publishEndpoint,
     IProviderValidator providerValidator,
-    ILoginAuditRepository loginAuditRepository,
+    IRepository<LoginAudit> loginAuditRepository,
     IUserAccountService userAccountService)
     : ICommandHandler<ProviderRegisterCommand, Result<ProviderRegisterResult>>
 {
@@ -39,9 +39,10 @@ public class ProviderRegisterHandler(
                 return Result<ProviderRegisterResult>.Conflict("User already exists");
 
             var registerResult = await userAccountService.RegisterUserAsync(email, "", false);
-            if(!registerResult.IsSuccess)
-                return Result<ProviderRegisterResult>.Error(registerResult.Errors.FirstOrDefault() ?? "Registration failed");
-            
+            if (!registerResult.IsSuccess)
+                return Result<ProviderRegisterResult>.Error(registerResult.Errors.FirstOrDefault() ??
+                                                            "Registration failed");
+
             string userId = registerResult.Value;
 
             var userToken = await authService.LoginAsync(email);
@@ -54,7 +55,10 @@ public class ProviderRegisterHandler(
             var user = AppUser.Create(new AppUserCreateParams(userId, email, null, whoInvited?.Id, true,
                 nameof(AuthProviders.Google)));
             await userRepository.AddAsync(user, cancellationToken);
-            var apiKey = apiKeyRepository.CreateApiKey(user.Id);
+            
+            var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id, true));
+            await apiKeyRepository.AddAsync(apiKey, cancellationToken);
+
 
             var loginAudit = LoginAudit.Create(new CreateLoginAuditParams
             {
@@ -65,7 +69,7 @@ public class ProviderRegisterHandler(
                 IsSuspicious = false,
                 LoggedInAt = DateTime.UtcNow
             });
-            loginAuditRepository.AddLogin(loginAudit, cancellationToken);
+            await loginAuditRepository.AddAsync(loginAudit, cancellationToken);
 
             //Start Saga
             await publishEndpoint.Publish(new UserRegisterSagaStartedIntegrationEvent
@@ -73,14 +77,14 @@ public class ProviderRegisterHandler(
                 CorrelationId = Guid.NewGuid(),
                 UserId = user.Id,
                 Email = user.Email,
-                ApiKey = apiKey
+                ApiKey = apiKey.ApiKeyValue,
             }, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             await tx.CommitAsync(cancellationToken);
 
             return Result<ProviderRegisterResult>.Success(new ProviderRegisterResult
             {
-                ApiKey = apiKey,
+                ApiKeys = user.ApiKeys.Select(k => k.ApiKeyValue).ToList(),
                 Token = userToken,
             });
         }

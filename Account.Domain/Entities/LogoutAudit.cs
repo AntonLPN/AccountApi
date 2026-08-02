@@ -2,7 +2,7 @@ using Account.Domain.DTOs;
 
 namespace Account.Domain.Entities;
 
-public class LogoutAudit
+public class LogoutAudit : AggregateRoot
 {
     public long Id { get; set; }
     public string UserId { get; set; } = "";
@@ -11,7 +11,7 @@ public class LogoutAudit
     public string? UserAgent { get; set; }
     public DateTime LoggedOutAt { get; set; }
 
-    public static LogoutAudit Create(CreateLogoutAuditDto dto)
+    public static LogoutAudit Create(CreateLogoutCreateParams dto)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dto.UserId, nameof(dto.UserId));
         ArgumentException.ThrowIfNullOrWhiteSpace(dto.Email, nameof(dto.Email));

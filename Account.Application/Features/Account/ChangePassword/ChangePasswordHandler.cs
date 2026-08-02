@@ -19,7 +19,6 @@ public class ChangePasswordHandler(
     ICryptography cryptographyService,
     IPublishEndpoint publishEndpoint,
     IAuthService authService,
-    IApiKeyRepository apiKeyRepository,
     IUnitOfWork unitOfWork)
     : ICommandHandler<ChangePasswordCommand, Result<ChangePasswordResult>>
 {
@@ -31,7 +30,7 @@ public class ChangePasswordHandler(
         ArgumentException.ThrowIfNullOrEmpty(request.PendingToken, nameof(request.PendingToken));
 
         var normalizedEmail = Email.Create(request.Email);
-        var user = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(normalizedEmail), cancellationToken);
+        var user = await userRepository.FirstOrDefaultAsync(new UserByEmailWithAuthorizedApiKeysSpec(normalizedEmail), cancellationToken);
         if (user == null)
         {
             logger.LogWarning(
@@ -71,7 +70,7 @@ public class ChangePasswordHandler(
             return Result<ChangePasswordResult>.Success(new ChangePasswordResult
             {
                 Token = tokenResponse,
-                ApiKey = await apiKeyRepository.GetApiKeyAsync(user.Id, cancellationToken)
+                ApiKeys = user.ApiKeys.Select(k => k.ApiKeyValue).ToList()
             });
         }
         catch (Exception e)

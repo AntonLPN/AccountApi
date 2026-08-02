@@ -33,9 +33,6 @@ public static class DependencyInjectionInfrastructure
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IUnitOfWork, UnitOfWorkAdapter>();
         //TODO remove this when finish refactoring to IRepository and specs 
-        services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
-        services.AddScoped<ILoginAuditRepository, LoginAuditRepository>();
-        services.AddScoped<ILogoutAuditRepository, LogoutAuditRepository>();
         services.AddScoped<IOtpSessionRepository, OtpSessionRepository>();
         //MassTransit
         services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();

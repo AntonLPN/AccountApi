@@ -2,7 +2,7 @@ using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Commands;
 using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Events;
 using Account.Domain.DTOs;
 using Account.Domain.Entities;
-using Account.Domain.Repositories;
+using Ardalis.SharedKernel;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
@@ -10,8 +10,7 @@ namespace Account.Infrastructure.Consumers.Logout;
 
 public class RecordLogoutAuditConsumer(
     ILogger<RecordLogoutAuditConsumer> logger,
-    ILogoutAuditRepository logoutAuditRepository,
-    IUnitOfWork unitOfWork)
+    IRepository<LogoutAudit> logoutAuditRepository)
     : IConsumer<RecordLogoutAuditIntegrationCommand>
 {
     public async Task Consume(ConsumeContext<RecordLogoutAuditIntegrationCommand> context)
@@ -19,7 +18,7 @@ public class RecordLogoutAuditConsumer(
         var message = context.Message;
         try
         {
-            var logoutAuditDto = new CreateLogoutAuditDto
+            var logoutAuditDto = new CreateLogoutCreateParams
             {
                 UserId = message.UserId,
                 Email = message.Email,
@@ -28,8 +27,7 @@ public class RecordLogoutAuditConsumer(
                 LoggedOutAt = DateTime.UtcNow
             };
             var logoutAudit = LogoutAudit.Create(logoutAuditDto);
-            logoutAuditRepository.AddLogout(logoutAudit, context.CancellationToken);
-            await unitOfWork.SaveChangesAsync(context.CancellationToken);
+            await logoutAuditRepository.AddAsync(logoutAudit, context.CancellationToken);
         }
         catch (Exception e)
         {
