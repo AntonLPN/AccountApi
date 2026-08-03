@@ -3,12 +3,10 @@ using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
 using Account.Infrastructure.Cryptography;
 using Account.Infrastructure.Persistence;
-using Account.Infrastructure.Repositories;
 using Account.Infrastructure.Services;
 using Account.Infrastructure.Services.Email;
 using Account.Infrastructure.Services.ExternalProviders;
 using Ardalis.SharedKernel;
-using Ardalis.Specification.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Account.Infrastructure.Extensions;
@@ -28,12 +26,9 @@ public static class DependencyInjectionInfrastructure
         services.AddScoped<IUserAccountService, KeycloakAccountService>();
         services.AddScoped<IPasswordService, KeycloakPasswordService>();
         services.AddScoped<IGoogleAuthService, GoogleService>();
-
         //Repository
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IUnitOfWork, UnitOfWorkAdapter>();
-        //TODO remove this when finish refactoring to IRepository and specs 
-        services.AddScoped<IOtpSessionRepository, OtpSessionRepository>();
         //MassTransit
         services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();
     }

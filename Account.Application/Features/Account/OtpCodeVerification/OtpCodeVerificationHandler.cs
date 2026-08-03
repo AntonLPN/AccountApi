@@ -16,10 +16,11 @@ namespace Account.Application.Features.Account.OtpCodeVerification;
 public class OtpCodeVerificationHandler(
     ILogger<OtpCodeVerificationHandler> logger,
     IRepository<AppUser> userRepository,
-    IOtpSessionRepository otpSessionRepository,
+    IRepository<OtpSessions> otpSessionRepository,
     IUnitOfWork unitOfWork,
     IAuthService authService,
-    IPublishEndpoint publishEndpoint)
+    IPublishEndpoint publishEndpoint,
+    ICryptography cryptographyService)
     : ICommandHandler<OtpCodeVerificationCommand, Result<OtpConfirmationResult>>
 {
     public async Task<Result<OtpConfirmationResult>> Handle(OtpCodeVerificationCommand request,
@@ -30,13 +31,15 @@ public class OtpCodeVerificationHandler(
         var normalizedEmail = Email.Create(request.Email);
         try
         {
-            var user = await userRepository.FirstOrDefaultAsync(new UserByEmailWithAuthorizedApiKeysSpec(normalizedEmail),
+            var user = await userRepository.FirstOrDefaultAsync(
+                new UserByEmailWithAuthorizedApiKeysSpec(normalizedEmail),
                 cancellationToken);
             if (user is null)
                 return Result<OtpConfirmationResult>.NotFound("User not found");
-
+            var otpCodeHash = cryptographyService.Hash(request.OtpCode);
             var otpActiveSession =
-                await otpSessionRepository.GetActiveOtpSessionAsync(user.Id, request.OtpCode, cancellationToken);
+                await otpSessionRepository.FirstOrDefaultAsync(new OtpGetActiveSessionSpec(user.Id, otpCodeHash),
+                    cancellationToken);
             if (otpActiveSession == null || otpActiveSession.UsedAt != null)
                 return Result<OtpConfirmationResult>.NotFound(
                     "No active OTP session found for the user or OTP already used");
@@ -63,7 +66,7 @@ public class OtpCodeVerificationHandler(
                 return Result<OtpConfirmationResult>.Unauthorized("Login failed after OTP verification");
 
             otpActiveSession.UsedAt = DateTime.UtcNow;
-            otpSessionRepository.UpdateOtpSession(otpActiveSession);
+            await otpSessionRepository.UpdateAsync(otpActiveSession, cancellationToken);
 
             await publishEndpoint.Publish(new OtpCodeConfirmedIntegrationEvent()
             {

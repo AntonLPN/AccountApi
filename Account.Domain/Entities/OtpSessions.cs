@@ -4,7 +4,7 @@ using Account.Domain.Models;
 
 namespace Account.Domain.Entities;
 
-public class OtpSessions
+public class OtpSessions : AggregateRoot
 {
     [Key] public int Id { get; set; }
     public required Guid CorrelationId { get; set; }

@@ -1,8 +1,13 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Account.Contracts.Saga.TwoFactor.Events;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Domain.Repositories;
+using Account.Domain.Specifications;
+using Ardalis.SharedKernel;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using OtpNet;
@@ -11,9 +16,10 @@ using OtpNet;
 
 namespace Account.Infrastructure.Services;
 
+// ReSharper disable once ClassNeverInstantiated.Global
 public class MfaService(
     ICryptography cryptographyService,
-    IOtpSessionRepository otpSessionsRepository,
+    IRepository<OtpSessions> otpSessionsRepository,
     IPublishEndpoint publishEndpoint,
     IUnitOfWork unitOfWork,
     ILogger<MfaService> logger) : IMfaManager
@@ -47,7 +53,8 @@ public class MfaService(
         await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
-            var otpSessions = await otpSessionsRepository.GetActiveSessionsAsync(user.Id, cancellationToken);
+            var otpSessions =
+                await otpSessionsRepository.ListAsync(new OtpGetActiveSessionsSpec(user.Id), cancellationToken);
             foreach (var session in otpSessions)
             {
                 session.Invalidate();
@@ -56,7 +63,7 @@ public class MfaService(
             var otpSessionCreateParams =
                 new OtpSessionCreateParams(cryptographyService.Hash(otpCode), user.Id, correlationId);
             var otpSession = OtpSessions.Create(otpSessionCreateParams);
-            otpSessionsRepository.AddOtpSession(otpSession);
+            await otpSessionsRepository.AddAsync(otpSession, cancellationToken);
 
             await publishEndpoint.Publish(new TwoFactorSagaStartedIntegrationEvent
             {
@@ -77,6 +84,5 @@ public class MfaService(
             logger.LogError(e, "Error occurred while initiating two-factor process for user {UserId}", user.Id);
             throw;
         }
-     
     }
 }

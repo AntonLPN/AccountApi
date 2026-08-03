@@ -1,3 +1,4 @@
+using System;
 using MassTransit;
 
 namespace Account.Infrastructure.Persistence.SagaModels;
