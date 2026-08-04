@@ -162,7 +162,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    //[AuthorizeApiKeyOnly]
+    [AuthorizeApiKeyOnly]
     [AllowAnonymous]
     [HttpPost("forgot-password")]
     [ProducesResponseType(typeof(ForgotPasswordResult), StatusCodes.Status200OK)]
@@ -179,8 +179,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    //TODO : Add change password
-    //[PreAuthOnly]
+    [PreAuthOnly]
     [AllowAnonymous]
     [HttpPost("change-password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -190,10 +189,10 @@ public class AuthController(IMediator mediator) : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        // var emailClaim = User.FindFirst("email")?.Value;
-        // if (string.IsNullOrWhiteSpace(emailClaim))
-        //     return BadRequest("User not found");
-        var cmd = new ChangePasswordCommand("user@example.com", model.NewPassword, model.PendingToken, model.OtpCode);
+        var emailClaim = User.FindFirst("email")?.Value;
+        if (string.IsNullOrWhiteSpace(emailClaim))
+            return BadRequest("User not found");
+        var cmd = new ChangePasswordCommand(emailClaim, model.NewPassword, model.PendingToken, model.OtpCode);
         var res = await mediator.Send(cmd);
         throw new NotImplementedException();
       
