@@ -29,9 +29,14 @@ public class AccountController(IMediator mediator) : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("confirm-email")]
-    public async Task<IActionResult> ConfirmEmail()
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest model)
     {
-        
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+        //flow 
+        //1 send to email otp code to user
+        //2 check otp code
+        //3 confirm email in db and keycloak
         throw new NotImplementedException();
     }
 }

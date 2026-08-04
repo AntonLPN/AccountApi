@@ -5,11 +5,11 @@ namespace AccountApi.Models.RequestModels;
 
 public class OtpCodeVerificationRequestModel
 {
-    [JsonPropertyName("otpCode")]
     [Required(ErrorMessage = "OtpCode is required.")]
+    [JsonPropertyName("otpCode")]
     public required string OtpCode { get; set; }
     
-    [JsonPropertyName("pendingToken")]
     [Required(ErrorMessage = "PendingToken is required.")]
+    [JsonPropertyName("pendingToken")]
     public required string PendingToken { get; set; }
 }

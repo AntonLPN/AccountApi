@@ -7,6 +7,6 @@ public class GoogleLoginModelRequest
 {
     [Required(ErrorMessage = "Token is required")]
     [JsonPropertyName("token")]
-    public string Token { get; set; } = "";
+    public required string Token { get; set; } 
 
 }

@@ -6,21 +6,21 @@ namespace AccountApi.Models.RequestModels;
 
 public sealed class RegisterModelRequest
 {
-    [EmailAddress]
     [Required(ErrorMessage = "Email is required")]
+    [EmailAddress]
     [JsonPropertyName("email")]
-    public string Email { get; set; } = "";
+    public required string Email { get; set; }
 
     [Required(ErrorMessage = "Password is required")]
     [MinLength(6, ErrorMessage = "Password must be at least 6 characters long")]
     [RegularExpression(@"^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{6,}$",
         ErrorMessage = "Password must contain at least one uppercase letter, one number, and one special character.")]
     [JsonPropertyName("password")]
-    public string Password { get; set; } = "";
+    public required string Password { get; set; }
 
-    [JsonPropertyName("referralCode")]
     [Required(ErrorMessage = "ReferralCode is required")]
     [SwaggerSchema(
         "Can be empty. If the user was referred by someone, then this field should contain the referral code of that person.")]
-    public string ReferralCode { get; set; } = "";
+    [JsonPropertyName("referralCode")]
+    public required string ReferralCode { get; set; }
 }

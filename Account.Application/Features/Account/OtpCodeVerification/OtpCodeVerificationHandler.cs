@@ -36,6 +36,7 @@ public class OtpCodeVerificationHandler(
                 cancellationToken);
             if (user is null)
                 return Result<OtpConfirmationResult>.NotFound("User not found");
+            //TODO this part should be moved to a separate service otp
             var otpCodeHash = cryptographyService.Hash(request.OtpCode);
             var otpActiveSession =
                 await otpSessionRepository.FirstOrDefaultAsync(new OtpGetActiveSessionSpec(user.Id, otpCodeHash),

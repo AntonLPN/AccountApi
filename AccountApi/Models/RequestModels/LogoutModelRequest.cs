@@ -7,5 +7,5 @@ public sealed class LogoutModelRequest
 {
     [Required(ErrorMessage = "Refresh token is required")]
     [JsonPropertyName("refreshToken")]
-    public string RefreshToken { get; set; } = "";
+    public required string RefreshToken { get; set; } 
 }

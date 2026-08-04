@@ -7,5 +7,5 @@ public class RefreshModelRequest
 {
     [Required(ErrorMessage = "RefreshToken is required")]
     [JsonPropertyName("refreshToken")]
-    public string RefreshToken { get; set; } = "";
+    public required string RefreshToken { get; set; }
 }

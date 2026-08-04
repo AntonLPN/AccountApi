@@ -1,9 +1,11 @@
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace AccountApi.Models.RequestModels;
 
 public class DeleteApiKeyRequest
 {
+    [Required(ErrorMessage = "ApiKey is required")]
     [JsonPropertyName("apiKey")]
-    public string ApiKey { get; set; } = string.Empty;
+    public required string ApiKey { get; set; }
 }
