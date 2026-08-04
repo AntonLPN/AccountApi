@@ -9,8 +9,10 @@ public class ApiKey : AggregateRoot
     [Column("Key")] public required string ApiKeyValue { get; init; }
     public bool IsAuthorize { get; set; } = true;
     public DateTime CreatedAt { get; init; }
-
     public DateTime ExpiredAt { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    
 
     public required string UserId { get; init; }
     [ForeignKey(nameof(UserId))] public AppUser AppUser { get; set; }

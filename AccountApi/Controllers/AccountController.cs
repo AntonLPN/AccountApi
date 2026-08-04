@@ -16,7 +16,7 @@ public class AccountController(IMediator mediator) : ControllerBase
     [AuthorizeApiKeyOnly]
     //[AllowAnonymous]
     [HttpGet("check-email-availability")]
-    public async Task<IActionResult> ChekEmailAvailability(ChekEmailAvailabilityRequest model)
+    public async Task<IActionResult> ChekEmailAvailability([FromBody] ChekEmailAvailabilityRequest model)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
@@ -25,5 +25,13 @@ public class AccountController(IMediator mediator) : ControllerBase
             return BadRequest(res.Errors);
 
         return Ok(new ChekEmailAvailabilityResponse { IsAvailable = res.Value });
+    }
+
+    [AllowAnonymous]
+    [HttpPost("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail()
+    {
+        
+        throw new NotImplementedException();
     }
 }

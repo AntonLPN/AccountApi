@@ -1,4 +1,6 @@
 using Account.Application.Features.Account.ChangePassword;
+using Account.Application.Features.Account.CreateApiKey;
+using Account.Application.Features.Account.DeleteApiKey;
 using Account.Application.Features.Account.ForgotPassword;
 using Account.Application.Features.Account.Login;
 using Account.Application.Features.Account.Logout;
@@ -10,6 +12,7 @@ using Account.Domain.Enums;
 using AccountApi.Authorization;
 using AccountApi.Helpers;
 using AccountApi.Models.RequestModels;
+using AccountApi.Models.ResponseModels;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -194,10 +197,43 @@ public class AuthController(IMediator mediator) : ControllerBase
             return BadRequest("User not found");
         var cmd = new ChangePasswordCommand(emailClaim, model.NewPassword, model.PendingToken, model.OtpCode);
         var res = await mediator.Send(cmd);
-        throw new NotImplementedException();
-      
+        return Ok(res.Value);
+    }
 
-        return Ok();
+    [Authorize]
+    [HttpPost("create-api-key")]
+    public async Task<IActionResult> CreateApiKey()
+    {
+        var emailClaim = User.FindFirst("email")?.Value;
+        if (string.IsNullOrWhiteSpace(emailClaim))
+            return BadRequest("User not found");
+        var cmd = new CreateApiKeyCommand(emailClaim);
+        var res = await mediator.Send(cmd);
+        if (!res.IsSuccess)
+            return BadRequest(res.Errors);
+        
+        return Ok(new CreateApiKeyResponse
+        {
+            ApiKey = res.Value
+        });
+    }
+
+    [Authorize]
+    [HttpPost("delete-api-key")]
+    public async Task<IActionResult> DeleteApiKey([FromBody] DeleteApiKeyRequest model)
+    {
+        var emailClaim = User.FindFirst("email")?.Value;
+        if (string.IsNullOrWhiteSpace(emailClaim))
+            return BadRequest("User not found");
+        var cmd = new DeleteApiKeyCommand(emailClaim, model.ApiKey);
+        var res = await mediator.Send(cmd);
+        if (!res.IsSuccess)
+            return BadRequest(res.Errors);
+        return res.Value switch
+        {
+            false => BadRequest("Api key not found"),
+            true => Ok()
+        };
     }
 
     private void SetRefreshTokenCookie(string? refreshToken)

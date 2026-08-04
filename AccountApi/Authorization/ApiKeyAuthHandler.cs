@@ -59,7 +59,7 @@ public class ApiKeyAuthHandler(
     {
         var key = await dbContext.ApiKeys
             .AsNoTracking()
-            .FirstOrDefaultAsync(k => k.ApiKeyValue == apiKey);
+            .FirstOrDefaultAsync(k => k.ApiKeyValue == apiKey && k.IsAuthorize && !k.IsDeleted);
 
         if (key is not null)
             await SetCacheAsync(apiKey, key.IsAuthorize, key.UserId);
@@ -70,6 +70,6 @@ public class ApiKeyAuthHandler(
     private async Task SetCacheAsync(string apiKey, bool isActive, string userId)
     {
         var payload = JsonSerializer.Serialize(new CachedApiKeyInfo(userId, isActive));
-        await dataCache.SetAsync(apiKey, payload,TimeSpan.FromMinutes(5));
+        await dataCache.SetAsync(apiKey, payload, TimeSpan.FromMinutes(5));
     }
 }

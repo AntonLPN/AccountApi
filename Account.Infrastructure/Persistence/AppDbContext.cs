@@ -64,6 +64,8 @@ public class AppDbContext : DbContext
             entity.Property(e => e.IsAuthorize).HasColumnName("Authorize").IsRequired();
             entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt");
             entity.Property(e => e.ExpiredAt).HasColumnName("ExpiredAt");
+            entity.Property(e => e.IsDeleted).HasColumnName("IsDeleted").HasDefaultValue(false);
+            entity.Property(e => e.DeletedAt).HasColumnName("DeletedAt");
 
             entity.HasOne(a => a.AppUser)
                 .WithMany(u => u.ApiKeys)
