@@ -20,7 +20,7 @@ public class OtpCodeVerificationHandler(
     IUnitOfWork unitOfWork,
     IAuthService authService,
     IPublishEndpoint publishEndpoint,
-    ICryptography cryptographyService)
+    IOtpService otpService)
     : ICommandHandler<OtpCodeVerificationCommand, Result<OtpConfirmationResult>>
 {
     public async Task<Result<OtpConfirmationResult>> Handle(OtpCodeVerificationCommand request,
@@ -36,42 +36,24 @@ public class OtpCodeVerificationHandler(
                 cancellationToken);
             if (user is null)
                 return Result<OtpConfirmationResult>.NotFound("User not found");
-            //TODO this part should be moved to a separate service otp
-            var otpCodeHash = cryptographyService.Hash(request.OtpCode);
             var otpActiveSession =
-                await otpSessionRepository.FirstOrDefaultAsync(new OtpGetActiveSessionSpec(user.Id, otpCodeHash),
-                    cancellationToken);
-            if (otpActiveSession == null || otpActiveSession.UsedAt != null)
-                return Result<OtpConfirmationResult>.NotFound(
-                    "No active OTP session found for the user or OTP already used");
-
-            if (otpActiveSession.ExpiresAt < DateTime.UtcNow)
+                await otpService.ValidateActiveSessionAsync(user, request.OtpCode, cancellationToken);
+            if (!otpActiveSession.IsSuccess)
             {
-                logger.LogWarning("OTP session expired for user {UserId}", user.Id);
-                return Result<OtpConfirmationResult>.Conflict("OTP session expired");
-            }
-
-            var secretKey = Convert.FromBase64String(user.EncryptedTwoFactorSecret);
-            var totp = new Totp(secretKey, step: 300, mode: OtpHashMode.Sha1, totpSize: 6);
-            bool isValid = totp.VerifyTotp(request.OtpCode, out long timeStepMatched,
-                VerificationWindow.RfcSpecifiedNetworkDelay);
-
-            if (!isValid)
-            {
-                logger.LogWarning("Invalid OTP attempt for user {UserId}", user.Id);
-                return Result<OtpConfirmationResult>.Conflict("Invalid OTP code");
+                return Result<OtpConfirmationResult>.Conflict(otpActiveSession.Errors.FirstOrDefault() ??
+                                                              "Invalid OTP code");
             }
 
             TokenResponse? tokenResponse = await authService.LoginAsync(normalizedEmail);
             if (tokenResponse is null)
                 return Result<OtpConfirmationResult>.Unauthorized("Login failed after OTP verification");
 
-            otpActiveSession.UsedAt = DateTime.UtcNow;
+            otpActiveSession.Value.UsedAt = DateTime.UtcNow;
             await otpSessionRepository.UpdateAsync(otpActiveSession, cancellationToken);
 
             await publishEndpoint.Publish(new OtpCodeConfirmedIntegrationEvent()
             {
-                CorrelationId = otpActiveSession.CorrelationId,
+                CorrelationId = otpActiveSession.Value.CorrelationId,
                 UserId = user.Id,
                 IsValid = true,
             }, cancellationToken);

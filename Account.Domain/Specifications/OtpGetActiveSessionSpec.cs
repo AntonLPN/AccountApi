@@ -7,6 +7,9 @@ public class OtpGetActiveSessionSpec : Specification<OtpSessions>, ISingleResult
 {
     public OtpGetActiveSessionSpec(string userId, string otpCodeHash)
     {
-        Query.Where(s => s.UserId == userId && s.UsedAt == null && s.CodeHash == otpCodeHash);
+        Query.Where(s => s.UserId == userId &&
+                         s.UsedAt == null &&
+                         s.IsUsed == false &&
+                         s.CodeHash == otpCodeHash);
     }
 }

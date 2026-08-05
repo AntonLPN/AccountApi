@@ -1,4 +1,3 @@
-using Account.Application.Features.Account.OtpCodeVerification;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Specifications;
@@ -6,7 +5,6 @@ using Account.Domain.ValueObjects;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
 using Microsoft.Extensions.Logging;
-using OtpNet;
 
 namespace Account.Application.Features.Account.ConfirmEmail;
 
@@ -14,7 +12,8 @@ public class ConfirmEmailHandler(
     ILogger<ConfirmEmailHandler> logger,
     IRepository<AppUser> userRepository,
     ICryptography cryptographyService,
-    IRepository<OtpSessions> otpSessionRepository)
+    IRepository<OtpSessions> otpSessionRepository,
+    IOtpService otpService)
     : ICommandHandler<ConfirmEmailCommand, Result<bool>>
 {
     public async Task<Result<bool>> Handle(ConfirmEmailCommand request, CancellationToken cancellationToken)
@@ -40,12 +39,8 @@ public class ConfirmEmailHandler(
                 return Result<bool>.Conflict("OTP session expired");
             }
 
-            var secretKey = Convert.FromBase64String(user.EncryptedTwoFactorSecret);
-            var totp = new Totp(secretKey, step: 300, mode: OtpHashMode.Sha1, totpSize: 6);
-            bool isValid = totp.VerifyTotp(request.ConfirmationCode, out long timeStepMatched,
-                VerificationWindow.RfcSpecifiedNetworkDelay);
-
-            if (!isValid)
+            var isVerified = otpService.VerifyOtpCode(user, request.ConfirmationCode);
+            if (!isVerified)
             {
                 logger.LogWarning("Invalid OTP attempt for user {UserId}", user.Id);
                 return Result<bool>.Conflict("Invalid OTP code");
