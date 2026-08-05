@@ -75,4 +75,34 @@ public class AppUser : AggregateRoot
         ArgumentException.ThrowIfNullOrEmpty(newHashPassword);
         PasswordHash = newHashPassword; // In a real application, you would hash the password before storing it
     }
+
+    public void ConfirmEmail()
+    {
+        EmailConfirmed = true;
+        AddDomainEvent(new EmailConfirmedDomainEvent(Id));
+    }
+
+    public void InitiateTwoFactorAuthentication(string otpCode)
+    {
+        AddDomainEvent(new TwoFactorInitiatedDomainEvent
+        {
+            UserId = Id,
+            Email = Email,
+            OtpCode = otpCode,
+            CorrelationId = Guid.NewGuid(),
+            ExpirationTime = DateTime.UtcNow.AddMinutes(5)
+        });
+    }
+
+    public void EnableTwoFactorAuthentication()
+    {
+        IsTwoFactorEnabled = true;
+        //TODO add domain event
+    }
+    public void DisableTwoFactorAuthentication()
+    {
+        IsTwoFactorEnabled = false;
+        //TODO add domain event
+    }
+    
 }

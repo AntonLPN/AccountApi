@@ -22,6 +22,7 @@ public static class DependencyInjectionInfrastructure
         services.AddScoped<IDataCache, RedisDataCache>();
         services.AddScoped<IMfaManager, MfaService>();
         services.AddScoped<IPreAuthTokenService, PreAuthTokenService>();
+        services.AddScoped<IOtpService, OtpService>();
         //External Providers
         services.AddScoped<IUserAccountService, KeycloakAccountService>();
         services.AddScoped<IPasswordService, KeycloakPasswordService>();
@@ -31,5 +32,6 @@ public static class DependencyInjectionInfrastructure
         services.AddScoped<IUnitOfWork, UnitOfWorkAdapter>();
         //MassTransit
         services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();
+        services.AddScoped<IOutboxEventPublisher, MassTransitOutboxEventPublisher>();
     }
 }

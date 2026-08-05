@@ -173,18 +173,13 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(a => a.Id).HasName("PK_OptSessions");
             entity.Property(a => a.CodeHash).HasMaxLength(255).HasColumnName("CodeHash").IsUnicode();
-            entity.Property(a => a.CorrelationId).HasMaxLength(255).HasColumnName("CorrelationId").IsUnicode();
             entity.Property(a => a.UserId).HasMaxLength(255).HasColumnName("UserId").IsUnicode();
             entity.Property(a => a.InvalidatedAt).HasColumnName("InvalidatedAt");
             entity.Property(a => a.IsUsed).HasColumnName("IsUsed").HasDefaultValue(false);
             entity.Property(a => a.CreatedAt).HasColumnName("CreatedAt");
             entity.Property(a => a.ExpiresAt).HasColumnName("ExpiresAt");
             entity.Property(a => a.UsedAt).HasColumnName("UsedAt");
-            
-            entity.HasIndex(a => a.CorrelationId)
-                .IsUnique()
-                .HasDatabaseName("UX_OtpSessions_CorrelationId");
-            
+      
             entity.HasIndex(a => a.UserId)
                 .HasDatabaseName("UX_OtpSessions_ActiveUserId");
         });

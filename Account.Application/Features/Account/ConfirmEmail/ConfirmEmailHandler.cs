@@ -24,34 +24,24 @@ public class ConfirmEmailHandler(
             var user = await userRepository.FirstOrDefaultAsync(
                 new UserByEmailSpec(normalizedEmail),
                 cancellationToken);
-            //TODO this part should be moved to a separate service
-            var otpCodeHash = cryptographyService.Hash(request.ConfirmationCode);
+            if (user is null)
+                return Result<bool>.NotFound("User not found");
             var otpActiveSession =
-                await otpSessionRepository.FirstOrDefaultAsync(new OtpGetActiveSessionSpec(user.Id, otpCodeHash),
-                    cancellationToken);
-            if (otpActiveSession == null || otpActiveSession.UsedAt != null)
-                return Result<bool>.NotFound(
-                    "No active OTP session found for the user or OTP already used");
-
-            if (otpActiveSession.ExpiresAt < DateTime.UtcNow)
+                await otpService.ValidateActiveSessionAsync(user, request.ConfirmationCode, cancellationToken);
+            if (!otpActiveSession.IsSuccess)
             {
-                logger.LogWarning("OTP session expired for user {UserId}", user.Id);
-                return Result<bool>.Conflict("OTP session expired");
+                return Result<bool>.Conflict(otpActiveSession.Errors.FirstOrDefault() ??
+                                             "Invalid OTP code");
             }
 
-            var isVerified = otpService.VerifyOtpCode(user, request.ConfirmationCode);
-            if (!isVerified)
-            {
-                logger.LogWarning("Invalid OTP attempt for user {UserId}", user.Id);
-                return Result<bool>.Conflict("Invalid OTP code");
-            }
+            user.ConfirmEmail();
+            await userRepository.UpdateAsync(user, cancellationToken);
+            return Result<bool>.Success(true);
         }
         catch (Exception e)
         {
             logger.LogError(e, "Error occurred while handling ConfirmEmailCommand");
             throw;
         }
-
-        throw new NotImplementedException();
     }
 }

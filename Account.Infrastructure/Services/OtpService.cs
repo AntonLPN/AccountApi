@@ -1,6 +1,7 @@
 using Account.Application.Features.Account.OtpCodeVerification;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
+using Account.Domain.Models;
 using Account.Domain.Specifications;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
@@ -33,6 +34,34 @@ public class OtpService(
         return totp.VerifyTotp(otpCode, out _, VerificationWindow.RfcSpecifiedNetworkDelay);
     }
 
+    public async Task<Result<bool>> InvalidateOtpSessionsAsync(string userId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+
+        var otpSessions =
+            await otpSessionRepository.ListAsync(new OtpGetActiveSessionsSpec(userId), cancellationToken);
+        if (otpSessions.Count == 0)
+            return Result<bool>.Success(true);
+        foreach (var session in otpSessions)
+        {
+            session.Invalidate();
+        }
+
+        await otpSessionRepository.UpdateRangeAsync(otpSessions, cancellationToken);
+        return Result<bool>.Success(true);
+    }
+
+    public async Task<Result<bool>> CreateOtpSessionAsync(string userId, string otpCode, Guid correlationId,
+        CancellationToken cancellationToken = default)
+    {
+        var otpSessionCreateParams =
+            new OtpSessionCreateParams(cryptographyService.Hash(otpCode), userId, correlationId);
+        var otpSession = OtpSessions.Create(otpSessionCreateParams);
+        await otpSessionRepository.AddAsync(otpSession, cancellationToken);
+        return Result<bool>.Success(true);
+    }
+
     public async Task<Result<OtpSessions>> ValidateActiveSessionAsync(AppUser user, string otpCode,
         CancellationToken cancellationToken = default)
     {
@@ -56,6 +85,7 @@ public class OtpService(
             logger.LogWarning("Invalid OTP attempt for user {UserId}", user.Id);
             return Result<OtpSessions>.Conflict("Invalid OTP code");
         }
+
         return Result<OtpSessions>.Success(otpActiveSession);
     }
 }

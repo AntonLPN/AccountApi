@@ -1,16 +1,7 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Account.Contracts.Saga.TwoFactor.Events;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
-using Account.Domain.Models;
 using Account.Domain.Repositories;
-using Account.Domain.Specifications;
-using Ardalis.SharedKernel;
-using MassTransit;
 using Microsoft.Extensions.Logging;
-using OtpNet;
 
 // ReSharper disable InconsistentNaming
 
@@ -18,14 +9,10 @@ namespace Account.Infrastructure.Services;
 
 // ReSharper disable once ClassNeverInstantiated.Global
 public class MfaService(
-    ICryptography cryptographyService,
-    IRepository<OtpSessions> otpSessionsRepository,
-    IPublishEndpoint publishEndpoint,
     IUnitOfWork unitOfWork,
     ILogger<MfaService> logger,
     IOtpService otpService) : IMfaManager
 {
-    private const int OTP_CODE_EXPIRATION_TIME = 5;
     
     public async Task<string> InitiateTwoFactorProcessAsync(
         AppUser user,
@@ -37,30 +24,12 @@ public class MfaService(
         await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
-            var otpSessions =
-                await otpSessionsRepository.ListAsync(new OtpGetActiveSessionsSpec(user.Id), cancellationToken);
-            foreach (var session in otpSessions)
-            {
-                session.Invalidate();
-            }
-
-            var otpSessionCreateParams =
-                new OtpSessionCreateParams(cryptographyService.Hash(otpCode), user.Id, correlationId);
-            var otpSession = OtpSessions.Create(otpSessionCreateParams);
-            await otpSessionsRepository.AddAsync(otpSession, cancellationToken);
-
-            await publishEndpoint.Publish(new TwoFactorSagaStartedIntegrationEvent
-            {
-                CorrelationId = correlationId,
-                UserId = user.Id,
-                Email = user.Email,
-                OtpCode = otpCode,
-                ExpirationTime = DateTime.UtcNow.AddMinutes(OTP_CODE_EXPIRATION_TIME)
-            }, cancellationToken);
-
+            await otpService.InvalidateOtpSessionsAsync(user.Id, cancellationToken);
+            await otpService.CreateOtpSessionAsync(user.Id, otpCode, correlationId, cancellationToken);
+            user.InitiateTwoFactorAuthentication(otpCode);
+            
             await unitOfWork.SaveChangesAsync(cancellationToken);
             await tx.CommitAsync(cancellationToken);
-
             return otpCode;
         }
         catch (Exception e)

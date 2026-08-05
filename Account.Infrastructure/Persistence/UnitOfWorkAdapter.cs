@@ -12,7 +12,8 @@ public class UnitOfWorkAdapter(AppDbContext dbContext, IPublisher publisher) : I
     {
         var affected = await dbContext.SaveChangesAsync(cancellationToken);
         await DispatchDomainEventsAsync(cancellationToken);
-        return affected;
+        var affectedByEvents = await dbContext.SaveChangesAsync(cancellationToken); 
+        return affected + affectedByEvents;
     }
 
     public async Task<IAppDbTransaction> BeginTransactionAsync(CancellationToken cancellationToken)

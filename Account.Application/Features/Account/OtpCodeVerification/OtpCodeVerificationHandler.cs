@@ -53,7 +53,7 @@ public class OtpCodeVerificationHandler(
 
             await publishEndpoint.Publish(new OtpCodeConfirmedIntegrationEvent()
             {
-                CorrelationId = otpActiveSession.Value.CorrelationId,
+                CorrelationId = Guid.NewGuid(),
                 UserId = user.Id,
                 IsValid = true,
             }, cancellationToken);
