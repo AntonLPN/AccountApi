@@ -93,7 +93,12 @@ public class AppUser : AggregateRoot
             ExpirationTime = DateTime.UtcNow.AddMinutes(5)
         });
     }
-
+    public void RecordLogin(string? ipAddress, string? userAgent)
+    {
+        LastLoginAt = DateTime.UtcNow;
+        AddDomainEvent(new UserLoggedInDomainEvent(Id, Email, ipAddress, userAgent));
+    }
+    
     public void EnableTwoFactorAuthentication()
     {
         IsTwoFactorEnabled = true;

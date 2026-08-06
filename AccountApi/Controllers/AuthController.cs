@@ -68,7 +68,8 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    [AuthorizeApiKeyOnly]
+    //[AuthorizeApiKeyOnly]
+    [AllowAnonymous]
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

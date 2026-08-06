@@ -138,6 +138,6 @@ public class UserLoginSaga : MassTransitStateMachine<UserLoginSagaState>
                 })
                 .TransitionTo(LoginFailed));
 
-        SetCompletedWhenFinalized();
+        //SetCompletedWhenFinalized();
     }
 }

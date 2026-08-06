@@ -1,4 +1,5 @@
 using System.Text;
+using Account.Application.Extensions;
 using Account.Application.Features.Account.Register;
 using Account.Domain.Extensions;
 using Account.Infrastructure.Configuration;
@@ -121,6 +122,7 @@ public static class ServicesExtensions
             typeof(MassTransitIntegrationEventPublisher).Assembly // for integration events triggers
         ));
         services.AddInfrastructureServices();
+        services.AddApplicationServices();
         services.AddDomainServices();
 
         return services;
