@@ -52,10 +52,17 @@ public class ProviderRegisterHandler(
                 cancellationToken);
             //Save to DB
             await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
-            var user = AppUser.Create(new AppUserCreateParams(userId, email, null, whoInvited?.Id, true,
+            var user = AppUser.Create(new AppUserCreateParams(
+                userId,
+                email,
+                null,
+                whoInvited?.Id,
+                request.IpAddress,
+                request.UserAgent,
+                true,
                 nameof(AuthProviders.Google)));
             await userRepository.AddAsync(user, cancellationToken);
-            
+
             var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id, true));
             await apiKeyRepository.AddAsync(apiKey, cancellationToken);
 

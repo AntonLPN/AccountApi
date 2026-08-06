@@ -5,5 +5,7 @@ public sealed record AppUserCreateParams(
     string Email,
     string? PasswordHash,
     string? ReferrerId,
+    string? IpAddress,
+    string? UserAgent,
     bool EmailConfirmed = false,
     string? ProviderName = "my-corporate-ad");
