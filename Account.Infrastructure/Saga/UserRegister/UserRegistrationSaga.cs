@@ -38,7 +38,6 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                 {
                     context.Saga.UserId = context.Message.UserId;
                     context.Saga.Email = context.Message.Email;
-                    context.Saga.ApiKey = context.Message.ApiKey;
                     context.Saga.CreatedAt = DateTime.UtcNow;
                     context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Saga registration started for UserId={UserId}", context.Message.UserId);
@@ -48,7 +47,6 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                         CorrelationId = context.Saga.CorrelationId,
                         UserId = context.Message.UserId,
                         Email = context.Message.Email,
-                        ApiKey = context.Message.ApiKey
                     }
                 )
                 .Publish(context =>
@@ -58,9 +56,6 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                         UserId = context.Saga.UserId,
                         Email = context.Saga.Email,
                         ApiKey = context.Saga.ApiKey,
-                        ReferralCode = context.Message.ReferralCode,
-                        IsActive = context.Message.IsActive,
-                        EmailConfirmed = context.Message.EmailConfirmed
                     })
                 .TransitionTo(AwaitingWelcomeEmailSent));
         During(AwaitingWelcomeEmailSent,
@@ -74,7 +69,6 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                     CorrelationId = context.Saga.CorrelationId,
                     UserId = context.Saga.UserId,
                     Email = context.Saga.Email,
-                    ApiKey = context.Saga.ApiKey
                 })
                 .TransitionTo(AwaitingProfileInitialization));
         During(AwaitingProfileInitialization,

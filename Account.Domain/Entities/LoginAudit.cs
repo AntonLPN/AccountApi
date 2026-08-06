@@ -12,18 +12,19 @@ public class LoginAudit : AggregateRoot
     public bool IsSuspicious { get; set; }
     public DateTime LoggedInAt { get; set; }
 
-    public static LoginAudit Create(CreateLoginAuditParams @params)
+    public static LoginAudit Create(CreateLoginAuditParams createLoginAuditParams)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(@params.UserId, nameof(@params.UserId));
-        ArgumentException.ThrowIfNullOrWhiteSpace(@params.Email, nameof(@params.Email));
+        ArgumentException.ThrowIfNullOrWhiteSpace(createLoginAuditParams.UserId, nameof(createLoginAuditParams.UserId));
+        ArgumentException.ThrowIfNullOrWhiteSpace(createLoginAuditParams.Email, nameof(createLoginAuditParams.Email));
         return new LoginAudit
         {
-            UserId = @params.UserId,
-            Email = @params.Email,
-            IpAddress = @params.IpAddress,
-            UserAgent = @params.UserAgent,
-            IsSuspicious = @params.IsSuspicious,
-            LoggedInAt = @params.LoggedInAt
+            UserId = createLoginAuditParams.UserId,
+            Email = createLoginAuditParams.Email,
+            IpAddress = createLoginAuditParams.IpAddress,
+            UserAgent = createLoginAuditParams.UserAgent,
+            IsSuspicious = createLoginAuditParams.IsSuspicious,
+            LoggedInAt = createLoginAuditParams.LoggedInAt
         };
+        
     }
 }

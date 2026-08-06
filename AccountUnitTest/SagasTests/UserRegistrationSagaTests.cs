@@ -49,7 +49,6 @@ public class UserRegistrationSagaTests : IAsyncLifetime
             CorrelationId = correlationId,
             UserId = Guid.NewGuid().ToString(),
             Email = email,
-            ApiKey = "api_key"
         }, cancellationToken: CancellationToken.None);
         // Assert
         var sagaHarness = _harness.GetSagaStateMachineHarness<UserRegistrationSaga, UserRegistrationSagaState>();
@@ -80,7 +79,6 @@ public class UserRegistrationSagaTests : IAsyncLifetime
             CorrelationId = correlationId,
             UserId = userId,
             Email = email,
-            ApiKey = "api_key"
         }, cancellationToken: CancellationToken.None);
 
         await _harness.Bus.Publish(new WelcomeEmailSentIntegrationEvent()
@@ -88,7 +86,6 @@ public class UserRegistrationSagaTests : IAsyncLifetime
             CorrelationId = correlationId,
             UserId = userId,
             Email = email,
-            ApiKey = "api_key"
         }, cancellationToken: CancellationToken.None);
 
         // Assert
@@ -116,7 +113,6 @@ public class UserRegistrationSagaTests : IAsyncLifetime
             CorrelationId = correlationId,
             UserId = userId,
             Email = email,
-            ApiKey = "api_key"
         }, cancellationToken: CancellationToken.None);
 
         await sagaHarness.Exists(correlationId, saga => saga.AwaitingWelcomeEmailSent);

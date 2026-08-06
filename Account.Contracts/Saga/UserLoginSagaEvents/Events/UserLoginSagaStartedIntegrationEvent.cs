@@ -1,6 +1,6 @@
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Models;
 
-namespace Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
+namespace Account.Contracts.Saga.UserLoginSagaEvents.Events;
 
 public class UserLoginSagaStartedIntegrationEvent : BaseLoginModel
 {

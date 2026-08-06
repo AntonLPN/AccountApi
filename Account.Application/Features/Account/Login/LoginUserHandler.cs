@@ -23,7 +23,6 @@ public class LoginUserHandler(
         var strategy = loginStrategies.First(s => s.CanHandle(user));
         return await strategy.HandleAsync(user, request, cancellationToken);
         
-     
     }
     
 }

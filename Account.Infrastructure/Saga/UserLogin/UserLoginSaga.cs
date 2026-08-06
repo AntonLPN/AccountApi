@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Account.Contracts.Saga.UserLoginSagaEvents.Commands;
+using Account.Contracts.Saga.UserLoginSagaEvents.Events;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
 using Account.Infrastructure.Persistence.SagaModels;
 using MassTransit;

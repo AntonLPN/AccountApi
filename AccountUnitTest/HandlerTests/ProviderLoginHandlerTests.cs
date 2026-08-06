@@ -1,5 +1,6 @@
 using Account.Application.Features.Account.ProviderLogin;
 using Account.Application.Interfaces;
+using Account.Contracts.Saga.UserLoginSagaEvents.Events;
 using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
 using Account.Domain.Entities;
 using Account.Domain.Enums;

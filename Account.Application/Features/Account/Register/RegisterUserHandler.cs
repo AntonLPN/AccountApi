@@ -44,7 +44,6 @@ public class RegisterUserHandler(
         {
             var whoInvited = await userRepository.FirstOrDefaultAsync(new UserByReferralCodeSpec(request.ReferrerCode),
                 cancellationToken);
-
             var passwordHash = cryptographyService.Hash(request.Password);
             var user = AppUser.Create(new AppUserCreateParams(keycloakIdUser.Value, normalizedEmail, passwordHash,
                 whoInvited?.Id, false, nameof(AuthProviders.LocalProvider)));
@@ -70,10 +69,6 @@ public class RegisterUserHandler(
                 CorrelationId = Guid.NewGuid(),
                 UserId = user.Id,
                 Email = user.Email,
-                ApiKey = apiKey.ApiKeyValue,
-                IsActive = true,
-                ReferralCode = user.ReferralCode,
-                EmailConfirmed = user.EmailConfirmed
             }, cancellationToken);
 
             await unitOfWork.SaveChangesAsync(cancellationToken); //need for saga

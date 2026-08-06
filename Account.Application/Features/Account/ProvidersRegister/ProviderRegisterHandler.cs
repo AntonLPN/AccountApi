@@ -77,7 +77,6 @@ public class ProviderRegisterHandler(
                 CorrelationId = Guid.NewGuid(),
                 UserId = user.Id,
                 Email = user.Email,
-                ApiKey = apiKey.ApiKeyValue,
             }, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             await tx.CommitAsync(cancellationToken);

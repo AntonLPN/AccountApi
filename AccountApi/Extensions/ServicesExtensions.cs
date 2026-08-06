@@ -115,7 +115,7 @@ public static class ServicesExtensions
                 .Build());
     }
 
-    public static IServiceCollection AddLifeTimeServices(this IServiceCollection services)
+    public static void  AddLifeTimeServices(this IServiceCollection services)
     {
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(
             typeof(RegisterCommand).Assembly,
@@ -125,7 +125,6 @@ public static class ServicesExtensions
         services.AddApplicationServices();
         services.AddDomainServices();
 
-        return services;
     }
 
     public static IServiceCollection AddMassTransitMessaging(this IServiceCollection services,
