@@ -25,7 +25,7 @@ public static class DependencyInjectionInfrastructure
         services.AddScoped<IOtpService, OtpService>();
         //External Providers
         services.AddScoped<IUserAccountService, KeycloakAccountService>();
-        services.AddScoped<IPasswordService, KeycloakPasswordService>();
+        services.AddScoped<IProviderPasswordService, KeycloakProviderPasswordService>();
         services.AddScoped<IGoogleAuthService, GoogleService>();
         //Repository
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));

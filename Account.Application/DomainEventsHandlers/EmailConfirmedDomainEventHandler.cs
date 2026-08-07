@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Account.Application.DomainEventsHandlers;
 
-public class EmailConfirmedEventHandler:INotificationHandler<EmailConfirmedDomainEvent>
+public class EmailConfirmedDomainEventHandler:INotificationHandler<EmailConfirmedDomainEvent>
 {
     public Task Handle(EmailConfirmedDomainEvent notification, CancellationToken cancellationToken)
     {

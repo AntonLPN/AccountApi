@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Account.Application.DomainEventsHandlers;
 
-public class UserLoggedInEventHandler(ILogger<UserLoggedInEventHandler> logger, IOutboxEventPublisher publisher) : INotificationHandler<UserLoggedInDomainEvent>
+public class UserLoggedInDomainEventHandler(ILogger<UserLoggedInDomainEventHandler> logger, IOutboxEventPublisher publisher) : INotificationHandler<UserLoggedInDomainEvent>
 {
     public async Task Handle(UserLoggedInDomainEvent notification, CancellationToken cancellationToken)
     {

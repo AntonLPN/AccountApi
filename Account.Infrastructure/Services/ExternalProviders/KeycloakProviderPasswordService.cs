@@ -6,9 +6,9 @@ using Microsoft.Extensions.Options;
 
 namespace Account.Infrastructure.Services.ExternalProviders;
 
-public class KeycloakPasswordService(
+public class KeycloakProviderPasswordService(
     KeycloakHttpClient keycloakHttpClient,
-    IOptions<KeycloakAdminOptions> keyCloakOptions) : IPasswordService
+    IOptions<KeycloakAdminOptions> keyCloakOptions) : IProviderPasswordService
 {
     public Task<Result> ChangePasswordAsync(string email, string newPassword)
     {

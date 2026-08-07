@@ -1,4 +1,3 @@
-using Account.Contracts.Events;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
@@ -6,7 +5,6 @@ using Account.Domain.Specifications;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
-using MassTransit;
 using Microsoft.Extensions.Logging;
 
 namespace Account.Application.Features.Account.ChangePassword;
@@ -15,10 +13,8 @@ public class ChangePasswordHandler(
     ILogger<ChangePasswordHandler> logger,
     IRepository<AppUser> userRepository,
     IPreAuthTokenService preAuthTokenService,
-    IPasswordService passwordService,
+    IProviderPasswordService providerPasswordService,
     ICryptography cryptographyService,
-    IPublishEndpoint publishEndpoint,
-    IAuthService authService,
     IUnitOfWork unitOfWork)
     : ICommandHandler<ChangePasswordCommand, Result<ChangePasswordResult>>
 {
@@ -30,23 +26,23 @@ public class ChangePasswordHandler(
         ArgumentException.ThrowIfNullOrEmpty(request.PendingToken, nameof(request.PendingToken));
 
         var normalizedEmail = Email.Create(request.Email);
-        var user = await userRepository.FirstOrDefaultAsync(new UserByEmailWithAuthorizedApiKeysSpec(normalizedEmail), cancellationToken);
-        if (user == null)
-        {
-            logger.LogWarning(
-                "For change password operation, User not found with email: {MaskedEmail}",
-                MaskedEmail.Create(normalizedEmail));
-            return Result<ChangePasswordResult>.Conflict("");
-        }
-
-        var isValidToken =
-            await preAuthTokenService.ValidateAndConsumePendingTokenAsync(request.PendingToken, normalizedEmail);
-        if (!isValidToken)
-            return Result<ChangePasswordResult>.Conflict("Invalid token");
-
+        var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
-            var providerRes = await passwordService.ChangePasswordAsync(normalizedEmail, request.Password);
+            var user = await userRepository.FirstOrDefaultAsync(
+                new UserByEmailWithAuthorizedApiKeysSpec(normalizedEmail), cancellationToken);
+            if (user == null)
+            {
+                logger.LogWarning(
+                    "For change password operation, User not found with email: {MaskedEmail}",
+                    MaskedEmail.Create(normalizedEmail));
+                return Result<ChangePasswordResult>.Conflict("");//for safety wee don't return user not found
+            }
+            
+            if (!await preAuthTokenService.ValidateAndConsumePendingTokenAsync(request.PendingToken, normalizedEmail))
+                return Result<ChangePasswordResult>.Conflict("Invalid token");
+
+            var providerRes = await providerPasswordService.ChangePasswordAsync(normalizedEmail, request.Password);
             if (!providerRes.IsSuccess)
             {
                 logger.LogWarning(
@@ -56,21 +52,12 @@ public class ChangePasswordHandler(
             }
 
             user.ChangePassword(cryptographyService.Hash(request.Password));
-            //push to rabbit mq message  
-            await publishEndpoint.Publish(new ChangePasswordIntegrationEvent
-            {
-                CorrelationId = Guid.NewGuid(),
-                UserId = user.Id
-            }, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
-            var tokenResponse = await authService.LoginAsync(normalizedEmail, request.Password);
-            if (tokenResponse is null)
-                return Result<ChangePasswordResult>.Unauthorized();
+            await tx.CommitAsync(cancellationToken);
 
             return Result<ChangePasswordResult>.Success(new ChangePasswordResult
             {
-                Token = tokenResponse,
-                ApiKeys = user.ApiKeys.Select(k => k.ApiKeyValue).ToList()
+                IsPasswordChanged = true
             });
         }
         catch (Exception e)

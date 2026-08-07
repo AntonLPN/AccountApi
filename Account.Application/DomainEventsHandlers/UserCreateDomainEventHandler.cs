@@ -8,7 +8,7 @@ using MediatR;
 
 namespace Account.Application.DomainEventsHandlers;
 
-public class UserCreateEventHandler(
+public class UserCreateDomainEventHandler(
     IOutboxEventPublisher publisher,
     IRepository<LoginAudit> loginAuditRepository,
     IRepository<ApiKey> apiKeyRepository) : INotificationHandler<UserCreatedDomainEvent>

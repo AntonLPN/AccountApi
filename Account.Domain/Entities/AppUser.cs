@@ -74,6 +74,7 @@ public class AppUser : AggregateRoot
     {
         ArgumentException.ThrowIfNullOrEmpty(newHashPassword);
         PasswordHash = newHashPassword; // In a real application, you would hash the password before storing it
+        AddDomainEvent(new PasswordChangedDomainEvent(Id));
     }
 
     public void ConfirmEmail()

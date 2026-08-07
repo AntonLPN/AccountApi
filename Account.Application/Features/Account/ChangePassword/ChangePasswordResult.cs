@@ -1,7 +1,9 @@
-using Account.Application.Features.Account.Models;
+using System.Text.Json.Serialization;
 
 namespace Account.Application.Features.Account.ChangePassword;
 
-public class ChangePasswordResult : BaseAuthResponse
+public class ChangePasswordResult
 {
+    [JsonPropertyName("isPasswordChanged")]
+    public bool IsPasswordChanged { get; set; }
 }
