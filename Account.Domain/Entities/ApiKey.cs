@@ -29,7 +29,13 @@ public class ApiKey : AggregateRoot
             IsAuthorize = createParams.IsAuthorize,
             UserId = createParams.UserId
         };
-        //TODO add domain event
+    }
+    
+    public void Revoke()
+    {
+        IsAuthorize = false;
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
     }
 }
 

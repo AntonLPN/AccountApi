@@ -1,5 +1,4 @@
 using Account.Application.Features.Account.Logout;
-using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Events;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
@@ -7,7 +6,6 @@ using Account.Domain.Specifications;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
 using Ardalis.Specification;
-using MassTransit;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -17,18 +15,14 @@ public class LogoutUserHandlerTests
 {
     private readonly Mock<ILogger<LogoutUserHandler>> _logger = new();
     private readonly Mock<IAuthService> _authService = new();
-    private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IRepository<AppUser>> _userRepository = new();
-    private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
 
     private LogoutUserHandler CreateSut()
     {
         return new LogoutUserHandler(
             _logger.Object,
             _authService.Object,
-            _unitOfWork.Object,
-            _userRepository.Object,
-            _publishEndpoint.Object);
+            _userRepository.Object);
     }
 
     private static LogoutCommand CreateCommand(
@@ -68,7 +62,6 @@ public class LogoutUserHandlerTests
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultStatus.Unauthorized, result.Status);
         _authService.Verify(x => x.LogoutAsync(It.IsAny<string>()), Times.Never);
-        _publishEndpoint.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -93,8 +86,6 @@ public class LogoutUserHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultStatus.Error, result.Status);
-        _publishEndpoint.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
-        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -144,14 +135,7 @@ public class LogoutUserHandlerTests
         await sut.Handle(command, CancellationToken.None);
 
         // Assert
-        _publishEndpoint.Verify(x => x.Publish(
-            It.Is<UserLogoutSagaStartedIntegrationEvent>(e =>
-                e.CorrelationId != Guid.Empty &&
-                e.UserId == user.Id &&
-                e.Email == user.Email &&
-                e.IpAddress == command.IpAddress &&
-                e.UserAgent == command.UserAgent),
-            It.IsAny<CancellationToken>()), Times.Once);
+       
     }
 
     [Fact]
@@ -175,7 +159,6 @@ public class LogoutUserHandlerTests
         await sut.Handle(command, CancellationToken.None);
 
         // Assert
-        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -205,9 +188,6 @@ public class LogoutUserHandlerTests
                 It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
                 It.IsAny<CancellationToken>()),
             Times.Once);
-        _publishEndpoint.Verify(
-            x => x.Publish(It.IsAny<UserLogoutSagaStartedIntegrationEvent>(), It.IsAny<CancellationToken>()),
-            Times.Once);
-        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+  
     }
 }

@@ -11,8 +11,6 @@ namespace Account.Application.Features.Account.ConfirmEmail;
 public class ConfirmEmailHandler(
     ILogger<ConfirmEmailHandler> logger,
     IRepository<AppUser> userRepository,
-    ICryptography cryptographyService,
-    IRepository<OtpSessions> otpSessionRepository,
     IOtpService otpService)
     : ICommandHandler<ConfirmEmailCommand, Result<bool>>
 {

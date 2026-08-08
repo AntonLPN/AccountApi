@@ -1,4 +1,3 @@
-using Account.Contracts.SagaEvents.UserLogoutSagaEvents.Events;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
@@ -6,7 +5,6 @@ using Account.Domain.Specifications;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
-using MassTransit;
 using Microsoft.Extensions.Logging;
 
 namespace Account.Application.Features.Account.Logout;
@@ -14,9 +12,7 @@ namespace Account.Application.Features.Account.Logout;
 public class LogoutUserHandler(
     ILogger<LogoutUserHandler> logger,
     IAuthService authService,
-    IUnitOfWork unitOfWork,
-    IRepository<AppUser> userRepository,
-    IPublishEndpoint publishEndpoint)
+    IRepository<AppUser> userRepository)
     : ICommandHandler<LogoutCommand, Result>
 {
     public async Task<Result> Handle(LogoutCommand request, CancellationToken cancellationToken)
@@ -29,17 +25,8 @@ public class LogoutUserHandler(
         var loggedOut = await authService.LogoutAsync(request.RefreshToken);
         if (!loggedOut)
             return Result.Error("Logout failed");
-
-        await publishEndpoint.Publish(new UserLogoutSagaStartedIntegrationEvent
-        {
-            CorrelationId = Guid.NewGuid(),
-            UserId = user.Id,
-            Email = user.Email,
-            IpAddress = request.IpAddress,
-            UserAgent = request.UserAgent
-        }, cancellationToken);
-
-        await unitOfWork.SaveChangesAsync(cancellationToken); //need for saga
+        user.Logout(request.IpAddress, request.UserAgent);
+        //await unitOfWork.SaveChangesAsync(cancellationToken); //need for saga
 
         logger.LogInformation("User {Email} logged out, logout saga started", MaskedEmail.Create(normalizedEmail));
 

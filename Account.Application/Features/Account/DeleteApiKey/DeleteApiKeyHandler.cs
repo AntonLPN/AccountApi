@@ -25,10 +25,7 @@ public class DeleteApiKeyHandler(
                 await apiKeyRepository.FirstOrDefaultAsync(new ApiKeyByValueSpec(request.ApiKey), cancellationToken);
             if (apiKey is null)
                 return Result<bool>.NotFound("Api key not found");
-
-            apiKey.IsAuthorize = false;
-            apiKey.IsDeleted = true;
-            apiKey.DeletedAt = DateTime.UtcNow;
+            apiKey.Revoke();
             await apiKeyRepository.UpdateAsync(apiKey, cancellationToken);
             return Result<bool>.Success(true);
         }
@@ -38,7 +35,5 @@ public class DeleteApiKeyHandler(
                 MaskedEmail.Create(normalizedEmail));
             throw;
         }
-
-        throw new NotImplementedException();
     }
 }

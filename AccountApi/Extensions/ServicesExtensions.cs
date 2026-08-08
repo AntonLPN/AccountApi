@@ -8,7 +8,6 @@ using Account.Infrastructure.Persistence;
 using Account.Infrastructure.Persistence.SagaModels;
 using Account.Infrastructure.Saga.TwoFactor;
 using Account.Infrastructure.Saga.UserLogin;
-using Account.Infrastructure.Saga.UserLogout;
 using Account.Infrastructure.Saga.UserRegister;
 using Account.Infrastructure.Services;
 using AccountApi.Authorization;
@@ -205,7 +204,6 @@ public static class ServicesExtensions
         });
         x.AddSagaStateMachine<UserRegistrationSaga, UserRegistrationSagaState, UserRegistrationSagaDefinition>();
         x.AddSagaStateMachine<UserLoginSaga, UserLoginSagaState, UserLoginSagaDefinition>();
-        x.AddSagaStateMachine<UserLogoutSaga, UserLogoutSagaState, UserLogoutSagaDefinition>();
         x.AddSagaStateMachine<TwoFactorSaga, TwoFactorSagaState, TwoFactorSagaDefinition>();
     }
 

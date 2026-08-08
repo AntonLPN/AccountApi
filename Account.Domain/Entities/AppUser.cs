@@ -67,7 +67,6 @@ public class AppUser : AggregateRoot
         return new string(result);
     }
 
-    public void UpdateLastLogoutAt() => LastLogoutAt = DateTime.UtcNow;
     public void UpdateLastLoginAt() => LastLoginAt = DateTime.UtcNow;
 
     public void ChangePassword(string newHashPassword)
@@ -99,7 +98,12 @@ public class AppUser : AggregateRoot
         LastLoginAt = DateTime.UtcNow;
         AddDomainEvent(new UserLoggedInDomainEvent(Id, Email, ipAddress, userAgent));
     }
-    
+
+    public void Logout(string? ipAddress, string? userAgent)
+    {
+        LastLogoutAt = DateTime.UtcNow;
+        AddDomainEvent(new UserLoggedOutDomainEvent(Id, Email, ipAddress, userAgent));
+    }
     public void EnableTwoFactorAuthentication()
     {
         IsTwoFactorEnabled = true;
