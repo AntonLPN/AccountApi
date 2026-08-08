@@ -16,8 +16,6 @@ public class AppDbContext : DbContext
 
     //Sagas
     public DbSet<UserRegistrationSagaState> UserRegistrationSagaStates { get; set; } = null!;
-    public DbSet<UserLoginSagaState> UserLoginSagaStates { get; set; } = null!;
-    public DbSet<UserLogoutSagaState> UserLogoutSagaStates { get; set; } = null!;
     public DbSet<TwoFactorSagaState> TwoFactorSagaStates { get; set; } = null!;
 
     // ReSharper disable once ConvertToPrimaryConstructor
@@ -92,26 +90,7 @@ public class AppDbContext : DbContext
             entity.Property(x => x.FailureReason).HasMaxLength(255).HasColumnName("FailureReason").IsUnicode();
             entity.HasIndex(x => x.UserId);
         });
-
-        builder.Entity<UserLoginSagaState>(entity =>
-        {
-            entity.HasKey(s => s.CorrelationId);
-            entity.Property(s => s.CorrelationId).HasMaxLength(255);
-            entity.Property(s => s.CurrentState).HasMaxLength(64);
-            entity.Property(x => x.UserId).HasMaxLength(255);
-            entity.Property(x => x.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode();
-            entity.Property(x => x.IpAddress).HasMaxLength(64).HasColumnName("IpAddress").IsUnicode();
-            entity.Property(x => x.UserAgent).HasMaxLength(512).HasColumnName("UserAgent").IsUnicode();
-            entity.Property(x => x.IsSuspicious).HasColumnName("IsSuspicious").HasDefaultValue(false);
-            entity.Property(x => x.AuditRecorded).HasColumnName("AuditRecorded").HasDefaultValue(false);
-            entity.Property(x => x.LastLoginUpdated).HasColumnName("LastLoginUpdated").HasDefaultValue(false);
-            entity.Property(x => x.NotificationSent).HasColumnName("NotificationSent").HasDefaultValue(false);
-            entity.Property(x => x.FailureReason).HasMaxLength(255).HasColumnName("FailureReason").IsUnicode();
-            entity.Property(x => x.CreatedAt).HasColumnName("CreatedAt");
-            entity.Property(x => x.UpdatedAt).HasColumnName("UpdatedAt");
-            entity.HasIndex(x => x.UserId);
-        });
-
+        
         builder.Entity<LoginAudit>(entity =>
         {
             entity.HasKey(a => a.Id).HasName("PK_LoginAudit");
@@ -123,25 +102,7 @@ public class AppDbContext : DbContext
             entity.Property(a => a.LoggedInAt).HasColumnName("LoggedInAt");
             entity.HasIndex(a => a.UserId);
         });
-
-        builder.Entity<UserLogoutSagaState>(entity =>
-        {
-            entity.HasKey(s => s.CorrelationId);
-            entity.Property(s => s.CorrelationId).HasMaxLength(255);
-            entity.Property(s => s.CurrentState).HasMaxLength(64);
-            entity.Property(x => x.UserId).HasMaxLength(255);
-            entity.Property(x => x.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode();
-            entity.Property(x => x.IpAddress).HasMaxLength(64).HasColumnName("IpAddress").IsUnicode();
-            entity.Property(x => x.UserAgent).HasMaxLength(512).HasColumnName("UserAgent").IsUnicode();
-            entity.Property(x => x.AuditRecorded).HasColumnName("AuditRecorded").HasDefaultValue(false);
-            entity.Property(x => x.LastLogoutUpdated).HasColumnName("LastLogoutUpdated").HasDefaultValue(false);
-            entity.Property(x => x.NotificationSent).HasColumnName("NotificationSent").HasDefaultValue(false);
-            entity.Property(x => x.FailureReason).HasMaxLength(255).HasColumnName("FailureReason").IsUnicode();
-            entity.Property(x => x.CreatedAt).HasColumnName("CreatedAt");
-            entity.Property(x => x.UpdatedAt).HasColumnName("UpdatedAt");
-            entity.HasIndex(x => x.UserId);
-        });
-
+        
         builder.Entity<TwoFactorSagaState>(entity =>
         {
             entity.HasKey(s => s.CorrelationId);

@@ -7,7 +7,6 @@ using Account.Infrastructure.Extensions;
 using Account.Infrastructure.Persistence;
 using Account.Infrastructure.Persistence.SagaModels;
 using Account.Infrastructure.Saga.TwoFactor;
-using Account.Infrastructure.Saga.UserLogin;
 using Account.Infrastructure.Saga.UserRegister;
 using Account.Infrastructure.Services;
 using AccountApi.Authorization;
@@ -203,7 +202,6 @@ public static class ServicesExtensions
             r.UseMySql();
         });
         x.AddSagaStateMachine<UserRegistrationSaga, UserRegistrationSagaState, UserRegistrationSagaDefinition>();
-        x.AddSagaStateMachine<UserLoginSaga, UserLoginSagaState, UserLoginSagaDefinition>();
         x.AddSagaStateMachine<TwoFactorSaga, TwoFactorSagaState, TwoFactorSagaDefinition>();
     }
 

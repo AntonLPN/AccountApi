@@ -1,6 +1,4 @@
 using Account.Application.Interfaces;
-using Account.Contracts.Saga.UserLoginSagaEvents.Events;
-using Account.Contracts.SagaEvents.UserLoginSagaEvents.Events;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
@@ -35,18 +33,7 @@ public class ProviderLoginHandler(
                 return Result<ProviderLoginResult>.Unauthorized();
             var userToken = await authService.LoginAsync(email);
             ArgumentNullException.ThrowIfNull(userToken);
-
-            await publishEndpoint.Publish(new UserLoginSagaStartedIntegrationEvent
-            {
-                CorrelationId = Guid.NewGuid(),
-                UserId = user.Id,
-                Email = user.Email,
-                IpAddress = request.IpAddress,
-                UserAgent = request.UserAgent
-            }, cancellationToken);
-
-            await unitOfWork.SaveChangesAsync(cancellationToken); //need for saga
-
+            user.RecordLogin(request.IpAddress, request.UserAgent);
             logger.LogInformation("User {Email} logged in, login saga started", MaskedEmail.Create(email));
             return Result<ProviderLoginResult>.Success(new ProviderLoginResult
             {

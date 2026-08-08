@@ -21,6 +21,6 @@ public class UserLoggedOutDomainEventHandler(IRepository<LogoutAudit> logoutAudi
         };
         var logoutAudit = LogoutAudit.Create(logoutAuditDto);
         await logoutAuditRepository.AddAsync(logoutAudit, cancellationToken);
-
+        
     }
 }

@@ -67,7 +67,6 @@ public class AppUser : AggregateRoot
         return new string(result);
     }
 
-    public void UpdateLastLoginAt() => LastLoginAt = DateTime.UtcNow;
 
     public void ChangePassword(string newHashPassword)
     {
