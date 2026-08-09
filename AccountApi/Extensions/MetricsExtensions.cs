@@ -1,4 +1,5 @@
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 
 namespace AccountApi.Extensions;
 
@@ -11,7 +12,13 @@ public static class MetricsExtensions
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation()
-                .AddPrometheusExporter());
+                .AddPrometheusExporter())
+            .WithTracing(tracing => tracing
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddEntityFrameworkCoreInstrumentation() 
+                .AddSource("MassTransit") 
+                .AddOtlpExporter());
 
         return services;
     }
