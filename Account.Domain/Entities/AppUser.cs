@@ -14,7 +14,7 @@ public class AppUser : AggregateRoot
     public string Email { get; set; } = "";
     public bool EmailConfirmed { get; set; }
     public bool IsTwoFactorEnabled { get; set; }
-    public string EncryptedTwoFactorSecret { get; set; }
+    public string? EncryptedTwoFactorSecret { get; set; }
     public string? PasswordHash { get; set; } = "";
 
     public string? ProviderName { get; set; } = "my-corporate-ad"; //Google, Aple, etc.
@@ -71,7 +71,7 @@ public class AppUser : AggregateRoot
     public void ChangePassword(string newHashPassword)
     {
         ArgumentException.ThrowIfNullOrEmpty(newHashPassword);
-        PasswordHash = newHashPassword; // In a real application, you would hash the password before storing it
+        PasswordHash = newHashPassword; 
         AddDomainEvent(new PasswordChangedDomainEvent(Id));
     }
 

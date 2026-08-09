@@ -2,6 +2,7 @@ using Account.Application.Interfaces;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
 using Account.Infrastructure.Cryptography;
+using Account.Infrastructure.MassTransit;
 using Account.Infrastructure.Persistence;
 using Account.Infrastructure.Services;
 using Account.Infrastructure.Services.Email;
@@ -15,7 +16,7 @@ public static class DependencyInjectionInfrastructure
 {
     public static void AddInfrastructureServices(this IServiceCollection services)
     {
-        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IAuthService, KeycloakAuthService>();
         services.AddScoped<ICryptography, CryptographService>();
         services.AddScoped<IEmail, EmailService>();
         services.AddScoped<IProviderValidator, ProviderValidator>();

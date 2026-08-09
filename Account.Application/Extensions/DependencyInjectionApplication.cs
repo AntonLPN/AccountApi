@@ -1,3 +1,4 @@
+using Account.Application.Features.Account.ProvidersRegister;
 using Account.Application.Features.Account.Register;
 using Account.Application.Interfaces;
 using Account.Application.Strategies;
@@ -12,5 +13,6 @@ public static class DependencyInjectionApplication
         services.AddScoped<ILoginStrategy, MfaLoginStrategy>();
         services.AddScoped<ILoginStrategy, StandardLoginStrategy>();
         services.AddScoped<IUserRegistrationCoordinator, UserRegistrationCoordinator>();
+        services.AddScoped<IProviderRegistrationCoordinator, ProviderRegistrationCoordinator>();
     }
 }

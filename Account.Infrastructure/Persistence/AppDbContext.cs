@@ -13,7 +13,6 @@ public class AppDbContext : DbContext
     public DbSet<LogoutAudit> LogoutAudits { get; set; } = null!;
 
     public DbSet<OtpSessions> OptSessions { get; set; } = null!;
-
     //Sagas
     public DbSet<UserRegistrationSagaState> UserRegistrationSagaStates { get; set; } = null!;
     public DbSet<TwoFactorSagaState> TwoFactorSagaStates { get; set; } = null!;
@@ -31,7 +30,6 @@ public class AppDbContext : DbContext
         builder.AddInboxStateEntity();
         builder.AddOutboxMessageEntity();
         builder.AddOutboxStateEntity();
-
         builder.Entity<AppUser>(entity =>
         {
             entity.Property(e => e.Id).IsRequired()

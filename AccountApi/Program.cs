@@ -60,27 +60,18 @@ builder.Services.AddHttpClient<KeycloakHttpClient>()
         options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(120);
         options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(130);
     });
-//Use in production:
-// builder.Services.AddStackExchangeRedisCache(options =>
-//     options.Configuration = builder.Configuration.GetConnectionString("Redis"));
-
-// For debug
-builder.Services.AddDistributedMemoryCache();
 
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Account API v1");
+        options.ConfigObject.AdditionalItems["version"] = DateTime.UtcNow.Ticks.ToString();
+    });
 }
-
-app.UseSwaggerUI(options =>
-{
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Account API v1");
-//for debug, to avoid caching of swagger.json and always get the latest version
-    options.ConfigObject.AdditionalItems["version"] = DateTime.UtcNow.Ticks.ToString();
-});
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 using (var scope = app.Services.CreateScope())
 {
@@ -101,9 +92,10 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapPrometheusScrapingEndpoint();
+app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseHttpsRedirection();
-app.MapControllers().RequireRateLimiting("fixed");
+app.UseRateLimiter();
+app.MapControllers().RequireRateLimiting(RateLimiterPolices.Fixed);
 app.Run();

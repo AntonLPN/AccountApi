@@ -1,7 +1,7 @@
 using Account.Domain.Interfaces;
 using MassTransit;
 
-namespace Account.Infrastructure.Services;
+namespace Account.Infrastructure.MassTransit;
 
 public class MassTransitIntegrationEventPublisher(IPublishEndpoint publishEndpoint) : IIntegrationEventPublisher
 {

@@ -4,6 +4,7 @@ using Account.Application.Features.Account.Register;
 using Account.Domain.Extensions;
 using Account.Infrastructure.Configuration;
 using Account.Infrastructure.Extensions;
+using Account.Infrastructure.MassTransit;
 using Account.Infrastructure.Persistence;
 using Account.Infrastructure.Persistence.SagaModels;
 using Account.Infrastructure.Saga.TwoFactor;
@@ -23,8 +24,6 @@ public static class ServicesExtensions
 {
     public static IServiceCollection AddMySqlDatabase(this IServiceCollection services, IConfiguration configuration)
     {
-        ArgumentNullException.ThrowIfNull(configuration);
-
         var connectionString = configuration.GetSection("DbConfig:ConnectionString").Value;
         ArgumentException.ThrowIfNullOrEmpty(connectionString,
             "Database connection string configuration is missing or empty.");
@@ -38,11 +37,13 @@ public static class ServicesExtensions
         return services;
     }
 
-    public static void AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services,
+        IConfiguration configuration)
     {
         var keycloakSettings = configuration.GetSection("Authentication:Schemes:Bearer");
-        var preAuthKey = configuration["Authentication:PreAuth:SigningKey"]!; // отдельный секрет, только ваш
-
+        var preAuthKey = configuration["Authentication:PreAuth:SigningKey"]
+                         ?? throw new InvalidOperationException(
+                             "Authentication:PreAuth:SigningKey configuration is missing.");
         services.AddAuthentication("Bearer")
             //Keycloak - main authentication scheme, for all endpoints except /verify-otp
             .AddJwtBearer("Bearer", options =>
@@ -69,7 +70,7 @@ public static class ServicesExtensions
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
-                    ValidIssuer = "account-api-preauth", 
+                    ValidIssuer = "account-api-preauth",
                     ValidateAudience = true,
                     ValidAudience = "account-api-preauth",
                     ValidateLifetime = true,
@@ -100,20 +101,21 @@ public static class ServicesExtensions
                 .AddAuthenticationSchemes("PreAuth")
                 .RequireAuthenticatedUser()
                 .RequireClaim("purpose",
-                    "otp_pending")) 
+                    "otp_pending"))
 
             //for all other endpoints, require full authentication through Keycloak
             .AddPolicy(AuthPolicies.MfaRequired, policy => policy
                 .AddAuthenticationSchemes("Bearer")
                 .RequireAuthenticatedUser())
-
             .SetDefaultPolicy(new AuthorizationPolicyBuilder()
                 .AddAuthenticationSchemes("Bearer")
                 .RequireAuthenticatedUser()
                 .Build());
+
+        return services;
     }
 
-    public static void  AddLifeTimeServices(this IServiceCollection services)
+    public static IServiceCollection AddLifeTimeServices(this IServiceCollection services)
     {
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(
             typeof(RegisterCommand).Assembly,
@@ -123,6 +125,7 @@ public static class ServicesExtensions
         services.AddApplicationServices();
         services.AddDomainServices();
 
+        return services;
     }
 
     public static IServiceCollection AddMassTransitMessaging(this IServiceCollection services,
@@ -205,37 +208,27 @@ public static class ServicesExtensions
         x.AddSagaStateMachine<TwoFactorSaga, TwoFactorSagaState, TwoFactorSagaDefinition>();
     }
 
-    public static void AddRedis(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddRedis(this IServiceCollection services, IConfiguration configuration)
     {
-        //if user docker compose, redis will be in localhost
-        //use this to connect to redis in docker compose
-        //var redis = ConnectionMultiplexer.Connect($"{cfg.Host}:{cfg.Port}");
-        // var db = redis.GetDatabase();
-        //builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
-
-        //if run app without docker compose, for example, https://upstash.com/
-        var redisSection = configuration.GetSection("Redis");
-        ArgumentNullException.ThrowIfNull(redisSection);
+        var redisSection = configuration.GetSection("Redis").Get<RedisOptions>() ??
+                           throw new InvalidOperationException("Redis configuration section is missing.");
         var redisOptions = new ConfigurationOptions
         {
-            EndPoints =
-            {
-                {
-                    redisSection["Host"] ?? throw new InvalidOperationException("Redis config error"),
-                    int.Parse(redisSection["Port"] ?? "6379")
-                }
-            },
-            User = redisSection["User"],
-            Password = redisSection["Password"],
-            Ssl = bool.Parse(redisSection["Ssl"] ?? "false"),
+            EndPoints = { { redisSection.Host, redisSection.Port } },
+            User = redisSection.User,
+            Password = redisSection.Password,
+            Ssl = redisSection.Ssl,
             AbortOnConnectFail = false,
             ConnectTimeout = 5000
         };
 
         var redis = ConnectionMultiplexer.Connect(redisOptions);
         if (!redis.IsConnected)
-            throw new Exception("Failed to connect to Redis");
-        services.AddSingleton<IConnectionMultiplexer>(sp =>
-            ConnectionMultiplexer.Connect(redisOptions));
+            throw new InvalidOperationException("Failed to connect to Redis");
+
+        services.AddSingleton<IConnectionMultiplexer>(redis);
+        services.AddStackExchangeRedisCache(options => { options.ConfigurationOptions = redisOptions; });
+
+        return services;
     }
 }
