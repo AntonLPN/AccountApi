@@ -18,7 +18,12 @@ public static class MetricsExtensions
                 .AddHttpClientInstrumentation()
                 .AddEntityFrameworkCoreInstrumentation() 
                 .AddSource("MassTransit") 
-                .AddOtlpExporter());
+                .AddOtlpExporter(options =>
+                {
+                    //TODO add grafana tempo(container) for tracing and metrics
+                    //options.Endpoint = new Uri(configuration["OpenTelemetry:Otlp:Endpoint"] ?? "http://localhost:4317");
+                   // options.Protocol = OtlpExportProtocol.Grpc;
+                }));
 
         return services;
     }
