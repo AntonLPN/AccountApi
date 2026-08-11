@@ -23,18 +23,19 @@ public class ProviderRegistrationCoordinator(
     ICryptography cryptographyService)
     : IProviderRegistrationCoordinator
 {
-    public async Task<Result<ProviderRegisterResult>> RegisterAsync(ProviderRegisterCommand request, string email, CancellationToken ct)
+    public async Task<Result<ProviderRegisterResult>> RegisterAsync(ProviderRegisterCommand request, string email,
+        CancellationToken ct)
     {
         var registerResult = await userAccountService.RegisterUserAsync(email, "", false);
         if (!registerResult.IsSuccess)
-            return Result<ProviderRegisterResult>.Error(registerResult.Errors.FirstOrDefault() ?? "Registration failed");
+            return Result<ProviderRegisterResult>.Error(registerResult.Errors.FirstOrDefault() ??
+                                                        "Registration failed");
 
         var userId = registerResult.Value;
 
+        await using var tx = await unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            await using var tx = await unitOfWork.BeginTransactionAsync(ct);
-
             var whoInvited = await userRepository.FirstOrDefaultAsync(
                 new UserByReferralCodeSpec(request.ReferrerCode), ct);
 
@@ -44,8 +45,8 @@ public class ProviderRegistrationCoordinator(
             await userRepository.AddAsync(user, ct);
 
             var key = Guid.NewGuid().ToString("N");
-            var hashedKey = cryptographyService.Hash(key); 
-            var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id,key,hashedKey,true));
+            var hashedKey = cryptographyService.Hash(key);
+            var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id, key, hashedKey, true));
             await apiKeyRepository.AddAsync(apiKey, ct);
 
             var loginAudit = LoginAudit.Create(new CreateLoginAuditParams
@@ -62,9 +63,10 @@ public class ProviderRegistrationCoordinator(
             {
                 await tx.RollbackAsync(ct);
                 await CompensateExternalRegistrationAsync(email);
-                return Result<ProviderRegisterResult>.Error("Registration succeeded, but login failed. Please try logging in.");
+                return Result<ProviderRegisterResult>.Error(
+                    "Registration succeeded, but login failed. Please try logging in.");
             }
-            
+
             await tx.CommitAsync(ct);
 
             return Result<ProviderRegisterResult>.Success(new ProviderRegisterResult

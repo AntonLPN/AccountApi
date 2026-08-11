@@ -20,7 +20,6 @@ public class ApiKey : AggregateRoot
 
     public static ApiKey Create(ApiKeyCreateParams createParams)
     {
-
         return new ApiKey
         {
             HashApiKey = createParams.HashApiKey,
