@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Account.Contracts.Events.External;
 using Account.Infrastructure.Persistence;
 using MassTransit;
@@ -41,7 +38,7 @@ public class SyncDataConsumer(AppDbContext dbContext, ILogger<SyncDataConsumer> 
             Email = u.Email,
             ApiKey = u.ApiKeys
                 .Where(k => k.IsAuthorize && k.ExpiredAt > DateTime.UtcNow)
-                .Select(k => k.ApiKeyValue)
+                .Select(k => k.KeyPrefix)
                 .FirstOrDefault() ?? "",
             ReferralId = u.ReferrerId,
             IsActive = u.ApiKeys.Any(k => k.IsAuthorize && k.ExpiredAt > DateTime.UtcNow),

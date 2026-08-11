@@ -10,18 +10,17 @@ namespace Account.Application.DomainEventsHandlers;
 
 public class UserCreateDomainEventHandler(
     IOutboxEventPublisher publisher,
-    IRepository<LoginAudit> loginAuditRepository,
-    IRepository<ApiKey> apiKeyRepository) : INotificationHandler<UserCreatedDomainEvent>
+    IRepository<LoginAudit> loginAuditRepository) : INotificationHandler<UserCreatedDomainEvent>
 {
     public async Task Handle(UserCreatedDomainEvent notification, CancellationToken cancellationToken)
     {
-        await apiKeyRepository.AddAsync(ApiKey.Create(new ApiKeyCreateParams(notification.UserId)), cancellationToken);
+    
         await loginAuditRepository.AddAsync(LoginAudit.Create(new CreateLoginAuditParams
         {
             UserId = notification.UserId,
             Email = notification.Email
         }), cancellationToken);
-        
+
         await publisher.AddOutboxEventAsync(new UserRegisterSagaStartedIntegrationEvent()
         {
             CorrelationId = Guid.NewGuid(),

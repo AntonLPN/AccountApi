@@ -19,7 +19,8 @@ public class ProviderRegistrationCoordinator(
     IRepository<AppUser> userRepository,
     IRepository<ApiKey> apiKeyRepository,
     IRepository<LoginAudit> loginAuditRepository,
-    IAuthService authService)
+    IAuthService authService,
+    ICryptography cryptographyService)
     : IProviderRegistrationCoordinator
 {
     public async Task<Result<ProviderRegisterResult>> RegisterAsync(ProviderRegisterCommand request, string email, CancellationToken ct)
@@ -42,7 +43,9 @@ public class ProviderRegistrationCoordinator(
                 request.IpAddress, request.UserAgent, true, nameof(AuthProviders.Google)));
             await userRepository.AddAsync(user, ct);
 
-            var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id, true));
+            var key = Guid.NewGuid().ToString("N");
+            var hashedKey = cryptographyService.Hash(key); 
+            var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id,key,hashedKey,true));
             await apiKeyRepository.AddAsync(apiKey, ct);
 
             var loginAudit = LoginAudit.Create(new CreateLoginAuditParams
@@ -66,7 +69,7 @@ public class ProviderRegistrationCoordinator(
 
             return Result<ProviderRegisterResult>.Success(new ProviderRegisterResult
             {
-                ApiKeys = user.ApiKeys.Select(k => k.ApiKeyValue).ToList(),
+                ApiKeys = [key],
                 Token = token
             });
         }

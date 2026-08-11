@@ -6,7 +6,8 @@ namespace Account.Domain.Entities;
 public class ApiKey : AggregateRoot
 {
     [Key] public int Id { get; set; }
-    [Column("Key")] public required string ApiKeyValue { get; init; }
+    [Column("Key")] public required string HashApiKey { get; init; }
+    public required string KeyPrefix { get; set; }
     public bool IsAuthorize { get; set; } = true;
     public DateTime CreatedAt { get; init; }
     public DateTime ExpiredAt { get; set; }
@@ -19,15 +20,15 @@ public class ApiKey : AggregateRoot
 
     public static ApiKey Create(ApiKeyCreateParams createParams)
     {
-        var value = Guid.NewGuid().ToString("N");
 
         return new ApiKey
         {
-            ApiKeyValue = value,
+            HashApiKey = createParams.HashApiKey,
             CreatedAt = DateTime.UtcNow,
             ExpiredAt = DateTime.UtcNow.AddYears(99),
             IsAuthorize = createParams.IsAuthorize,
-            UserId = createParams.UserId
+            UserId = createParams.UserId,
+            KeyPrefix = createParams.ApiKey.Substring(0, 8)
         };
     }
     
@@ -39,4 +40,4 @@ public class ApiKey : AggregateRoot
     }
 }
 
-public sealed record ApiKeyCreateParams(string UserId, bool IsAuthorize = true);
+public sealed record ApiKeyCreateParams(string UserId,string ApiKey, string HashApiKey, bool IsAuthorize = true);

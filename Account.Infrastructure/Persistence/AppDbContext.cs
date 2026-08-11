@@ -56,7 +56,8 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(a => a.Id).HasName("PK_ApiKey");
             entity.Property(e => e.UserId).HasMaxLength(255).HasColumnName("UserId").IsUnicode();
-            entity.Property(e => e.ApiKeyValue).HasMaxLength(255).HasColumnName("Key").IsUnicode();
+            entity.Property(e => e.HashApiKey).HasMaxLength(255).HasColumnName("Key").IsUnicode();
+            entity.Property(e => e.KeyPrefix).HasMaxLength(8).HasColumnName("KeyPrefix").IsUnicode();
             entity.Property(e => e.IsAuthorize).HasColumnName("Authorize").IsRequired();
             entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt");
             entity.Property(e => e.ExpiredAt).HasColumnName("ExpiredAt");
@@ -68,7 +69,7 @@ public class AppDbContext : DbContext
                 .HasForeignKey(a => a.UserId)
                 .HasConstraintName("FK_AppUser_ApiKeys");
             
-            entity.HasIndex(a => a.ApiKeyValue)
+            entity.HasIndex(a => a.HashApiKey)
                 .IsUnique()
                 .HasDatabaseName("UX_ApiKey_Key");
         });

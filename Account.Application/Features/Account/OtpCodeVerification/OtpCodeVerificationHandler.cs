@@ -61,7 +61,7 @@ public class OtpCodeVerificationHandler(
             logger.LogInformation("OTP verification successful for user {UserId}", user.Id);
             return Result<OtpConfirmationResult>.Success(new OtpConfirmationResult()
             {
-                ApiKeys = user.ApiKeys.Select(k => k.ApiKeyValue).ToList(),
+                ApiKeys = user.ApiKeys.Select(k => k.KeyPrefix).ToList(),
                 Token = tokenResponse,
             });
         }

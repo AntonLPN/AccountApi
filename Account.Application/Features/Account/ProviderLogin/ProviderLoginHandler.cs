@@ -15,8 +15,6 @@ public class ProviderLoginHandler(
     ILogger<ProviderLoginHandler> logger,
     IProviderValidator providerValidator,
     IRepository<AppUser> userRepository,
-    IPublishEndpoint publishEndpoint,
-    IUnitOfWork unitOfWork,
     IAuthService authService)
     : ICommandHandler<ProviderLoginCommand, Result<ProviderLoginResult>>
 {
@@ -37,7 +35,7 @@ public class ProviderLoginHandler(
             logger.LogInformation("User {Email} logged in, login saga started", MaskedEmail.Create(email));
             return Result<ProviderLoginResult>.Success(new ProviderLoginResult
             {
-                ApiKeys = user.ApiKeys.Select(k => k.ApiKeyValue).ToList(),
+                ApiKeys = user.ApiKeys.Select(k => k.KeyPrefix).ToList(),
                 Token = userToken
             });
         }

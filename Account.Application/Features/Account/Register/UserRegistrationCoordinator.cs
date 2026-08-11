@@ -13,6 +13,7 @@ namespace Account.Application.Features.Account.Register;
 
 public class UserRegistrationCoordinator(ILogger<UserRegistrationCoordinator> logger,
     IRepository<AppUser> userRepository,
+    IRepository<ApiKey> apiKeyRepository,
     IUserAccountService userAccountService,
     IUnitOfWork unitOfWork,
     ICryptography cryptographyService,
@@ -44,6 +45,12 @@ public class UserRegistrationCoordinator(ILogger<UserRegistrationCoordinator> lo
                 false,
                 nameof(AuthProviders.LocalProvider)
             ));
+            
+            var key = Guid.NewGuid().ToString("N");
+            var hashedKey = cryptographyService.Hash(key); 
+            var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id,key,hashedKey,true));
+            
+            await apiKeyRepository.AddAsync(apiKey, ct);
             await userRepository.AddAsync(user, ct);
             await unitOfWork.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
@@ -52,7 +59,7 @@ public class UserRegistrationCoordinator(ILogger<UserRegistrationCoordinator> lo
             if (tokenResponse is not null)
                 return Result<RegisterUserResult>.Success(new RegisterUserResult
                 {
-                    ApiKeys = user.ApiKeys.Select(k => k.ApiKeyValue).ToList(),
+                    ApiKeys = [key],
                     Token = tokenResponse
                 });
             

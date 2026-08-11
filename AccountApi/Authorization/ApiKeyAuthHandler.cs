@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using Account.Domain.Interfaces;
@@ -20,7 +22,8 @@ public class ApiKeyAuthHandler(
     UrlEncoder encoder,
     IDataCache dataCache,
     IOptions<ApiKeyOptions> apiKeyOptions,
-    AppDbContext dbContext)
+    AppDbContext dbContext,
+    ICryptography cryptographyService)
     : AuthenticationHandler<ApiKeyAuthSchemeOptions>(options, logger, encoder)
 {
     private readonly string _masterApiKey = apiKeyOptions.Value.Key;
@@ -47,7 +50,9 @@ public class ApiKeyAuthHandler(
 
     private async Task<bool> IsAuthorizedAsync(string apiKey)
     {
-        if (apiKey.Equals(_masterApiKey)) return true;
+        if (CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(apiKey),
+                Encoding.UTF8.GetBytes(_masterApiKey))) return true;
         var key = await dataCache.GetAsync<CachedApiKeyInfo>(apiKey);
         if (key != null)
             return key.IsActive;
@@ -57,12 +62,13 @@ public class ApiKeyAuthHandler(
 
     private async Task<bool> ValidateFromDbAsync(string apiKey)
     {
+        var hashedApiKey = cryptographyService.Hash(apiKey);
         var key = await dbContext.ApiKeys
             .AsNoTracking()
-            .FirstOrDefaultAsync(k => k.ApiKeyValue == apiKey && k.IsAuthorize && !k.IsDeleted);
+            .FirstOrDefaultAsync(k => k.HashApiKey == hashedApiKey && k.IsAuthorize && !k.IsDeleted);
 
         if (key is not null)
-            await SetCacheAsync(apiKey, key.IsAuthorize, key.UserId);
+            await SetCacheAsync(hashedApiKey, key.IsAuthorize, key.UserId);
 
         return key is not null && key.IsAuthorize;
     }

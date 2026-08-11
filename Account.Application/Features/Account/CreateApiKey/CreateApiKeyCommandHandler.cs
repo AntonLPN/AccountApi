@@ -1,4 +1,5 @@
 using Account.Domain.Entities;
+using Account.Domain.Interfaces;
 using Account.Domain.Specifications;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
@@ -10,7 +11,8 @@ namespace Account.Application.Features.Account.CreateApiKey;
 public class CreateApiKeyCommandHandler(
     ILogger<CreateApiKeyCommandHandler> logger,
     IRepository<AppUser> userRepository,
-    IRepository<ApiKey> apiKeyRepository)
+    IRepository<ApiKey> apiKeyRepository,
+    ICryptography cryptographyService)
     : ICommandHandler<CreateApiKeyCommand, Result<string>>
 {
     public async Task<Result<string>> Handle(CreateApiKeyCommand request, CancellationToken cancellationToken)
@@ -22,9 +24,11 @@ public class CreateApiKeyCommandHandler(
                 cancellationToken);
             if (user is null)
                 return Result<string>.NotFound("User not found");
-            var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id, true));
+            var key = Guid.NewGuid().ToString("N");
+            var hashedKey = cryptographyService.Hash(key); 
+            var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id,key,hashedKey,true));
             await apiKeyRepository.AddAsync(apiKey, cancellationToken);
-            return Result<string>.Success(apiKey.ApiKeyValue);
+            return Result<string>.Success(key);
         }
         catch (Exception e)
         {

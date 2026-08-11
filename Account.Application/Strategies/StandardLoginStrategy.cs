@@ -27,7 +27,7 @@ public class StandardLoginStrategy(
         return Result<LoginUserResult>.Success(new LoginUserResult
         {
             IsMfaRequired = false,
-            ApiKeys = user.ApiKeys.Select(k => k.ApiKeyValue).ToList(),
+            ApiKeys = user.ApiKeys.Select(k => k.KeyPrefix).ToList(),
             Token = tokenResponse
         });
     }

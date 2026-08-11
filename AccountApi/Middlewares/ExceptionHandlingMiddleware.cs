@@ -50,6 +50,11 @@ public class ExceptionHandlingMiddleware(
                     g => g.Select(e => e.ErrorMessage).ToArray()
                 );
         }
+        
+        if (exception is OperationCanceledException && context.RequestAborted.IsCancellationRequested)
+        {
+            return Task.CompletedTask; //client disconnected
+        }
 
         return context.Response.WriteAsJsonAsync(response);
     }
@@ -82,6 +87,7 @@ public class ExceptionHandlingMiddleware(
 
     private (HttpStatusCode statusCode, string message, string errorCode) DetermineErrorResponse(Exception exception)
     {
+        
         return exception switch
         {
             // FluentValidation
