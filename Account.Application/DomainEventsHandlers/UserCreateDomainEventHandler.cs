@@ -18,7 +18,10 @@ public class UserCreateDomainEventHandler(
         await loginAuditRepository.AddAsync(LoginAudit.Create(new CreateLoginAuditParams
         {
             UserId = notification.UserId,
-            Email = notification.Email
+            Email = notification.Email,
+            IpAddress = notification.IpAddress,
+            UserAgent = notification.UserAgent,
+            
         }), cancellationToken);
 
         await publisher.AddOutboxEventAsync(new UserRegisterSagaStartedIntegrationEvent()

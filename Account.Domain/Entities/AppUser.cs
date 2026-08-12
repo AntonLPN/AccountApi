@@ -49,7 +49,7 @@ public class AppUser : AggregateRoot
             EmailConfirmed = createParams.EmailConfirmed,
             EncryptedTwoFactorSecret = Convert.ToBase64String(KeyGeneration.GenerateRandomKey(20))
         };
-        user.AddDomainEvent(new UserCreatedDomainEvent(user.Id, user.Email));
+        user.AddDomainEvent(new UserCreatedDomainEvent(user.Id, user.Email,createParams.IpAddress, createParams.UserAgent));
         return user;
     }
 
