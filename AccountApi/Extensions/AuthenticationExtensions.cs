@@ -3,6 +3,7 @@ using AccountApi.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
+
 // ReSharper disable InconsistentNaming
 
 namespace AccountApi.Extensions;
@@ -10,10 +11,10 @@ namespace AccountApi.Extensions;
 public static class AuthenticationExtensions
 {
     private const string PRE_AUTH_SHEME = "PreAuth";
-    private const string ISUER_NAME = "account-api-preauth";
+    private const string ISSUER_NAME = "account-api-preauth";
     private const string AUDIENCE_NAME = "account-api-preauth";
 
-    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services,
+    public static IServiceCollection AddAppAuthentication(this IServiceCollection services,
         IConfiguration configuration)
     {
         var keycloakSettings = configuration.GetSection("Authentication:Schemes:Bearer");
@@ -50,7 +51,7 @@ public static class AuthenticationExtensions
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
-                    ValidIssuer = ISUER_NAME,
+                    ValidIssuer = ISSUER_NAME,
                     ValidateAudience = true,
                     ValidAudience = AUDIENCE_NAME,
                     ValidateLifetime = true,
@@ -69,13 +70,16 @@ public static class AuthenticationExtensions
                 };
 #endif
             })
-            .AddScheme<ApiKeyAuthSchemeOptions, ApiKeyAuthHandler>(AuthPolicies.ApiKeyOnly, _ => { });
+            .AddScheme<ApiKeyAuthSchemeOptions, ApiKeyAuthHandler>(AuthPolicies.ApiKeyOnly, _ => { })
+            .AddScheme<MasterKeyAuthSchemeOptions, MasterKeyAuthHandler>(AuthPolicies.MasterKeyOnly, _ => { });
 
         services.AddAuthorizationBuilder()
             .AddPolicy(AuthPolicies.ApiKeyOnly, policy => policy
                 .AddAuthenticationSchemes(AuthPolicies.ApiKeyOnly)
                 .RequireAuthenticatedUser())
-
+            .AddPolicy(AuthPolicies.MasterKeyOnly, policy => policy
+                .AddAuthenticationSchemes(AuthPolicies.MasterKeyOnly)
+                .RequireAuthenticatedUser())
             //for /verify-otp
             .AddPolicy(AuthPolicies.PreAuthOnly, policy => policy
                 .AddAuthenticationSchemes(PRE_AUTH_SHEME)

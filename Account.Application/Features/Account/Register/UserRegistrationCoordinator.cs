@@ -37,15 +37,16 @@ public class UserRegistrationCoordinator(
                 request.RegisterCommand.EmailConfirmed,
                 nameof(request.RegisterCommand.Provider)
             ));
+            await userRepository.AddAsync(user, ct);
 
             var key = Guid.NewGuid().ToString("N");
             var hashedKey = cryptographyService.Hash(key);
             var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id, key, hashedKey, true));
-
             await apiKeyRepository.AddAsync(apiKey, ct);
-            await userRepository.AddAsync(user, ct);
+
             await unitOfWork.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
+            return Result<RegisterUserResult>.Success(new RegisterUserResult { IsSuccess = true });
         }
         catch (Exception e)
         {
@@ -56,8 +57,6 @@ public class UserRegistrationCoordinator(
             await CompensateExternalRegistrationAsync(normalizedEmail);
             throw;
         }
-
-        return Result<RegisterUserResult>.Success(new RegisterUserResult { IsSuccess = true });
     }
 
     private async Task CompensateExternalRegistrationAsync(Email email)

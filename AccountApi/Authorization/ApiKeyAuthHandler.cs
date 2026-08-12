@@ -50,9 +50,6 @@ public class ApiKeyAuthHandler(
 
     private async Task<bool> IsAuthorizedAsync(string apiKey)
     {
-        if (CryptographicOperations.FixedTimeEquals(
-                Encoding.UTF8.GetBytes(apiKey),
-                Encoding.UTF8.GetBytes(_masterApiKey))) return true;
         var key = await dataCache.GetAsync<CachedApiKeyInfo>(apiKey);
         if (key != null)
             return key.IsActive;

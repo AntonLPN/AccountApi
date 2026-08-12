@@ -8,7 +8,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Account.Application.Features.Account.Register;
 
-public class RegisterUserHandler(ILogger<RegisterUserHandler> logger,
+public class RegisterUserHandler(
+    ILogger<RegisterUserHandler> logger,
     IRepository<AppUser> userRepository,
     IUserRegistrationCoordinator coordinator,
     IUserAccountService userAccountService)
@@ -26,8 +27,7 @@ public class RegisterUserHandler(ILogger<RegisterUserHandler> logger,
         if (!keycloakResult.IsSuccess)
             return Result<RegisterUserResult>.Error(
                 keycloakResult.Errors.FirstOrDefault() ?? "Registration failed");
-        
-        return await coordinator.RegisterAsync(new UserCoordinatorParams(request,keycloakResult.Value), ct);
-    }
 
+        return await coordinator.RegisterAsync(new UserCoordinatorParams(request, keycloakResult.Value), ct);
+    }
 }

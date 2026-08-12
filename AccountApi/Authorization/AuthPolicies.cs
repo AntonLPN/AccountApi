@@ -7,6 +7,16 @@ public static class AuthPolicies
     public const string PreAuthOnly = "MfaPreAuthOnlyPolicy";
     public const string MfaRequired = "MfaRequiredPolicy";
     public const string ApiKeyOnly = "ApiKeyOnlyPolicy";
+    public const string MasterKeyOnly = "MasterKeyOnlyPolicy";
+}
+
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public class MasterKeyOnlyAttribute : AuthorizeAttribute
+{
+    public MasterKeyOnlyAttribute() :base(AuthPolicies.MasterKeyOnly)
+    {
+        
+    }
 }
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]

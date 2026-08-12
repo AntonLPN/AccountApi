@@ -25,8 +25,8 @@ namespace AccountApi.Controllers;
 [Produces("application/json")]
 public class AuthController(IMediator mediator) : ControllerBase
 {
-    //[AuthorizeApiKeyOnly]
-    [AllowAnonymous]
+//    [AllowAnonymous]
+    [MasterKeyOnly]
     [HttpPost("register")]
     [ProducesResponseType(typeof(RegisterUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

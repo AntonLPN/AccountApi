@@ -17,7 +17,7 @@ builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true
 builder.Host.AddSerilogLogging();
 
 builder.Services.AddMySqlDatabase(builder.Configuration);
-builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddAppAuthentication(builder.Configuration);
 builder.Services.AddMassTransitMessaging(builder.Configuration);
 builder.Services.AddRedis(builder.Configuration);
 builder.Services.AddLifeTimeServices();
