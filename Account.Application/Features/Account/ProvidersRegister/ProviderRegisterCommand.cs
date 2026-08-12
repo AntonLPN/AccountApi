@@ -7,7 +7,7 @@ namespace Account.Application.Features.Account.ProvidersRegister;
 public record ProviderRegisterCommand(
     string ProviderToken,
     string ReferrerCode,
-    AuthProviders Provider,
+    AuthProvider Provider,
     string? IpAddress,
     string? UserAgent)
     : ICommand<Result<ProviderRegisterResult>>;

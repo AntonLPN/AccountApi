@@ -1,5 +1,4 @@
 using Account.Domain.Entities;
-using Account.Domain.Enums;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Domain.Repositories;
@@ -11,62 +10,42 @@ using Microsoft.Extensions.Logging;
 
 namespace Account.Application.Features.Account.Register;
 
-public class UserRegistrationCoordinator(ILogger<UserRegistrationCoordinator> logger,
+public class UserRegistrationCoordinator(
+    ILogger<UserRegistrationCoordinator> logger,
     IRepository<AppUser> userRepository,
     IRepository<ApiKey> apiKeyRepository,
     IUserAccountService userAccountService,
     IUnitOfWork unitOfWork,
-    ICryptography cryptographyService,
-    IAuthService authService) : IUserRegistrationCoordinator
+    ICryptography cryptographyService) : IUserRegistrationCoordinator
 {
-    public async Task<Result<RegisterUserResult>> RegisterAsync(RegisterCommand request, CancellationToken ct)
+    public async Task<Result<RegisterUserResult>> RegisterAsync(UserCoordinatorParams request, CancellationToken ct)
     {
-        var normalizedEmail = Email.Create(request.Email);
-
-        var keycloakResult = await userAccountService.RegisterUserAsync(normalizedEmail, request.Password);
-        if (!keycloakResult.IsSuccess)
-            return Result<RegisterUserResult>.Error(
-                keycloakResult.Errors.FirstOrDefault() ?? "Registration failed");
+        var normalizedEmail = Email.Create(request.RegisterCommand.Email);
         await using var tx = await unitOfWork.BeginTransactionAsync(ct);
         try
         {
             var whoInvited = await userRepository.FirstOrDefaultAsync(
-                new UserByReferralCodeSpec(request.ReferrerCode), ct);
-
-            var passwordHash = cryptographyService.Hash(request.Password);
-
+                new UserByReferralCodeSpec(request.RegisterCommand.ReferrerCode), ct);
+            var passwordHash = cryptographyService.Hash(request.RegisterCommand.Password);
             var user = AppUser.Create(new AppUserCreateParams(
-                keycloakResult.Value,
+                request.UserId,
                 normalizedEmail,
                 passwordHash,
                 whoInvited?.Id,
-                request.IpAddress,
-                request.UserAgent,
-                false,
-                nameof(AuthProviders.LocalProvider)
+                request.RegisterCommand.IpAddress,
+                request.RegisterCommand.UserAgent,
+                request.RegisterCommand.EmailConfirmed,
+                nameof(request.RegisterCommand.Provider)
             ));
-            
+
             var key = Guid.NewGuid().ToString("N");
-            var hashedKey = cryptographyService.Hash(key); 
-            var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id,key,hashedKey,true));
-            
+            var hashedKey = cryptographyService.Hash(key);
+            var apiKey = ApiKey.Create(new ApiKeyCreateParams(user.Id, key, hashedKey, true));
+
             await apiKeyRepository.AddAsync(apiKey, ct);
             await userRepository.AddAsync(user, ct);
             await unitOfWork.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
-  
-            var tokenResponse = await authService.LoginAsync(normalizedEmail, request.Password);
-            if (tokenResponse is not null)
-                return Result<RegisterUserResult>.Success(new RegisterUserResult
-                {
-                    ApiKeys = [key],
-                    Token = tokenResponse
-                });
-            
-            logger.LogError("Login failed after successful registration for user {UserId}", user.Id);
-            return Result<RegisterUserResult>.Error(
-                "Registration succeeded, but automatic login failed. Please log in manually.");
-
         }
         catch (Exception e)
         {
@@ -75,10 +54,12 @@ public class UserRegistrationCoordinator(ILogger<UserRegistrationCoordinator> lo
                 MaskedEmail.Create(normalizedEmail));
 
             await CompensateExternalRegistrationAsync(normalizedEmail);
-            throw; 
+            throw;
         }
 
+        return Result<RegisterUserResult>.Success(new RegisterUserResult { IsSuccess = true });
     }
+
     private async Task CompensateExternalRegistrationAsync(Email email)
     {
         try
@@ -93,3 +74,6 @@ public class UserRegistrationCoordinator(ILogger<UserRegistrationCoordinator> lo
         }
     }
 }
+
+// ReSharper disable once ClassNeverInstantiated.Global
+public record UserCoordinatorParams(RegisterCommand RegisterCommand, string UserId);

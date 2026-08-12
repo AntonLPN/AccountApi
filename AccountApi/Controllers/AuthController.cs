@@ -38,12 +38,10 @@ public class AuthController(IMediator mediator) : ControllerBase
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers.UserAgent.ToString();
 
-        var regCmd = new RegisterCommand(model.Email, model.Password, model.ReferralCode, ipAddress, userAgent);
+        var regCmd = new RegisterCommand(AuthProvider.LocalProvider, model.Email,false, model.Password, model.ReferralCode, ipAddress, userAgent);
         var res = await mediator.Send(regCmd);
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
-
-        SetRefreshTokenCookie(res.Value?.Token?.RefreshToken);
         return Ok(res.Value);
     }
 
@@ -58,7 +56,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers.UserAgent.ToString();
 
-        var regCmd = new ProviderRegisterCommand(model.Token, model.ReferralCode, AuthProviders.Google, ipAddress,
+        var regCmd = new ProviderRegisterCommand(model.Token, model.ReferralCode, AuthProvider.Google, ipAddress,
             userAgent);
         var res = await mediator.Send(regCmd);
         if (!res.IsSuccess)
@@ -105,7 +103,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers.UserAgent.ToString();
 
-        var loginCmd = new ProviderLoginCommand(model.Token, AuthProviders.Google, ipAddress, userAgent);
+        var loginCmd = new ProviderLoginCommand(model.Token, AuthProvider.Google, ipAddress, userAgent);
         var res = await mediator.Send(loginCmd);
 
         if (res.Status == Ardalis.Result.ResultStatus.Unauthorized)

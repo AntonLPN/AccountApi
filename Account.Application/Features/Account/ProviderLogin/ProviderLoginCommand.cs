@@ -6,7 +6,7 @@ namespace Account.Application.Features.Account.ProviderLogin;
 
 public record ProviderLoginCommand(
     string ProviderToken,
-    AuthProviders Provider,
+    AuthProvider Provider,
     string? IpAddress,
     string? UserAgent)
     : ICommand<Result<ProviderLoginResult>>;

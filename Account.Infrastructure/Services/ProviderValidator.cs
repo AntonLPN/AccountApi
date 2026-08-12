@@ -6,14 +6,14 @@ namespace Account.Infrastructure.Services;
 
 public class ProviderValidator(IGoogleAuthService googleAuthService) : IProviderValidator
 {
-    public async Task<string?> ValidateProviderTokenAndGetEmailAsync(AuthProviders provider, string token)
+    public async Task<string?> ValidateProviderTokenAndGetEmailAsync(AuthProvider provider, string token)
     {
         switch (provider)
         {
-            case AuthProviders.Google:
+            case AuthProvider.Google:
                 var googlePayload = await googleAuthService.ValidateTokenAsync(token);
                 return googlePayload.Email;
-            case AuthProviders.Apple:
+            case AuthProvider.Apple:
                 //TODO waiting for apple implementation
                 break;
             default:

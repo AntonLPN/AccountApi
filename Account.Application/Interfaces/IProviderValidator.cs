@@ -4,5 +4,5 @@ namespace Account.Application.Interfaces;
 
 public interface IProviderValidator
 {
-    Task<string?> ValidateProviderTokenAndGetEmailAsync(AuthProviders provider, string token);
+    Task<string?> ValidateProviderTokenAndGetEmailAsync(AuthProvider provider, string token);
 }

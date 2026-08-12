@@ -1,6 +1,6 @@
 namespace Account.Domain.Enums;
 
-public enum AuthProviders
+public enum AuthProvider
 {
     LocalProvider,
     Google,

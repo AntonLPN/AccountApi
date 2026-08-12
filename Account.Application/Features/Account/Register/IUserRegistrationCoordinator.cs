@@ -4,5 +4,5 @@ namespace Account.Application.Features.Account.Register;
 
 public interface IUserRegistrationCoordinator
 {
-    Task<Result<RegisterUserResult>> RegisterAsync(RegisterCommand request, CancellationToken ct);
+    Task<Result<RegisterUserResult>> RegisterAsync(UserCoordinatorParams request, CancellationToken ct);
 }   
