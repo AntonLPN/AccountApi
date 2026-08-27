@@ -119,6 +119,11 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
             htmlTemplate, cancellationToken));
     }
 
+    public Task<bool> SendVerificationEmailAsync(string toEmail, string link, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
     private async Task<bool> SendMessageSmtp(MimeMessage message, CancellationToken cancellationToken = default)
     {
         var socketOptions = _emailConfig.Port == 25

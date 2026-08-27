@@ -25,11 +25,10 @@ public class ConfirmEmailHandler(
             if (user is null)
                 return Result<bool>.NotFound("User not found");
             var otpActiveSession =
-                await otpService.ValidateActiveSessionAsync(user, request.ConfirmationCode, cancellationToken);
+                await otpService.ValidateActiveSessionAsync(user, request.Token, cancellationToken);
             if (!otpActiveSession.IsSuccess)
             {
-                return Result<bool>.Conflict(otpActiveSession.Errors.FirstOrDefault() ??
-                                             "Invalid OTP code");
+                return Result<bool>.Conflict(otpActiveSession.Errors.FirstOrDefault() ?? "Invalid OTP code");
             }
 
             user.ConfirmEmail();

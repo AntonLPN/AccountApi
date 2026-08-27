@@ -1,4 +1,5 @@
 using Account.Application.Features.Account.ChekEmailAvailability;
+using Account.Application.Features.Account.SendEmailVerification;
 using AccountApi.Authorization;
 using AccountApi.Models.RequestModels;
 using AccountApi.Models.ResponseModels;
@@ -13,6 +14,8 @@ namespace AccountApi.Controllers;
 [Produces("application/json")]
 public class AccountController(IMediator mediator) : ControllerBase
 {
+    private const string VERIFY_EMAIL = "verify-email";
+
     [AuthorizeApiKeyOnly]
     //[AllowAnonymous]
     [HttpGet("check-email-availability")]
@@ -28,7 +31,30 @@ public class AccountController(IMediator mediator) : ControllerBase
     }
 
     [AllowAnonymous]
-    [HttpPost("confirm-email")]
+    //[Authorize]
+    [HttpGet("send-email-verification-link")]
+    public async Task<IActionResult> SendEmailVerification()
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+        var email = User.FindFirst("email")?.Value;
+#if DEBUG
+        email = "example@mail.com";
+
+#endif
+        var request = HttpContext.Request;
+        var baseUrl = $"{request.Scheme}://{request.Host}";
+        var confirmationUrl = $"{baseUrl}/api/account/{VERIFY_EMAIL}";
+        var cmd = new SendEmailVerificationCommand(email, confirmationUrl);
+        var res = await mediator.Send(cmd);
+        if (res.IsSuccess)
+            return BadRequest(res.Errors);
+
+        return Ok("Not implemented");
+    }
+
+    [AllowAnonymous]
+    [HttpPost(VERIFY_EMAIL)]
     public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest model)
     {
         if (!ModelState.IsValid)

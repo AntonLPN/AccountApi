@@ -11,7 +11,7 @@ namespace Account.Infrastructure.Services;
 public class PreAuthTokenService(IOptions<AuthenticationOptions> authenticationOptions, IDataCache dataCache)
     : IPreAuthTokenService
 {
-    private const string KeyNamePrefix = "pending_token_";
+    private const string KEY_NAME_PREFIX = "pending_token_";
     public string GeneratePreAuthToken(string email)
     {
         var key = new SymmetricSecurityKey(
@@ -39,13 +39,13 @@ public class PreAuthTokenService(IOptions<AuthenticationOptions> authenticationO
     {
         var pendingToken = Guid.NewGuid().ToString("N");
    
-        await dataCache.SetStringAsync($"{KeyNamePrefix+pendingToken}", email, TimeSpan.FromMinutes(5));
+        await dataCache.SetStringAsync($"{KEY_NAME_PREFIX+pendingToken}", email, TimeSpan.FromMinutes(5));
         return pendingToken;
     }
     
     public async Task<bool> ValidateAndConsumePendingTokenAsync(string pendingToken,string email)
     {
-        var res = await dataCache.ConsumeAsync($"{KeyNamePrefix+pendingToken}");
+        var res = await dataCache.ConsumeAsync($"{KEY_NAME_PREFIX+pendingToken}");
         if (string.IsNullOrEmpty(res))
         {
             return false;

@@ -14,4 +14,5 @@ public interface IEmail
         CancellationToken cancellationToken = default);
     Task<bool> SendOtpCodeAsync(string toEmail,string otpCode, CancellationToken cancellationToken = default);
     Task<bool> SendPasswordChangedEmailAsync(string toEmail, CancellationToken cancellationToken = default);
+    Task<bool> SendVerificationEmailAsync(string toEmail, string link, CancellationToken cancellationToken = default);
 }
