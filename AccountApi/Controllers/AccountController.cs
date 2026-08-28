@@ -14,15 +14,12 @@ namespace AccountApi.Controllers;
 [Produces("application/json")]
 public class AccountController(IMediator mediator) : ControllerBase
 {
-    private const string VERIFY_EMAIL = "verify-email";
 
     [AuthorizeApiKeyOnly]
     //[AllowAnonymous]
-    [HttpGet("check-email-availability")]
-    public async Task<IActionResult> ChekEmailAvailability([FromBody] ChekEmailAvailabilityRequest model)
+    [HttpPost("check-email-availability")]
+    public async Task<IActionResult> CheckEmailAvailability([FromBody] ChekEmailAvailabilityRequest model)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
         var res = await mediator.Send(new ChekEmailAvailabilityCommand(model.Email));
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
@@ -35,30 +32,23 @@ public class AccountController(IMediator mediator) : ControllerBase
     [HttpGet("send-email-verification-link")]
     public async Task<IActionResult> SendEmailVerification()
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
         var email = User.FindFirst("email")?.Value;
 #if DEBUG
-        email = "example@mail.com";
+        email = "user@example.com";
 
 #endif
-        var request = HttpContext.Request;
-        var baseUrl = $"{request.Scheme}://{request.Host}";
-        var confirmationUrl = $"{baseUrl}/api/account/{VERIFY_EMAIL}";
-        var cmd = new SendEmailVerificationCommand(email, confirmationUrl);
+        var cmd = new SendEmailVerificationCommand(email);
         var res = await mediator.Send(cmd);
-        if (res.IsSuccess)
+        if (!res.IsSuccess)
             return BadRequest(res.Errors);
 
         return Ok("Not implemented");
     }
 
     [AllowAnonymous]
-    [HttpPost(VERIFY_EMAIL)]
+    [HttpPost("verify-email")]
     public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest model)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
         //flow 
         //1 send to email otp code to user
         //2 check otp code

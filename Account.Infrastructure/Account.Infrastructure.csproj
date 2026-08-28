@@ -52,4 +52,11 @@
       <None Remove="Services\Email\Templates\PasswordChangedTemplate.html" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="HtmlTemplates\EmailConfirmation.html" />
+      <EmbeddedResource Include="HtmlTemplates\EmailConfirmation.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+    </ItemGroup>
+
 </Project>

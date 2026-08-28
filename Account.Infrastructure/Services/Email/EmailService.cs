@@ -1,15 +1,20 @@
+using System.Web;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
 using Account.Infrastructure.Configuration;
 using MailKit.Net.Smtp;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MimeKit;
 using Polly;
 
 namespace Account.Infrastructure.Services.Email;
 
-public class EmailService(IConfiguration configuration, ILogger<EmailService> logger) : IEmail
+public class EmailService(
+    IConfiguration configuration,
+    ILogger<EmailService> logger,
+    IOptions<AppUrlOptions> appUrlOptions) : IEmail
 {
     private readonly EmailConfig _emailConfig =
         configuration.GetSection("Messaging:Email").Get<EmailConfig>()
@@ -26,7 +31,7 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
 #endif
     }
 
-    private async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody,
+    private Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody,
         CancellationToken cancellationToken = default)
     {
         ValidateConfiguration();
@@ -39,15 +44,18 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
         msg.To.Add(new MailboxAddress(toEmail, toEmail));
         msg.Subject = subject;
         msg.Body = bodyBuilder.ToMessageBody();
-        try
+        return _emailRetryPolicy.ExecuteAsync(async () =>
         {
-            return await SendMessageSmtp(msg, cancellationToken);
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "An error occurred while sending email");
-            throw;
-        }
+            try
+            {
+                return await SendMessageSmtp(msg, cancellationToken);
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "An error occurred while sending email to {ToEmail}", toEmail);
+                throw; // Polly перехватит исключение и сделает повтор
+            }
+        });
     }
 
     public async Task<bool> SendWelcomeEmail(string toEmail, CancellationToken cancellationToken = default)
@@ -71,11 +79,11 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
             .Replace("{{IP_ADDRESS}}", suspiciousDevice.IpAddress)
             .Replace("{{DATE_TIME}}", suspiciousDevice.LoginTime.ToString("dd.MM.yyyy, HH:mm 'UTC'"))
             .Replace("{{USER_AGENT}}", suspiciousDevice.UserAgent);
-        return await _emailRetryPolicy.ExecuteAsync(async () => await SendEmailAsync(
+        return await SendEmailAsync(
             suspiciousDevice.ToEmail,
             "New Device Login — " + _emailConfig.OwnerName,
             body,
-            cancellationToken));
+            cancellationToken);
     }
 
     public async Task<bool> SendLogoutNotificationEmail(LogoutNotification logoutNotification,
@@ -87,11 +95,11 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
             .Replace("{{IP_ADDRESS}}", logoutNotification.IpAddress)
             .Replace("{{DATE_TIME}}", logoutNotification.LogoutTime.ToString("dd.MM.yyyy, HH:mm 'UTC'"))
             .Replace("{{USER_AGENT}}", logoutNotification.UserAgent);
-        return await _emailRetryPolicy.ExecuteAsync(async () => await SendEmailAsync(
+        return await SendEmailAsync(
             logoutNotification.ToEmail,
             "You have been logged out — " + _emailConfig.OwnerName,
             body,
-            cancellationToken));
+            cancellationToken);
     }
 
     public async Task<bool> SendOtpCodeAsync(string toEmail, string otpCode,
@@ -100,28 +108,43 @@ public class EmailService(IConfiguration configuration, ILogger<EmailService> lo
         var htmlTemplate = GetEmailTemplateAsync("OtpCodeTemplate.html");
         ArgumentException.ThrowIfNullOrEmpty(htmlTemplate);
         var body = htmlTemplate.Replace("{{CODE}}", otpCode);
-        return await _emailRetryPolicy.ExecuteAsync(async () => await SendEmailAsync(
+        return await SendEmailAsync(
             toEmail,
-            "Otp code - " + _emailConfig.OwnerName,
-            body
-        ));
+            "Your OTP Code — " + _emailConfig.OwnerName,
+            body,
+            cancellationToken);
     }
 
     public async Task<bool> SendPasswordChangedEmailAsync(string toEmail, CancellationToken cancellationToken = default)
     {
         var htmlTemplate = GetEmailTemplateAsync("PasswordChangedTemplate.html");
         ArgumentException.ThrowIfNullOrEmpty(htmlTemplate);
-        await SendEmailAsync(toEmail, "Password changed - " + _emailConfig.OwnerName, htmlTemplate, cancellationToken);
-        
-        return await _emailRetryPolicy.ExecuteAsync(async () => await SendEmailAsync(
+
+        return await SendEmailAsync(
             toEmail,
-            "Password changed - " + _emailConfig.OwnerName,
-            htmlTemplate, cancellationToken));
+            "Password Changed — " + _emailConfig.OwnerName,
+            htmlTemplate,
+            cancellationToken);
     }
 
-    public Task<bool> SendVerificationEmailAsync(string toEmail, string link, CancellationToken cancellationToken = default)
+    public async Task<bool> SendVerificationEmailAsync(string toEmail, string token,
+        CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var options = appUrlOptions.Value;
+        var builder = new UriBuilder(new Uri(new Uri(options.PublicBaseUrl), options.VerifyEmailPath));
+        var query = HttpUtility.ParseQueryString(builder.Query);
+        query["token"] = token;
+        builder.Query = query.ToString();
+        var verificationUrl = builder.Uri.ToString();
+
+        var htmlTemplate = GetEmailTemplateAsync("EmailConfirmation.html");
+        ArgumentException.ThrowIfNullOrEmpty(htmlTemplate);
+        var body = htmlTemplate.Replace("{{LINK}}", verificationUrl);
+
+        return await SendEmailAsync(
+            toEmail,
+            "Confirm your email address - " + _emailConfig.OwnerName,
+            body, cancellationToken);
     }
 
     private async Task<bool> SendMessageSmtp(MimeMessage message, CancellationToken cancellationToken = default)

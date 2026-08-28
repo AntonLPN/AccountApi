@@ -52,6 +52,7 @@ builder.Services.Configure<CryptoOptions>(builder.Configuration.GetSection("Cryp
 builder.Services.Configure<ApiKeyOptions>(builder.Configuration.GetSection("ApiKey"));
 builder.Services.Configure<RedisOptions>(builder.Configuration.GetSection("Redis"));
 builder.Services.Configure<AuthenticationOptions>(builder.Configuration.GetSection("Authentication"));
+builder.Services.Configure<AppUrlOptions>(builder.Configuration.GetSection("AppUrl"));
 
 builder.Services.AddHttpClient<KeycloakHttpClient>()
     .AddStandardResilienceHandler(options =>
