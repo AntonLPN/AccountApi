@@ -36,7 +36,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Logs\errors\" />
+      <Folder Include="Logs\" />
       <Folder Include="wwwroot\" />
     </ItemGroup>
 

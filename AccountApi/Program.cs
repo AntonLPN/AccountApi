@@ -1,4 +1,3 @@
-using Account.Infrastructure.Configuration;
 using Account.Infrastructure.HttpClients;
 using Account.Infrastructure.Persistence;
 using AccountApi.Authorization;
@@ -22,7 +21,7 @@ builder.Services.AddMassTransitMessaging(builder.Configuration);
 builder.Services.AddRedis(builder.Configuration);
 builder.Services.AddLifeTimeServices();
 builder.Services.AddObservabilityMetrics();
-
+builder.AddOptions();
 
 builder.Services.AddRateLimiter(limiter =>
 {
@@ -46,13 +45,6 @@ builder.Services.AddRateLimiter(limiter =>
 });
 
 
-builder.Services.Configure<KeycloakAdminOptions>(builder.Configuration.GetSection("KeycloakAdminClient"));
-builder.Services.Configure<GoogleOptions>(builder.Configuration.GetSection("Google"));
-builder.Services.Configure<CryptoOptions>(builder.Configuration.GetSection("Crypto"));
-builder.Services.Configure<ApiKeyOptions>(builder.Configuration.GetSection("ApiKey"));
-builder.Services.Configure<RedisOptions>(builder.Configuration.GetSection("Redis"));
-builder.Services.Configure<AuthenticationOptions>(builder.Configuration.GetSection("Authentication"));
-builder.Services.Configure<AppUrlOptions>(builder.Configuration.GetSection("AppUrl"));
 
 builder.Services.AddHttpClient<KeycloakHttpClient>()
     .AddStandardResilienceHandler(options =>
