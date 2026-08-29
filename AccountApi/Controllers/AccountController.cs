@@ -1,4 +1,5 @@
 using Account.Application.Features.Account.ChekEmailAvailability;
+using Account.Application.Features.Account.ConfirmEmail;
 using Account.Application.Features.Account.SendEmailVerification;
 using AccountApi.Authorization;
 using AccountApi.Models.RequestModels;
@@ -14,7 +15,6 @@ namespace AccountApi.Controllers;
 [Produces("application/json")]
 public class AccountController(IMediator mediator) : ControllerBase
 {
-
     [AuthorizeApiKeyOnly]
     //[AllowAnonymous]
     [HttpPost("check-email-availability")]
@@ -42,17 +42,17 @@ public class AccountController(IMediator mediator) : ControllerBase
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
 
-        return Ok("Not implemented");
+        return Ok("Check your email for verification link");
     }
 
     [AllowAnonymous]
-    [HttpPost("verify-email")]
-    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest model)
+    [HttpGet("verify-email")]
+    public async Task<IActionResult> ConfirmEmail([FromQuery] string token)
     {
-        //flow 
-        //1 send to email otp code to user
-        //2 check otp code
-        //3 confirm email in db and keycloak
-        throw new NotImplementedException();
+        var cmd = new ConfirmEmailCommand(token);
+        var res = await mediator.Send(cmd);
+        if (!res.IsSuccess)
+            return BadRequest(res.Errors);
+        return Redirect(res.IsSuccess ? "/email-verified.html" : "/email-verification-failed.html");
     }
 }

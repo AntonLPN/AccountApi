@@ -37,7 +37,10 @@
 
     <ItemGroup>
       <Folder Include="Logs\" />
-      <Folder Include="wwwroot\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="wwwroot\email-verified.html" />
     </ItemGroup>
 
 </Project>

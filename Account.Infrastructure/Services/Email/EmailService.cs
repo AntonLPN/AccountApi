@@ -160,7 +160,7 @@ public class EmailService(
         }
 
         await client.SendAsync(message, cancellationToken);
-        await client.DisconnectAsync(true, cancellationToken);
+        await client.DisconnectAsync(false, cancellationToken);
         return true;
     }
 

@@ -11,7 +11,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddMemoryCache();//for debug
+builder.Services.AddMemoryCache(); //for debug
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Host.AddSerilogLogging();
 
@@ -32,7 +32,7 @@ builder.Services.AddRateLimiter(limiter =>
         options.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
         options.QueueLimit = 10;
     });
-    
+
     limiter.AddFixedWindowLimiter(RateLimiterPolices.VerifyOtpPolicy, options =>
     {
         options.PermitLimit = 5;
@@ -45,7 +45,6 @@ builder.Services.AddRateLimiter(limiter =>
 });
 
 
-
 builder.Services.AddHttpClient<KeycloakHttpClient>()
     .AddStandardResilienceHandler(options =>
     {
@@ -55,7 +54,6 @@ builder.Services.AddHttpClient<KeycloakHttpClient>()
     });
 
 var app = builder.Build();
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -65,6 +63,7 @@ if (app.Environment.IsDevelopment())
         options.ConfigObject.AdditionalItems["version"] = DateTime.UtcNow.Ticks.ToString();
     });
 }
+app.UseStaticFiles();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 using (var scope = app.Services.CreateScope())
 {
