@@ -31,7 +31,7 @@ public static class AuthenticationExtensions
                                     throw new InvalidOperationException("Authority for keycloak settings is missing.");
                 options.Audience = keycloakSettings["ValidAudience"] ??
                                    throw new InvalidOperationException($"ValidAudience for keycloak is missing.");
-                options.RequireHttpsMetadata = !allowInsecureHttp;
+                options.RequireHttpsMetadata = allowInsecureHttp;
                 options.MapInboundClaims = false;
 #if DEBUG
                 options.Events = new JwtBearerEvents
