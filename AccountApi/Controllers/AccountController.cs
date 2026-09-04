@@ -33,10 +33,12 @@ public class AccountController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> SendEmailVerification()
     {
         var email = User.FindFirst("email")?.Value;
-#if DEBUG
-        email = "user@example.com";
-
-#endif
+        if (string.IsNullOrWhiteSpace(email))
+            return BadRequest("Email in credentials not found");
+// #if DEBUG
+//         email = "user@example.com";
+//
+// #endif
         var cmd = new SendEmailVerificationCommand(email);
         var res = await mediator.Send(cmd);
         if (!res.IsSuccess)

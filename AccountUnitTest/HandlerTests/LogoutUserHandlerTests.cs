@@ -1,7 +1,6 @@
 using Account.Application.Features.Account.Logout;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
-using Account.Domain.Repositories;
 using Account.Domain.Specifications;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
