@@ -1,189 +1,329 @@
-// using Account.Application.Features.Account.Register;
-// using Account.Domain.Entities;
-// using Account.Domain.Interfaces;
-// using Account.Domain.Models;
-// using Account.Domain.Repositories;
-// using Account.Domain.Specifications;
-// using Ardalis.Result;
-// using Ardalis.SharedKernel;
-// using Ardalis.Specification;
-// using MassTransit;
-// using Microsoft.Extensions.Logging;
-// using Moq;
-//
-// namespace AccountUnitTest.HandlerTests;
-//
-// public class RegisterUserHandlerTests
-// {
-//     private readonly Mock<ILogger<RegisterUserHandler>> _logger = new();
-//     private readonly Mock<IAuthService> _authService = new();
-//     private readonly Mock<IUnitOfWork> _unitOfWork = new();
-//     private readonly Mock<IRepository<AppUser>> _userRepository = new();
-//     private readonly Mock<IRepository<ApiKey>> _apiKeyRepository = new();
-//     private readonly Mock<IRepository<LoginAudit>> _loginAuditRepository = new();
-//     private readonly Mock<ICryptography> _cryptographyService = new();
-//     private readonly Mock<IAppDbTransaction> _tx = new();
-//     private readonly Mock<IUserAccountService> _userAccountService = new();
-//
-//     private RegisterUserHandler CreateSut()
-//     {
-//         _unitOfWork
-//             .Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
-//             .ReturnsAsync(_tx.Object);
-//
-//         return new RegisterUserHandler(
-//             _logger.Object,
-//             _authService.Object,
-//             _unitOfWork.Object,
-//             _userRepository.Object,
-//             _apiKeyRepository.Object,
-//             _loginAuditRepository.Object,
-//             _cryptographyService.Object,
-//             _userAccountService.Object);
-//     }
-//
-//     private static RegisterCommand CreateCommand(string email = "test@mail.com",
-//         string password = "123Avc_!@#$%^&*()_+")
-//         => new(email, password, "referrerId", "127.0.0.1", "userAgent");
-//
-//     [Fact]
-//     public async Task Handle_WhenEmailExists_ReturnsConflict()
-//     {
-//         var sut = CreateSut();
-//         var command = CreateCommand();
-//
-//         //Arrange
-//         _userRepository
-//             .Setup(x => x.FirstOrDefaultAsync(
-//                 It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
-//                 It.IsAny<CancellationToken>()))
-//             .ReturnsAsync(new AppUser());
-//
-//         //Act
-//         var result = await sut.Handle(command, CancellationToken.None);
-//
-//         //Assert
-//         Assert.False(result.IsSuccess);
-//         Assert.Equal(ResultStatus.Conflict, result.Status);
-//         Assert.Contains("User already exists", result.Errors);
-//
-//         _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
-//         _loginAuditRepository.Verify(x => x.AddAsync(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()),
-//             Times.Never);
-//         _userRepository.Verify(x => x.FirstOrDefaultAsync(
-//                 It.Is<ISpecification<AppUser>>(s => s is UserByReferralCodeSpec),
-//                 It.IsAny<CancellationToken>()),
-//             Times.Never);
-//     }
-//
-//     [Fact]
-//     public async Task Handle_WhenAuthService_ReturnError()
-//     {
-//         var sut = CreateSut();
-//         var cmd = CreateCommand();
-//
-//         //Arrange
-//         _userRepository
-//             .Setup(x => x.FirstOrDefaultAsync(
-//                 It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
-//                 It.IsAny<CancellationToken>()))
-//             .ReturnsAsync((AppUser?)null);
-//
-//         _userAccountService
-//             .Setup(x => x.RegisterUserAsync(cmd.Email, cmd.Password, true))
-//             .ReturnsAsync(Result<string>.Error("Registration failed"));
-//
-//         //Act
-//         var result = await sut.Handle(cmd, CancellationToken.None);
-//
-//         //Assert
-//         Assert.False(result.IsSuccess);
-//         Assert.Equal(ResultStatus.Error, result.Status);
-//         Assert.Contains("Registration failed", result.Errors);
-//
-//         _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
-//         _loginAuditRepository.Verify(x => x.AddAsync(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()),
-//             Times.Never);
-//     }
-//
-//     [Fact]
-//     public async Task Handle_WhenAuthService_ReturnSuccess()
-//     {
-//         var sut = CreateSut();
-//         var cmd = CreateCommand();
-//         const string keycloakUserId = "keycloak-user-id";
-//
-//         //Arrange
-//         _userRepository
-//             .Setup(x => x.FirstOrDefaultAsync(
-//                 It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
-//                 It.IsAny<CancellationToken>()))
-//             .ReturnsAsync((AppUser?)null);
-//
-//         _userRepository
-//             .Setup(x => x.FirstOrDefaultAsync(
-//                 It.Is<ISpecification<AppUser>>(s => s is UserByReferralCodeSpec),
-//                 It.IsAny<CancellationToken>()))
-//             .ReturnsAsync((AppUser?)null);
-//
-//         _userAccountService
-//             .Setup(x => x.RegisterUserAsync(cmd.Email, cmd.Password, true))
-//             .ReturnsAsync(Result<string>.Success(keycloakUserId));
-//
-//         _cryptographyService
-//             .Setup(x => x.Hash(cmd.Password))
-//             .Returns("password_hash");
-//
-//         _userRepository
-//             .Setup(x => x.AddAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()))
-//             .ReturnsAsync((AppUser u, CancellationToken _) => u);
-//
-//         _apiKeyRepository
-//             .Setup(x => x.AddAsync(It.IsAny<ApiKey>(), It.IsAny<CancellationToken>()))
-//             .ReturnsAsync((ApiKey k, CancellationToken _) => k);
-//
-//         _loginAuditRepository
-//             .Setup(x => x.AddAsync(It.IsAny<LoginAudit>(), It.IsAny<CancellationToken>()))
-//             .ReturnsAsync((LoginAudit l, CancellationToken _) => l);
-//
-//         _authService
-//             .Setup(x => x.LoginAsync(cmd.Email, cmd.Password))
-//             .ReturnsAsync(new TokenResponse
-//             {
-//                 AccessToken = "access_token",
-//                 RefreshToken = "refresh_token",
-//                 TokenType = "token_type",
-//                 ExpiresIn = 3600,
-//                 Scope = "scope"
-//             });
-//
-//         //Act
-//         var result = await sut.Handle(cmd, CancellationToken.None);
-//
-//         //Assert
-//         Assert.True(result.IsSuccess);
-//         Assert.Equal(ResultStatus.Ok, result.Status);
-//         Assert.NotNull(result.Value);
-//         Assert.NotNull(result.Value.ApiKeys);
-//         Assert.NotNull(result.Value.Token);
-//         Assert.Equal("access_token", result.Value.Token.AccessToken);
-//         Assert.Equal("refresh_token", result.Value.Token.RefreshToken);
-//         Assert.Equal("token_type", result.Value.Token.TokenType);
-//         Assert.Equal(3600, result.Value.Token.ExpiresIn);
-//         Assert.Equal("scope", result.Value.Token.Scope);
-//
-//         //Db verify
-//         _userRepository.Verify(x => x.AddAsync(It.IsAny<AppUser>(), It.IsAny<CancellationToken>()), Times.Once);
-//         _apiKeyRepository.Verify(x => x.AddAsync(It.IsAny<ApiKey>(), It.IsAny<CancellationToken>()), Times.Once);
-//         _unitOfWork.Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
-//         _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-//         _tx.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
-//         _tx.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
-//
-//         _loginAuditRepository.Verify(x => x.AddAsync(It.Is<LoginAudit>(a =>
-//             a.UserId == keycloakUserId &&
-//             a.Email == cmd.Email &&
-//             a.IpAddress == cmd.IpAddress &&
-//             a.UserAgent == cmd.UserAgent), It.IsAny<CancellationToken>()), Times.Once);
-//     }
-// }
+using Account.Application.Features.Account.Register;
+using Account.Domain.Entities;
+using Account.Domain.Enums;
+using Account.Domain.Interfaces;
+using Account.Domain.Specifications;
+using Ardalis.Result;
+using Ardalis.SharedKernel;
+using Ardalis.Specification;
+using Microsoft.Extensions.Logging;
+using Moq;
+
+namespace AccountUnitTest.HandlerTests;
+
+public class RegisterUserHandlerTests
+{
+    private readonly Mock<ILogger<RegisterUserHandler>> _logger = new();
+    private readonly Mock<IRepository<AppUser>> _userRepository = new();
+    private readonly Mock<IUserRegistrationCoordinator> _coordinator = new();
+    private readonly Mock<IUserAccountService> _userAccountService = new();
+
+    private RegisterUserHandler CreateSut()
+        => new(_logger.Object, _userRepository.Object, _coordinator.Object, _userAccountService.Object);
+
+    private static RegisterCommand CreateCommand(
+        AuthProvider provider = AuthProvider.LocalProvider,
+        string email = "test@example.com",
+        bool emailConfirmed = false,
+        string password = "StrongP@ssw0rd!",
+        string referrerCode = "REF123",
+        string? ipAddress = "127.0.0.1",
+        string? userAgent = "userAgent")
+        => new(provider, email, emailConfirmed, password, referrerCode, ipAddress, userAgent);
+
+    private void SetupUserByEmail(AppUser? user)
+        => _userRepository
+            .Setup(x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+    [Fact]
+    public async Task Handle_WhenUserAlreadyExists_ReturnsConflict()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+
+        SetupUserByEmail(new AppUser());
+
+        var result = await sut.Handle(cmd, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.Conflict, result.Status);
+        Assert.Contains("User already exists", result.Errors);
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserAlreadyExists_DoesNotCallUserAccountService()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+
+        SetupUserByEmail(new AppUser());
+
+        await sut.Handle(cmd, CancellationToken.None);
+
+        _userAccountService.Verify(
+            x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserAlreadyExists_DoesNotCallCoordinator()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+
+        SetupUserByEmail(new AppUser());
+
+        await sut.Handle(cmd, CancellationToken.None);
+
+        _coordinator.Verify(
+            x => x.RegisterAsync(It.IsAny<UserCoordinatorParams>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserDoesNotExist_CallsUserAccountServiceWithNormalizedEmail()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand(email: "Test@EXAMPLE.com");
+
+        SetupUserByEmail(null);
+        _userAccountService
+            .Setup(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result<string>.Success("user-id"));
+        _coordinator
+            .Setup(x => x.RegisterAsync(It.IsAny<UserCoordinatorParams>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RegisterUserResult>.Success(new RegisterUserResult()));
+
+        await sut.Handle(cmd, CancellationToken.None);
+
+        _userAccountService.Verify(
+            x => x.RegisterUserAsync("test@example.com", cmd.Password, true),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserAccountServiceFails_ReturnsError()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+        var errorMessage = "Keycloak service unavailable";
+
+        SetupUserByEmail(null);
+        _userAccountService
+            .Setup(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result<string>.Error(errorMessage));
+
+        var result = await sut.Handle(cmd, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.Error, result.Status);
+        Assert.Contains(errorMessage, result.Errors);
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserAccountServiceFails_DoesNotCallCoordinator()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+
+        SetupUserByEmail(null);
+        _userAccountService
+            .Setup(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result<string>.Error("Registration failed"));
+
+        await sut.Handle(cmd, CancellationToken.None);
+
+        _coordinator.Verify(
+            x => x.RegisterAsync(It.IsAny<UserCoordinatorParams>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserAccountServiceSucceeds_CallsCoordinatorWithCorrectParams()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+        var userId = "generated-user-id";
+
+        SetupUserByEmail(null);
+        _userAccountService
+            .Setup(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result<string>.Success(userId));
+        _coordinator
+            .Setup(x => x.RegisterAsync(It.IsAny<UserCoordinatorParams>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RegisterUserResult>.Success(new RegisterUserResult()));
+
+        await sut.Handle(cmd, CancellationToken.None);
+
+        _coordinator.Verify(
+            x => x.RegisterAsync(
+                It.Is<UserCoordinatorParams>(p => p.UserId == userId && p.RegisterCommand == cmd),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenCoordinatorSucceeds_ReturnsCoordinatorResult()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+        var expectedResult = Result<RegisterUserResult>.Success(
+            new RegisterUserResult { IsSuccess = true, Message = "Registration successful" });
+
+        SetupUserByEmail(null);
+        _userAccountService
+            .Setup(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result<string>.Success("user-id"));
+        _coordinator
+            .Setup(x => x.RegisterAsync(It.IsAny<UserCoordinatorParams>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedResult);
+
+        var result = await sut.Handle(cmd, CancellationToken.None);
+
+        Assert.Same(expectedResult, result);
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Registration successful", result.Value.Message);
+    }
+
+    [Fact]
+    public async Task Handle_WhenCoordinatorFails_ReturnsCoordinatorError()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+        var errorResult = Result<RegisterUserResult>.Error("Coordinator failed");
+
+        SetupUserByEmail(null);
+        _userAccountService
+            .Setup(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result<string>.Success("user-id"));
+        _coordinator
+            .Setup(x => x.RegisterAsync(It.IsAny<UserCoordinatorParams>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(errorResult);
+
+        var result = await sut.Handle(cmd, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.Error, result.Status);
+        Assert.Contains("Coordinator failed", result.Errors);
+    }
+
+    [Fact]
+    public async Task Handle_PropagatesCancellationToken()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+        using var cts = new CancellationTokenSource();
+
+        SetupUserByEmail(null);
+        _userAccountService
+            .Setup(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result<string>.Success("user-id"));
+        _coordinator
+            .Setup(x => x.RegisterAsync(It.IsAny<UserCoordinatorParams>(), cts.Token))
+            .ReturnsAsync(Result<RegisterUserResult>.Success(new RegisterUserResult()));
+
+        await sut.Handle(cmd, cts.Token);
+
+        _userRepository.Verify(
+            x => x.FirstOrDefaultAsync(
+                It.Is<ISpecification<AppUser>>(s => s is UserByEmailSpec),
+                cts.Token),
+            Times.Once);
+        _coordinator.Verify(
+            x => x.RegisterAsync(It.IsAny<UserCoordinatorParams>(), cts.Token),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_LogsRegisterAttempt()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand(email: "test@example.com");
+
+        SetupUserByEmail(null);
+        _userAccountService
+            .Setup(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result<string>.Success("user-id"));
+        _coordinator
+            .Setup(x => x.RegisterAsync(It.IsAny<UserCoordinatorParams>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RegisterUserResult>.Success(new RegisterUserResult()));
+
+        await sut.Handle(cmd, CancellationToken.None);
+
+        _logger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Registering user")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WithDifferentAuthProviders_Succeeds()
+    {
+        var sut = CreateSut();
+
+        foreach (var provider in Enum.GetValues<AuthProvider>())
+        {
+            var cmd = CreateCommand(provider: provider);
+
+            SetupUserByEmail(null);
+            _userAccountService
+                .Setup(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(Result<string>.Success("user-id"));
+            _coordinator
+                .Setup(x => x.RegisterAsync(It.IsAny<UserCoordinatorParams>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<RegisterUserResult>.Success(new RegisterUserResult()));
+
+            var result = await sut.Handle(cmd, CancellationToken.None);
+
+            Assert.True(result.IsSuccess);
+        }
+    }
+
+    [Fact]
+    public async Task Handle_WithEmailConfirmedFlag_PassesToCoordinator()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand(emailConfirmed: true);
+
+        SetupUserByEmail(null);
+        _userAccountService
+            .Setup(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result<string>.Success("user-id"));
+        _coordinator
+            .Setup(x => x.RegisterAsync(It.IsAny<UserCoordinatorParams>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RegisterUserResult>.Success(new RegisterUserResult()));
+
+        await sut.Handle(cmd, CancellationToken.None);
+
+        _coordinator.Verify(
+            x => x.RegisterAsync(
+                It.Is<UserCoordinatorParams>(p => p.RegisterCommand.EmailConfirmed == true),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserAccountServiceReturnsErrorWithoutMessage_UsesDefaultMessage()
+    {
+        var sut = CreateSut();
+        var cmd = CreateCommand();
+
+        SetupUserByEmail(null);
+        _userAccountService
+            .Setup(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result<string>.Error());
+
+        var result = await sut.Handle(cmd, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Single(result.Errors);
+        Assert.Equal("Registration failed", result.Errors.First());
+    }
+}
