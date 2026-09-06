@@ -18,6 +18,8 @@ public class AppUser : AggregateRoot
     public string? PasswordHash { get; set; } = "";
 
     public string? ProviderName { get; set; } = "my-corporate-ad"; //Google, Aple, etc.
+    public bool IsBlocked { get; set; }
+    public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
     public DateTime? LastLogoutAt { get; set; }
 
@@ -28,15 +30,16 @@ public class AppUser : AggregateRoot
     [Comment("ID of the referrer user who invited this user (referrer)")]
     public string? ReferrerId { get; set; } = "";
 
+    public bool IsDeleted { get; set; }
     public ICollection<ApiKey> ApiKeys { get; set; } = [];
 
     public static AppUser Create(AppUserCreateParams createParams)
     {
         if (string.IsNullOrWhiteSpace(createParams.Id))
-            throw new ArgumentException("User ID cannot be empty", nameof(createParams.Id));
+            throw new ArgumentException("createParams.Id cannot be empty", nameof(createParams));
 
         if (string.IsNullOrWhiteSpace(createParams.Email))
-            throw new ArgumentException("Email cannot be empty", nameof(createParams.Email));
+            throw new ArgumentException("createParams.Email cannot be empty", nameof(createParams));
         var user = new AppUser
         {
             Id = createParams.Id,
@@ -47,7 +50,8 @@ public class AppUser : AggregateRoot
             ReferrerId = createParams.ReferrerId,
             ProviderName = createParams.ProviderName,
             EmailConfirmed = createParams.EmailConfirmed,
-            EncryptedTwoFactorSecret = Convert.ToBase64String(KeyGeneration.GenerateRandomKey(20))
+            EncryptedTwoFactorSecret = Convert.ToBase64String(KeyGeneration.GenerateRandomKey(20)),
+            CreatedAt = DateTime.UtcNow
         };
         user.AddDomainEvent(new UserCreatedDomainEvent(user.Id, user.Email,createParams.IpAddress, createParams.UserAgent));
         return user;

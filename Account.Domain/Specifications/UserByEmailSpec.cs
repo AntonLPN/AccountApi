@@ -7,6 +7,6 @@ public class UserByEmailSpec : Specification<AppUser>, ISingleResultSpecificatio
 {
     public UserByEmailSpec(string email)
     {
-        Query.Where(u => u.Email == email);
+        Query.Where(u => u.Email == email && u.IsDeleted == false);
     }
 }
