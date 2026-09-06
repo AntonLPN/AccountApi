@@ -17,7 +17,7 @@ public static class AuthenticationExtensions
     public static IServiceCollection AddAppAuthentication(this IServiceCollection services,
         IConfiguration configuration)
     {
-        var keycloakSettings = configuration.GetSection("Authentication:Schemes:Bearer");
+        var authSettings = configuration.GetSection("Authentication:Schemes:Bearer");
         var preAuthKey = configuration["Authentication:PreAuth:SigningKey"]
                          ?? throw new InvalidOperationException(
                              "Authentication:PreAuth:SigningKey configuration is missing.");
@@ -27,9 +27,9 @@ public static class AuthenticationExtensions
             //Keycloak - main authentication scheme, for all endpoints except /verify-otp
             .AddJwtBearer("Bearer", options =>
             {
-                options.Authority = keycloakSettings["Authority"] ??
+                options.Authority = authSettings["Authority"] ??
                                     throw new InvalidOperationException("Authority for keycloak settings is missing.");
-                options.Audience = keycloakSettings["ValidAudience"] ??
+                options.Audience = authSettings["ValidAudience"] ??
                                    throw new InvalidOperationException($"ValidAudience for keycloak is missing.");
                 options.RequireHttpsMetadata = allowInsecureHttp;
                 options.MapInboundClaims = false;

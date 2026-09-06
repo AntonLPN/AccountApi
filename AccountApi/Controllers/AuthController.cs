@@ -25,20 +25,17 @@ namespace AccountApi.Controllers;
 [Produces("application/json")]
 public class AuthController(IMediator mediator) : ControllerBase
 {
-//    [AllowAnonymous]
     [MasterKeyOnly]
     [HttpPost("register")]
     [ProducesResponseType(typeof(RegisterUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterModelRequest model)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers.UserAgent.ToString();
 
-        var regCmd = new RegisterCommand(AuthProvider.LocalProvider, model.Email,false, model.Password, model.ReferralCode, ipAddress, userAgent);
+        var regCmd = new RegisterCommand(AuthProvider.LocalProvider, model.Email, false, model.Password,
+            model.ReferralCode, ipAddress, userAgent);
         var res = await mediator.Send(regCmd);
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
@@ -51,8 +48,6 @@ public class AuthController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GoogleRegister([FromBody] GoogleRegisterRequest model)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers.UserAgent.ToString();
 
@@ -73,9 +68,6 @@ public class AuthController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginModelRequest model)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers.UserAgent.ToString();
 
@@ -97,9 +89,6 @@ public class AuthController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] GoogleLoginModelRequest model)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers.UserAgent.ToString();
 
@@ -122,8 +111,6 @@ public class AuthController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Logout([FromBody] LogoutModelRequest model)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
         var emailClaim = User.FindFirst("email")?.Value;
         if (string.IsNullOrWhiteSpace(emailClaim))
             return BadRequest("User not found");
@@ -148,9 +135,6 @@ public class AuthController(IMediator mediator) : ControllerBase
     [EnableRateLimiting(RateLimiterPolices.VerifyOtpPolicy)]
     public async Task<IActionResult> OtpCodeVerification([FromBody] OtpCodeVerificationRequestModel model)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
         var emailClaim = User.FindFirst("email")?.Value;
         if (string.IsNullOrWhiteSpace(emailClaim))
             return BadRequest("User not found");
@@ -170,8 +154,6 @@ public class AuthController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestModel model)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
         var cmd = new ForgotPasswordCommand(model.Email);
         var res = await mediator.Send(cmd);
         if (!res.IsSuccess)
@@ -187,9 +169,6 @@ public class AuthController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestModel model)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
         var emailClaim = User.FindFirst("email")?.Value;
         if (string.IsNullOrWhiteSpace(emailClaim))
             return BadRequest("User not found");
@@ -209,7 +188,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         var res = await mediator.Send(cmd);
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
-        
+
         return Ok(new CreateApiKeyResponse
         {
             ApiKey = res.Value

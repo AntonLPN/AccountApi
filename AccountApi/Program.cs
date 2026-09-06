@@ -15,13 +15,13 @@ builder.Services.AddMemoryCache(); //for debug
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Host.AddSerilogLogging();
 
+builder.AddOptions();
 builder.Services.AddMySqlDatabase(builder.Configuration);
 builder.Services.AddAppAuthentication(builder.Configuration);
 builder.Services.AddMassTransitMessaging(builder.Configuration);
 builder.Services.AddRedis(builder.Configuration);
 builder.Services.AddLifeTimeServices();
 builder.Services.AddObservabilityMetrics();
-builder.AddOptions();
 
 builder.Services.AddRateLimiter(limiter =>
 {
