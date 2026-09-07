@@ -42,7 +42,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    [AuthorizeApiKeyOnly]
+    [MasterKeyOnly]
     [HttpPost("google-register")]
     [ProducesResponseType(typeof(ProviderRegisterResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -61,7 +61,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    [AuthorizeApiKeyOnly]
+    [MasterKeyOnly]
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -82,7 +82,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    [AuthorizeApiKeyOnly]
+    [MasterKeyOnly]
     [HttpPost("google-login")]
     [ProducesResponseType(typeof(ProviderLoginResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

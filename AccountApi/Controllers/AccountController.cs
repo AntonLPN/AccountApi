@@ -54,7 +54,7 @@ public class AccountController(IMediator mediator) : ControllerBase
         return Redirect(res.IsSuccess ? "/email-verified.html" : "/email-verification-failed.html");
     }
 
-    [Authorize]
+    [AuthorizeTokenOnly]
     [HttpGet("get-account-info")]
     public async Task<IActionResult> GetAccountInfo()
     {

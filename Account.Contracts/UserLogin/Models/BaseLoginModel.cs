@@ -2,6 +2,7 @@ namespace Account.Contracts.UserLogin.Models;
 
 public class BaseLoginModel
 {
+    // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public Guid CorrelationId { get; init; }
     public string UserId { get; init; } = null!;
     public string Email { get; init; } = null!;
