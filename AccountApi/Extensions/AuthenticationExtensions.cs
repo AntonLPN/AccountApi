@@ -77,6 +77,12 @@ public static class AuthenticationExtensions
             .AddPolicy(AuthPolicies.TokenOnly, policy => policy
                 .AddAuthenticationSchemes("Bearer")
                 .RequireAuthenticatedUser())
+            .AddPolicy(AuthPolicies.ApiKeyAndMasterKey, policy => policy
+                .AddAuthenticationSchemes(AuthPolicies.ApiKeyOnly, AuthPolicies.MasterKeyOnly)
+                .RequireAssertion(context =>
+                {
+                    return context.User.Identities.Any(i => i.IsAuthenticated);
+                }))
             .AddPolicy(AuthPolicies.ApiKeyOnly, policy => policy
                 .AddAuthenticationSchemes(AuthPolicies.ApiKeyOnly)
                 .RequireAuthenticatedUser())

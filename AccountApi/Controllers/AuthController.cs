@@ -61,7 +61,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    [MasterKeyOnly]
+    [AuthorizeApiKeyAndMasterKey]
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

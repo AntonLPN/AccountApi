@@ -19,11 +19,9 @@ public class MasterKeyAuthHandler(
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         if (!Request.Headers.TryGetValue("X-Api-Key", out var keyHeader) ||
-            string.IsNullOrWhiteSpace(keyHeader))
+            string.IsNullOrWhiteSpace(keyHeader) ||
+            !IsMasterKey(keyHeader.ToString()))
             return Task.FromResult(AuthenticateResult.NoResult());
-
-        if (!IsMasterKey(keyHeader.ToString()))
-            return Task.FromResult(AuthenticateResult.Fail("Invalid master key."));
 
         var claims = new[] { new Claim(ClaimTypes.Role, "System") };
         var identity = new ClaimsIdentity(claims, Scheme.Name);

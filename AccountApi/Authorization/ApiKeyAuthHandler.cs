@@ -38,8 +38,13 @@ public class ApiKeyAuthHandler(
 
         var apiKey = keyHeader.ToString();
 
+        if (!string.IsNullOrEmpty(_masterApiKey) && apiKey == _masterApiKey)
+        {
+            return AuthenticateResult.NoResult();
+        }
+
         if (!await IsAuthorizedAsync(apiKey))
-            return AuthenticateResult.Fail("Invalid or inactive API key.");
+            return AuthenticateResult.Fail("Invalid API key");
 
         var claims = new[] { new Claim(ClaimTypes.Name, "ApiKeyUser") };
         var identity = new ClaimsIdentity(claims, Scheme.Name);
