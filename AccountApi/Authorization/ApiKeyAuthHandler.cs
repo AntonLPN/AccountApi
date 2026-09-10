@@ -1,6 +1,4 @@
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using Account.Domain.Interfaces;
@@ -28,6 +26,7 @@ public class ApiKeyAuthHandler(
 {
     private readonly string _masterApiKey = apiKeyOptions.Value.Key;
 
+    // ReSharper disable once NotAccessedPositionalProperty.Local
     private record CachedApiKeyInfo(string UserId, bool IsActive);
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -65,14 +64,14 @@ public class ApiKeyAuthHandler(
     private async Task<bool> ValidateFromDbAsync(string apiKey)
     {
         var hashedApiKey = cryptographyService.Hash(apiKey);
-        var key = await dbContext.ApiKeys
+        var key = await dbContext.ApiKeys.Include(k => k.AppUser)
             .AsNoTracking()
             .FirstOrDefaultAsync(k => k.HashApiKey == hashedApiKey && k.IsAuthorize && !k.IsDeleted);
-
-        if (key is not null)
-            await SetCacheAsync(hashedApiKey, key.IsAuthorize, key.UserId);
-
-        return key is not null && key.IsAuthorize;
+        if (key == null || key.AppUser is { IsBlocked: true })
+            return false;
+        
+        await SetCacheAsync(hashedApiKey, key.IsAuthorize, key.UserId);
+        return true;
     }
 
     private async Task SetCacheAsync(string apiKey, bool isActive, string userId)
