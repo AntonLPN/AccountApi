@@ -71,7 +71,7 @@ public class AccountController(IMediator mediator) : ControllerBase
     }
     
     [AuthorizeJWT]
-    [HttpPost("2fa/enable-setup")]
+    [HttpPatch("2fa/setup")]
     public async Task<IActionResult> Enable2FaSetup([FromBody] Enable2FaSetupRequest model)
     {
         var email = User.FindFirst("email")?.Value;

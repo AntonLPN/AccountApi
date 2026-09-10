@@ -8,7 +8,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Account.Application.Features.Account.Setup2Fa;
 
-public class Setup2FaHandler(ILogger<Setup2FaHandler> logger, IRepository<AppUser> userRepository, IUnitOfWork unitOfWork)
+public class Setup2FaHandler(
+    ILogger<Setup2FaHandler> logger,
+    IRepository<AppUser> userRepository,
+    IUnitOfWork unitOfWork)
     : ICommandHandler<Setup2FaCommand, Result<bool>>
 {
     public async Task<Result<bool>> Handle(Setup2FaCommand request, CancellationToken cancellationToken)
@@ -22,6 +25,9 @@ public class Setup2FaHandler(ILogger<Setup2FaHandler> logger, IRepository<AppUse
             var user = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(request.Email), cancellationToken);
             if (user is null)
                 return Result<bool>.NotFound("User not found");
+            if (!user.EmailConfirmed)
+                return Result<bool>.Conflict("Email not confirmed for enable or disable 2FA");
+            
             await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
             user.SetTwoFactor(request.IsEnable);
             await unitOfWork.SaveChangesAsync(cancellationToken);
