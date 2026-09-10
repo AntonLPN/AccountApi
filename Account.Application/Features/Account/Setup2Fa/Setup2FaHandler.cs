@@ -28,10 +28,8 @@ public class Setup2FaHandler(
             if (!user.EmailConfirmed)
                 return Result<bool>.Conflict("Email not confirmed for enable or disable 2FA");
             
-            await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
             user.SetTwoFactor(request.IsEnable);
             await unitOfWork.SaveChangesAsync(cancellationToken);
-            await tx.CommitAsync(cancellationToken);
             return Result<bool>.Success(true);
         }
         catch (Exception e)
