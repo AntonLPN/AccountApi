@@ -21,9 +21,9 @@ public class AuthorizeApiKeyAndMasterKeyAttribute : AuthorizeAttribute
 }
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public class AuthorizeTokenOnlyAttribute : AuthorizeAttribute
+public class AuthorizeJWTAttribute : AuthorizeAttribute
 {
-    public AuthorizeTokenOnlyAttribute() : base(AuthPolicies.TokenOnly)
+    public AuthorizeJWTAttribute() : base(AuthPolicies.TokenOnly)
     {
         
     }
