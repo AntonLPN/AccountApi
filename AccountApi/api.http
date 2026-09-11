@@ -1,0 +1,27 @@
+@Api_HostAddress = http://localhost:5001
+
+###
+# curl -X 'GET' 
+#  'http://localhost:5001/api/test/test' 
+#  -H 'accept: */*'
+GET {{Api_HostAddress}}/api/test/test
+accept: */*
+
+###
+
+# curl -X 'PATCH' 
+#  'http://localhost:5001/api/account/2fa/setup' 
+#  -H 'accept: */*' 
+#  -H 'Content-Type: application/json' 
+#  -d '{
+#  "isEnableTwoFactor": true
+#}'
+PATCH {{Api_HostAddress}}/api/account/2fa/setup
+accept: */*
+Content-Type: application/json
+
+{
+  "isEnableTwoFactor": true
+}
+
+###
