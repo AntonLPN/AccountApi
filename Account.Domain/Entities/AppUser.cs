@@ -53,7 +53,8 @@ public class AppUser : AggregateRoot
             EncryptedTwoFactorSecret = Convert.ToBase64String(KeyGeneration.GenerateRandomKey(20)),
             CreatedAt = DateTime.UtcNow
         };
-        user.AddDomainEvent(new UserCreatedDomainEvent(user.Id, user.Email,createParams.IpAddress, createParams.UserAgent));
+        user.AddDomainEvent(new UserCreatedDomainEvent(user.Id, user.Email, createParams.IpAddress,
+            createParams.UserAgent));
         return user;
     }
 
@@ -75,7 +76,7 @@ public class AppUser : AggregateRoot
     public void ChangePassword(string newHashPassword)
     {
         ArgumentException.ThrowIfNullOrEmpty(newHashPassword);
-        PasswordHash = newHashPassword; 
+        PasswordHash = newHashPassword;
         AddDomainEvent(new PasswordChangedDomainEvent(Id));
     }
 
@@ -96,6 +97,7 @@ public class AppUser : AggregateRoot
             ExpirationTime = DateTime.UtcNow.AddMinutes(5)
         });
     }
+
     public void RecordLogin(string? ipAddress, string? userAgent)
     {
         LastLoginAt = DateTime.UtcNow;
@@ -107,15 +109,10 @@ public class AppUser : AggregateRoot
         LastLogoutAt = DateTime.UtcNow;
         AddDomainEvent(new UserLoggedOutDomainEvent(Id, Email, ipAddress, userAgent));
     }
-    public void EnableTwoFactorAuthentication()
+
+
+    public void SetTwoFactor(bool isEnable)
     {
-        IsTwoFactorEnabled = true;
-        //TODO add domain event
+        IsTwoFactorEnabled = isEnable;
     }
-    public void DisableTwoFactorAuthentication()
-    {
-        IsTwoFactorEnabled = false;
-        //TODO add domain event
-    }
-    
 }

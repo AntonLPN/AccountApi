@@ -2,6 +2,7 @@ using Account.Application.Features.Account.AccountInfo;
 using Account.Application.Features.Account.ChekEmailAvailability;
 using Account.Application.Features.Account.ConfirmEmail;
 using Account.Application.Features.Account.SendEmailVerification;
+using Account.Application.Features.Account.Setup2Fa;
 using AccountApi.Authorization;
 using AccountApi.Models.RequestModels;
 using AccountApi.Models.ResponseModels;
@@ -54,7 +55,7 @@ public class AccountController(IMediator mediator) : ControllerBase
         return Redirect(res.IsSuccess ? "/email-verified.html" : "/email-verification-failed.html");
     }
 
-    [AuthorizeTokenOnly]
+    [AuthorizeJWT]
     [HttpGet("get-account-info")]
     public async Task<IActionResult> GetAccountInfo()
     {
@@ -67,5 +68,21 @@ public class AccountController(IMediator mediator) : ControllerBase
             return BadRequest(resInfo.Errors);
         
         return Ok(resInfo.Value);
+    }
+    
+    [AuthorizeJWT]
+    [HttpPatch("2fa/setup")]
+    public async Task<IActionResult> Enable2FaSetup([FromBody] Enable2FaSetupRequest model)
+    {
+        var email = User.FindFirst("email")?.Value;
+        if (string.IsNullOrWhiteSpace(email))
+            return NotFound("Email in credentials not found");
+
+        var cmd = new Setup2FaCommand(email, model.IsEnableTwoFactor);
+        var res = await mediator.Send(cmd);
+        if (!res.IsSuccess)
+            return BadRequest(res.Errors);
+
+        return Ok();
     }
 }
