@@ -12,25 +12,25 @@ public class Setup2FaHandler(
     ILogger<Setup2FaHandler> logger,
     IRepository<AppUser> userRepository,
     IUnitOfWork unitOfWork)
-    : ICommandHandler<Setup2FaCommand, Result<bool>>
+    : ICommandHandler<Setup2FaCommand, Result>
 {
-    public async Task<Result<bool>> Handle(Setup2FaCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(Setup2FaCommand request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(request.Email))
-            return Result<bool>.Invalid(new ValidationError("Email", "Email cannot be null or empty"));
+            return Result.Invalid(new ValidationError("Email", "Email cannot be null or empty"));
 
         var normalizedEmail = Email.Create(request.Email);
         try
         {
             var user = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(request.Email), cancellationToken);
             if (user is null)
-                return Result<bool>.NotFound("User not found");
+                return Result.NotFound("User not found");
             if (!user.EmailConfirmed)
-                return Result<bool>.Conflict("Email not confirmed for enable or disable 2FA");
+                return Result.Conflict("Email not confirmed for enable or disable 2FA");
             
             user.SetTwoFactor(request.IsEnable);
             await unitOfWork.SaveChangesAsync(cancellationToken);
-            return Result<bool>.Success(true);
+            return Result.Success();
         }
         catch (Exception e)
         {
