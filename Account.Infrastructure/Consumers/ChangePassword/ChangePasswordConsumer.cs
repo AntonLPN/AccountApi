@@ -1,7 +1,6 @@
 using Account.Contracts.Events;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
-using Account.Domain.Repositories;
 using Account.Domain.Specifications;
 using Ardalis.SharedKernel;
 using MassTransit;

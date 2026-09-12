@@ -4,7 +4,7 @@ public sealed record AppUserCreateParams(
     string Id,
     string Email,
     string? PasswordHash,
-    string? ReferrerId,
+    Guid? ReferrerId,
     string? IpAddress,
     string? UserAgent,
     bool EmailConfirmed = false,

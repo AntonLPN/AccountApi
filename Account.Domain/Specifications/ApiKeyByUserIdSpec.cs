@@ -5,7 +5,7 @@ namespace Account.Domain.Specifications;
 
 public class ApiKeyByUserIdSpec : Specification<ApiKey>, ISingleResultSpecification<ApiKey>
 {
-    public ApiKeyByUserIdSpec(string userId)
+    public ApiKeyByUserIdSpec(Guid userId)
     {
         Query.Where(u => u.UserId == userId);
     }

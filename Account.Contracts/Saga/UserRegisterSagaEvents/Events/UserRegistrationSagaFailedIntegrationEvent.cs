@@ -3,6 +3,6 @@ namespace Account.Contracts.Saga.UserRegisterSagaEvents.Events;
 public class UserRegistrationSagaFailedIntegrationEvent
 {
     public Guid CorrelationId { get; init; }
-    public string UserId { get; init; } = null!;
+    public Guid UserId { get; init; } 
     public string?  FailureReason { get; set; }
 }

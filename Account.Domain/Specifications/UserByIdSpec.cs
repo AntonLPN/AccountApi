@@ -5,7 +5,7 @@ namespace Account.Domain.Specifications;
 
 public class UserByIdSpec:Specification<AppUser>,ISingleResultSpecification<AppUser>
 {
-    public UserByIdSpec(string userId)
+    public UserByIdSpec(Guid userId)
     {
         Query.Where(u => u.Id == userId);
     }

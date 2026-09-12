@@ -70,7 +70,7 @@ public class ApiKeyAuthHandler(
         if (key == null || key.AppUser is { IsBlocked: true })
             return false;
         
-        await SetCacheAsync(hashedApiKey, key.IsAuthorize, key.UserId);
+        await SetCacheAsync(hashedApiKey, key.IsAuthorize, key.UserId.ToString());
         return true;
     }
 

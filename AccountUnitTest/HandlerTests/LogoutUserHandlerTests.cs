@@ -15,7 +15,7 @@ public class LogoutUserHandlerTests
     private readonly Mock<ILogger<LogoutUserHandler>> _logger = new();
     private readonly Mock<IAuthService> _authService = new();
     private readonly Mock<IRepository<AppUser>> _userRepository = new();
-
+    
     private LogoutUserHandler CreateSut()
     {
         return new LogoutUserHandler(
@@ -31,13 +31,13 @@ public class LogoutUserHandlerTests
         string? userAgent = "Mozilla/5.0")
         => new(email, refreshToken, ipAddress, userAgent);
 
-    private static AppUser CreateUser(string id = "user123", string email = "test@mail.com")
+    private static AppUser CreateUser()
     {
         return new AppUser
         {
-            Id = id,
-            Email = email,
-            UserName = email,
+            Id =  Guid.NewGuid(),
+            Email = "test@mail.com",
+            UserName = "test@mail.com",
             PasswordHash = "hash",
             EmailConfirmed = true
         };

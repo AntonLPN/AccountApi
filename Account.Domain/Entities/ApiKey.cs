@@ -7,15 +7,15 @@ public class ApiKey : AggregateRoot
 {
     [Key] public int Id { get; set; }
     [Column("Key")] public required string HashApiKey { get; init; }
-    public required string KeyPrefix { get; set; }
+    public required string KeyPrefix { get; init; }
     public bool IsAuthorize { get; set; } = true;
     public DateTime CreatedAt { get; init; }
-    public DateTime ExpiredAt { get; set; }
+    public DateTime ExpiredAt { get; init; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
     
 
-    public required string UserId { get; init; }
+    public required Guid UserId { get; init; }
     [ForeignKey(nameof(UserId))] public AppUser AppUser { get; set; }
 
     public static ApiKey Create(ApiKeyCreateParams createParams)
@@ -39,4 +39,4 @@ public class ApiKey : AggregateRoot
     }
 }
 
-public sealed record ApiKeyCreateParams(string UserId,string ApiKey, string HashApiKey, bool IsAuthorize = true);
+public sealed record ApiKeyCreateParams(Guid UserId,string ApiKey, string HashApiKey, bool IsAuthorize = true);

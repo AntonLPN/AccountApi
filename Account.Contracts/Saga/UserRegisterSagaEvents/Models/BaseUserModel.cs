@@ -3,6 +3,6 @@ namespace Account.Contracts.Saga.UserRegisterSagaEvents.Models;
 public class BaseUserModel
 {
     public Guid CorrelationId  { get; init; }
-    public string UserId  { get; init; } = null!;
+    public Guid UserId  { get; init; } 
     public string Email  { get; init; } = null!;
 }

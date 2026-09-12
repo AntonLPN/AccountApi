@@ -5,7 +5,7 @@ namespace Account.Domain.Specifications;
 
 public class OtpGetActiveSessionSpec : Specification<OtpSessions>, ISingleResultSpecification<OtpSessions>
 {
-    public OtpGetActiveSessionSpec(string userId, string otpCodeHash)
+    public OtpGetActiveSessionSpec(Guid userId, string otpCodeHash)
     {
         Query.Where(s => s.UserId == userId &&
                          s.UsedAt == null &&

@@ -58,7 +58,7 @@ public class AppDbContext : DbContext
         builder.Entity<ApiKey>(entity =>
         {
             entity.HasKey(a => a.Id).HasName("PK_ApiKey");
-            entity.Property(e => e.UserId).HasMaxLength(255).HasColumnName("UserId").IsUnicode();
+            entity.Property(e => e.UserId).HasMaxLength(255).HasColumnName("UserId");
             entity.Property(e => e.HashApiKey).HasMaxLength(255).HasColumnName("Key").IsUnicode();
             entity.Property(e => e.KeyPrefix).HasMaxLength(8).HasColumnName("KeyPrefix").IsUnicode();
             entity.Property(e => e.IsAuthorize).HasColumnName("Authorize").IsRequired();
@@ -96,7 +96,7 @@ public class AppDbContext : DbContext
         builder.Entity<LoginAudit>(entity =>
         {
             entity.HasKey(a => a.Id).HasName("PK_LoginAudit");
-            entity.Property(a => a.UserId).HasMaxLength(255).HasColumnName("UserId").IsUnicode();
+            entity.Property(a => a.UserId).HasMaxLength(255).HasColumnName("UserId");
             entity.Property(a => a.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode();
             entity.Property(a => a.IpAddress).HasMaxLength(64).HasColumnName("IpAddress").IsUnicode();
             entity.Property(a => a.UserAgent).HasMaxLength(512).HasColumnName("UserAgent").IsUnicode();
@@ -110,7 +110,7 @@ public class AppDbContext : DbContext
             entity.HasKey(s => s.CorrelationId);
             entity.Property(s => s.CorrelationId).HasMaxLength(255);
             entity.Property(s => s.CurrentState).HasMaxLength(64);
-            entity.Property(x => x.UserId).HasMaxLength(255);
+            entity.Property(x => x.UserId).HasColumnName("UserId");
             entity.Property(x => x.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode();
             entity.Property(x => x.OtpCode).HasMaxLength(7).HasColumnName("OtpCode").IsUnicode();
             entity.Property(x => x.OtpCodeSent).HasColumnName("OtpCodeSent").HasDefaultValue(false);
@@ -124,7 +124,7 @@ public class AppDbContext : DbContext
         builder.Entity<LogoutAudit>(entity =>
         {
             entity.HasKey(a => a.Id).HasName("PK_LogoutAudit");
-            entity.Property(a => a.UserId).HasMaxLength(255).HasColumnName("UserId").IsUnicode();
+            entity.Property(a => a.UserId).HasMaxLength(255).HasColumnName("UserId");
             entity.Property(a => a.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode();
             entity.Property(a => a.IpAddress).HasMaxLength(64).HasColumnName("IpAddress").IsUnicode();
             entity.Property(a => a.UserAgent).HasMaxLength(512).HasColumnName("UserAgent").IsUnicode();
@@ -136,7 +136,7 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(a => a.Id).HasName("PK_OptSessions");
             entity.Property(a => a.CodeHash).HasMaxLength(255).HasColumnName("CodeHash").IsUnicode();
-            entity.Property(a => a.UserId).HasMaxLength(255).HasColumnName("UserId").IsUnicode();
+            entity.Property(a => a.UserId).HasMaxLength(255).HasColumnName("UserId");
             entity.Property(a => a.InvalidatedAt).HasColumnName("InvalidatedAt");
             entity.Property(a => a.IsUsed).HasColumnName("IsUsed").HasDefaultValue(false);
             entity.Property(a => a.CreatedAt).HasColumnName("CreatedAt");

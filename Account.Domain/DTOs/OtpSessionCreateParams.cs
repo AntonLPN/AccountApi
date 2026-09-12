@@ -1,3 +1,3 @@
 namespace Account.Domain.Models;
 
-public record OtpSessionCreateParams(string CodeHash, string UserId, Guid CorrelationId);
+public record OtpSessionCreateParams(string CodeHash, Guid UserId, Guid CorrelationId);
