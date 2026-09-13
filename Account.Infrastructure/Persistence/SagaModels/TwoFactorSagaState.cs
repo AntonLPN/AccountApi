@@ -7,7 +7,7 @@ public class TwoFactorSagaState : SagaStateMachineInstance, ISagaVersion
     public Guid CorrelationId { get; set; }
     public int Version { get; set; }
     public string CurrentState { get; set; } = null!;
-    public string UserId { get; set; } = "";
+    public Guid UserId { get; set; } 
     public string Email { get; set; } = "";
     public required string OtpCode { get; set; }
     public bool OtpCodeSent { get; set; }

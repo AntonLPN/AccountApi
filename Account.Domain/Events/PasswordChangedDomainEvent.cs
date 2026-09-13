@@ -4,9 +4,9 @@ namespace Account.Domain.Events;
 
 public class PasswordChangedDomainEvent : INotification
 {
-    public string UserId { get; set; }
+    public Guid UserId { get; }
 
-    public PasswordChangedDomainEvent(string userId)
+    public PasswordChangedDomainEvent(Guid userId)
     {
         UserId = userId;
     }

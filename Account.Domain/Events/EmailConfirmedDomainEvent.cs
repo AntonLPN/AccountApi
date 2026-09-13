@@ -4,9 +4,9 @@ namespace Account.Domain.Events;
 
 public sealed class EmailConfirmedDomainEvent : INotification
 {
-    public  string UserId { get; set; }
+    public Guid UserId { get; set; }
 
-    public EmailConfirmedDomainEvent(string userId)
+    public EmailConfirmedDomainEvent(Guid userId)
     {
         UserId = userId;
     }

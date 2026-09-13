@@ -9,7 +9,6 @@ using Ardalis.Result;
 using Ardalis.SharedKernel;
 using MassTransit;
 using Microsoft.Extensions.Logging;
-using OtpNet;
 
 namespace Account.Application.Features.Account.OtpCodeVerification;
 

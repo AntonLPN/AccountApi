@@ -9,17 +9,17 @@ namespace Account.Domain.Entities;
 
 public class AppUser : AggregateRoot
 {
-    [Key] public string Id { get; set; } = "";
-    public string? UserName { get; set; }
-    public string Email { get; set; } = "";
+    [Key] public Guid Id { get; init; } 
+    public string? UserName { get; init; }
+    public string Email { get; init; } = "";
     public bool EmailConfirmed { get; set; }
     public bool IsTwoFactorEnabled { get; set; }
-    public string? EncryptedTwoFactorSecret { get; set; }
+    public string? EncryptedTwoFactorSecret { get; init; }
     public string? PasswordHash { get; set; } = "";
 
     public string? ProviderName { get; set; } = "my-corporate-ad"; //Google, Aple, etc.
     public bool IsBlocked { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; init; }
     public DateTime? LastLoginAt { get; set; }
     public DateTime? LastLogoutAt { get; set; }
 
@@ -28,7 +28,7 @@ public class AppUser : AggregateRoot
     public string ReferralCode { get; init; } = ""; //GUID or UUID
 
     [Comment("ID of the referrer user who invited this user (referrer)")]
-    public string? ReferrerId { get; set; } = "";
+    public Guid? ReferrerId { get; set; } 
 
     public bool IsDeleted { get; set; }
     public ICollection<ApiKey> ApiKeys { get; set; } = [];
@@ -42,7 +42,7 @@ public class AppUser : AggregateRoot
             throw new ArgumentException("createParams.Email cannot be empty", nameof(createParams));
         var user = new AppUser
         {
-            Id = createParams.Id,
+            Id = Guid.Parse(createParams.Id),
             Email = createParams.Email,
             UserName = createParams.Email, // Set UserName to Email by default
             PasswordHash = createParams.PasswordHash,

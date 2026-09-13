@@ -83,7 +83,7 @@ public class SendEmailVerificationHandlerTests
         var sut = CreateSut();
         var cmd = CreateCommand();
         var normalizedEmail = Email.Create(cmd.Email);
-        var user = new AppUser { Id = "user-id", Email = normalizedEmail };
+        var user = new AppUser { Id = Guid.NewGuid(), Email = normalizedEmail };
 
         SetupUserByEmail(normalizedEmail, user);
         _dataCache
@@ -110,7 +110,7 @@ public class SendEmailVerificationHandlerTests
         var sut = CreateSut();
         var cmd = CreateCommand();
         var normalizedEmail = Email.Create(cmd.Email);
-        var user = new AppUser { Id = "user-id", Email = normalizedEmail };
+        var user = new AppUser { Id = Guid.NewGuid(), Email = normalizedEmail };
 
         SetupUserByEmail(normalizedEmail, user);
         _dataCache
@@ -138,7 +138,7 @@ public class SendEmailVerificationHandlerTests
         var sut = CreateSut();
         var cmd = CreateCommand();
         var normalizedEmail = Email.Create(cmd.Email);
-        var user = new AppUser { Id = "user-id", Email = normalizedEmail };
+        var user = new AppUser { Id = Guid.NewGuid(), Email = normalizedEmail };
         string? capturedToken = null;
 
         SetupUserByEmail(normalizedEmail, user);
@@ -167,7 +167,7 @@ public class SendEmailVerificationHandlerTests
         var sut = CreateSut();
         var cmd = CreateCommand();
         var normalizedEmail = Email.Create(cmd.Email);
-        var user = new AppUser { Id = "user-id", Email = normalizedEmail };
+        var user = new AppUser { Id = Guid.NewGuid(), Email = normalizedEmail };
 
         SetupUserByEmail(normalizedEmail, user);
         _dataCache
@@ -218,7 +218,7 @@ public class SendEmailVerificationHandlerTests
         var sut = CreateSut();
         var cmd = CreateCommand("Test@EXAMPLE.com");
         var normalizedEmail = Email.Create(cmd.Email); // "test@example.com"
-        var user = new AppUser { Id = "user-id", Email = normalizedEmail };
+        var user = new AppUser { Id = Guid.NewGuid(), Email = normalizedEmail };
 
         SetupUserByEmail(normalizedEmail, user);
         _dataCache
@@ -243,7 +243,7 @@ public class SendEmailVerificationHandlerTests
         var sut = CreateSut();
         var cmd = CreateCommand();
         var normalizedEmail = Email.Create(cmd.Email);
-        var user = new AppUser { Id = "user-id", Email = normalizedEmail };
+        var user = new AppUser { Id = Guid.NewGuid(), Email = normalizedEmail };
         using var cts = new CancellationTokenSource();
 
         _userRepository
@@ -276,7 +276,7 @@ public class SendEmailVerificationHandlerTests
         var sut = CreateSut();
         var cmd = CreateCommand();
         var normalizedEmail = Email.Create(cmd.Email);
-        var user = new AppUser { Id = "user-id", Email = normalizedEmail };
+        var user = new AppUser { Id = Guid.NewGuid(), Email = normalizedEmail };
         string? capturedToken = null;
 
         SetupUserByEmail(normalizedEmail, user);
@@ -307,7 +307,7 @@ public class SendEmailVerificationHandlerTests
         var originalEmail = "test@example.com";
         var cmd = CreateCommand(originalEmail);
         var normalizedEmail = Email.Create(cmd.Email);
-        var user = new AppUser { Id = "user-id", Email = normalizedEmail };
+        var user = new AppUser { Id = Guid.NewGuid(), Email = normalizedEmail };
 
         SetupUserByEmail(normalizedEmail, user);
         _dataCache

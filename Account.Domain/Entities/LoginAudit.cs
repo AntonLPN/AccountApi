@@ -1,11 +1,13 @@
+using System.ComponentModel.DataAnnotations;
 using Account.Domain.DTOs;
 
 namespace Account.Domain.Entities;
 
 public class LoginAudit : AggregateRoot
 {
-    public long Id { get; set; }
-    public string UserId { get; set; } = "";
+    [Key]
+    public int Id { get; set; }
+    public Guid UserId { get; set; } 
     public string Email { get; set; } = "";
     public string? IpAddress { get; set; }
     public string? UserAgent { get; set; }
@@ -14,7 +16,7 @@ public class LoginAudit : AggregateRoot
 
     public static LoginAudit Create(CreateLoginAuditParams createLoginAuditParams)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(createLoginAuditParams.UserId, nameof(createLoginAuditParams.UserId));
+        ArgumentNullException.ThrowIfNull(createLoginAuditParams.UserId, nameof(createLoginAuditParams.UserId));
         ArgumentException.ThrowIfNullOrWhiteSpace(createLoginAuditParams.Email, nameof(createLoginAuditParams.Email));
         return new LoginAudit
         {

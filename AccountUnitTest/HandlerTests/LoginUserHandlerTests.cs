@@ -56,8 +56,12 @@ public class LoginUserHandlerTests
 
         _standardStrategy.Verify(x => x.CanHandle(It.IsAny<AppUser>()), Times.Never);
         _mfaStrategy.Verify(x => x.CanHandle(It.IsAny<AppUser>()), Times.Never);
-        _standardStrategy.Verify(x => x.HandleAsync(It.IsAny<AppUser>(), It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()), Times.Never);
-        _mfaStrategy.Verify(x => x.HandleAsync(It.IsAny<AppUser>(), It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        _standardStrategy.Verify(
+            x => x.HandleAsync(It.IsAny<AppUser>(), It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _mfaStrategy.Verify(
+            x => x.HandleAsync(It.IsAny<AppUser>(), It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -65,7 +69,7 @@ public class LoginUserHandlerTests
     {
         var sut = CreateSut(_standardStrategy.Object, _mfaStrategy.Object);
         var cmd = CreateCommand();
-        var user = new AppUser { Id = "user-id", Email = cmd.Email, IsTwoFactorEnabled = false };
+        var user = new AppUser { Id = Guid.NewGuid(), Email = cmd.Email, IsTwoFactorEnabled = false };
         var expected = Result<LoginUserResult>.Success(new LoginUserResult { IsMfaRequired = false });
 
         SetupUserByEmail(user);
@@ -79,7 +83,9 @@ public class LoginUserHandlerTests
 
         Assert.Same(expected, result);
         _standardStrategy.Verify(x => x.HandleAsync(user, cmd, It.IsAny<CancellationToken>()), Times.Once);
-        _mfaStrategy.Verify(x => x.HandleAsync(It.IsAny<AppUser>(), It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mfaStrategy.Verify(
+            x => x.HandleAsync(It.IsAny<AppUser>(), It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -87,7 +93,7 @@ public class LoginUserHandlerTests
     {
         var sut = CreateSut(_standardStrategy.Object, _mfaStrategy.Object);
         var cmd = CreateCommand();
-        var user = new AppUser { Id = "user-id", Email = cmd.Email, IsTwoFactorEnabled = true };
+        var user = new AppUser { Id = Guid.NewGuid(), Email = cmd.Email, IsTwoFactorEnabled = true };
         var expected = Result<LoginUserResult>.Success(new LoginUserResult { IsMfaRequired = true });
 
         SetupUserByEmail(user);
@@ -101,7 +107,9 @@ public class LoginUserHandlerTests
 
         Assert.True(result.Value.IsMfaRequired);
         _mfaStrategy.Verify(x => x.HandleAsync(user, cmd, It.IsAny<CancellationToken>()), Times.Once);
-        _standardStrategy.Verify(x => x.HandleAsync(It.IsAny<AppUser>(), It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        _standardStrategy.Verify(
+            x => x.HandleAsync(It.IsAny<AppUser>(), It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -109,7 +117,7 @@ public class LoginUserHandlerTests
     {
         var sut = CreateSut(_standardStrategy.Object, _mfaStrategy.Object);
         var cmd = CreateCommand();
-        var user = new AppUser { Id = "user-id", Email = cmd.Email };
+        var user = new AppUser { Id = Guid.NewGuid(), Email = cmd.Email };
 
         SetupUserByEmail(user);
         _standardStrategy.Setup(x => x.CanHandle(user)).Returns(false);
@@ -125,7 +133,7 @@ public class LoginUserHandlerTests
     {
         var sut = CreateSut(_standardStrategy.Object);
         var cmd = CreateCommand();
-        var user = new AppUser { Id = "user-id", Email = cmd.Email, IsTwoFactorEnabled = false };
+        var user = new AppUser { Id = Guid.NewGuid(), Email = cmd.Email, IsTwoFactorEnabled = false };
 
         SetupUserByEmail(user);
         _standardStrategy.Setup(x => x.CanHandle(user)).Returns(true);
@@ -142,7 +150,7 @@ public class LoginUserHandlerTests
     {
         var sut = CreateSut(_standardStrategy.Object);
         var cmd = CreateCommand();
-        var user = new AppUser { Id = "user-id", Email = cmd.Email, IsTwoFactorEnabled = false };
+        var user = new AppUser { Id = Guid.NewGuid(), Email = cmd.Email, IsTwoFactorEnabled = false };
         using var cts = new CancellationTokenSource();
 
         _userRepository
@@ -168,7 +176,7 @@ public class LoginUserHandlerTests
     {
         var sut = CreateSut(_standardStrategy.Object);
         var cmd = CreateCommand(email: "Test@EXAMPLE.com");
-        var user = new AppUser { Id = "user-id", Email = "test@example.com", IsTwoFactorEnabled = false };
+        var user = new AppUser { Id = Guid.NewGuid(), Email = "test@example.com", IsTwoFactorEnabled = false };
 
         ISpecification<AppUser>? capturedSpec = null;
         _userRepository

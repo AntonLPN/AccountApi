@@ -1,4 +1,3 @@
-using Account.Application.Features.Account.OtpCodeVerification;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
@@ -22,6 +21,8 @@ public class OtpService(
 
     public string GenerateOtpCode(AppUser user)
     {
+        if (user.EncryptedTwoFactorSecret == null)
+            throw new InvalidOperationException("User does not have a two-factor secret set.");
         var secretKey = Convert.FromBase64String(user.EncryptedTwoFactorSecret);
         var totp = new Totp(secretKey, step: OTP_CODE_STEP, mode: OtpHashMode.Sha1, totpSize: OTP_CODE_LENGTH);
         return totp.ComputeTotp();
@@ -29,16 +30,17 @@ public class OtpService(
 
     public bool VerifyOtpCode(AppUser user, string otpCode)
     {
+        if (user.EncryptedTwoFactorSecret == null)
+            throw new InvalidOperationException("User does not have a two-factor secret set.");
         var secretKey = Convert.FromBase64String(user.EncryptedTwoFactorSecret);
         var totp = new Totp(secretKey, step: OTP_CODE_STEP, mode: OtpHashMode.Sha1, totpSize: OTP_CODE_LENGTH);
         return totp.VerifyTotp(otpCode, out _, VerificationWindow.RfcSpecifiedNetworkDelay);
     }
 
-    public async Task<Result<bool>> InvalidateOtpSessionsAsync(string userId,
+    public async Task<Result<bool>> InvalidateOtpSessionsAsync(Guid userId,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrEmpty(userId);
-
+        ArgumentNullException.ThrowIfNull(userId);
         var otpSessions =
             await otpSessionRepository.ListAsync(new OtpGetActiveSessionsSpec(userId), cancellationToken);
         if (otpSessions.Count == 0)
@@ -52,7 +54,7 @@ public class OtpService(
         return Result<bool>.Success(true);
     }
 
-    public async Task<Result<bool>> CreateOtpSessionAsync(string userId, string otpCode, Guid correlationId,
+    public async Task<Result<bool>> CreateOtpSessionAsync(Guid userId, string otpCode, Guid correlationId,
         CancellationToken cancellationToken = default)
     {
         var otpSessionCreateParams =

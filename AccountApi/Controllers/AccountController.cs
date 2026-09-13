@@ -18,12 +18,14 @@ namespace AccountApi.Controllers;
 public class AccountController(IMediator mediator) : ControllerBase
 {
     [AuthorizeApiKeyOnly]
+    [ProducesResponseType<ChekEmailAvailabilityResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [HttpPost("check-email-availability")]
     public async Task<IActionResult> CheckEmailAvailability([FromBody] ChekEmailAvailabilityRequest model)
     {
         var res = await mediator.Send(new ChekEmailAvailabilityCommand(model.Email));
         if (!res.IsSuccess)
-            return NotFound(res.Errors);
+            return BadRequest(res.Errors);
 
         return Ok(new ChekEmailAvailabilityResponse { IsAvailable = res.Value });
     }
@@ -56,6 +58,7 @@ public class AccountController(IMediator mediator) : ControllerBase
     }
 
     [AuthorizeJWT]
+    [ProducesResponseType<AccountInfoResult>(StatusCodes.Status200OK)]
     [HttpGet("get-account-info")]
     public async Task<IActionResult> GetAccountInfo()
     {
@@ -71,6 +74,8 @@ public class AccountController(IMediator mediator) : ControllerBase
     }
     
     [AuthorizeJWT]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [HttpPatch("2fa/setup")]
     public async Task<IActionResult> Enable2FaSetup([FromBody] Enable2FaSetupRequest model)
     {

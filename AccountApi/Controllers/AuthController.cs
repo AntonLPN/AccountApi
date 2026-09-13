@@ -104,7 +104,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    [Authorize]
+    [AuthorizeJWT]
     [HttpPost("logout")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
