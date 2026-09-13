@@ -11,7 +11,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Account.Application.DomainEventsHandlers;
 
-public class UserLoggedInDomainEventHandler(ILogger<UserLoggedInDomainEventHandler> logger,
+public class UserLoggedInDomainEventHandler(
+    ILogger<UserLoggedInDomainEventHandler> logger,
     IRepository<LoginAudit> loginAuditRepository,
     IOutboxEventPublisher publisher,
     IUnitOfWork unitOfWork) : INotificationHandler<UserLoggedInDomainEvent>
@@ -23,11 +24,17 @@ public class UserLoggedInDomainEventHandler(ILogger<UserLoggedInDomainEventHandl
             logger.LogWarning("User logged in without user agent");
             return;
         }
-        var seenDeviceBefore =
-            await loginAuditRepository.AnyAsync(
+
+        var device =
+            await loginAuditRepository.FirstOrDefaultAsync(
                 new LoginAuditByUserAndUserAgentAsReadOnlySpec(notification.UserId, notification.UserAgent),
                 cancellationToken);
-        if (!seenDeviceBefore)
+        if (device != null)
+        {
+            device.LoggedInAt = DateTime.UtcNow;
+            await loginAuditRepository.UpdateAsync(device, cancellationToken);
+        }
+        else //new device
         {
             var loginAuditDto = new CreateLoginAuditParams
             {
@@ -35,12 +42,12 @@ public class UserLoggedInDomainEventHandler(ILogger<UserLoggedInDomainEventHandl
                 Email = notification.Email,
                 IpAddress = notification.IpAddress,
                 UserAgent = notification.UserAgent,
-                IsSuspicious = true, 
+                IsSuspicious = true,
                 LoggedInAt = DateTime.UtcNow
             };
             var loginAudit = LoginAudit.Create(loginAuditDto);
             await loginAuditRepository.AddAsync(loginAudit, cancellationToken);
-            
+
             await publisher.AddOutboxEventAsync(new SendLoginNotificationEmailIntegrationEvent
             {
                 CorrelationId = Guid.NewGuid(),
@@ -52,6 +59,5 @@ public class UserLoggedInDomainEventHandler(ILogger<UserLoggedInDomainEventHandl
             }, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
-
     }
 }

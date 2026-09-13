@@ -9,6 +9,7 @@ using Account.Infrastructure.Services.Email;
 using Account.Infrastructure.Services.ExternalProviders;
 using Ardalis.SharedKernel;
 using Microsoft.Extensions.DependencyInjection;
+using IDomainEventDispatcher = Account.Domain.Interfaces.IDomainEventDispatcher;
 
 namespace Account.Infrastructure.Extensions;
 
@@ -34,5 +35,7 @@ public static class DependencyInjectionInfrastructure
         //MassTransit
         services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();
         services.AddScoped<IOutboxEventPublisher, MassTransitOutboxEventPublisher>();
+        //Domain
+        services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
     }
 }
