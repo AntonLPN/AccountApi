@@ -1,6 +1,7 @@
 using Account.Application.Features.Account.Logout;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
+using Account.Domain.Repositories;
 using Account.Domain.Specifications;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
@@ -15,13 +16,15 @@ public class LogoutUserHandlerTests
     private readonly Mock<ILogger<LogoutUserHandler>> _logger = new();
     private readonly Mock<IAuthService> _authService = new();
     private readonly Mock<IRepository<AppUser>> _userRepository = new();
+    private readonly Mock<IUnitOfWork> _unitOfWork = new();
     
     private LogoutUserHandler CreateSut()
     {
         return new LogoutUserHandler(
             _logger.Object,
             _authService.Object,
-            _userRepository.Object);
+            _userRepository.Object,
+            _unitOfWork.Object);
     }
 
     private static LogoutCommand CreateCommand(
