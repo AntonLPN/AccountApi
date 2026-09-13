@@ -12,7 +12,8 @@ namespace Account.Application.Features.Account.Logout;
 public class LogoutUserHandler(
     ILogger<LogoutUserHandler> logger,
     IAuthService authService,
-    IRepository<AppUser> userRepository)
+    IRepository<AppUser> userRepository,
+    IUnitOfWork unitOfWork)
     : ICommandHandler<LogoutCommand, Result>
 {
     public async Task<Result> Handle(LogoutCommand request, CancellationToken cancellationToken)
@@ -26,8 +27,7 @@ public class LogoutUserHandler(
         if (!loggedOut)
             return Result.Error("Logout failed");
         user.Logout(request.IpAddress, request.UserAgent);
-        //await unitOfWork.SaveChangesAsync(cancellationToken); //need for saga
-
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         logger.LogInformation("User {Email} logged out, logout saga started", MaskedEmail.Create(normalizedEmail));
 
         return Result.Success();
