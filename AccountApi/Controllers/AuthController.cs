@@ -37,6 +37,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         var regCmd = new RegisterCommand(AuthProvider.LocalProvider, model.Email, false, model.Password,
             model.ReferralCode, ipAddress, userAgent);
         var res = await mediator.Send(regCmd);
+        
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
         return Ok(res.Value);
