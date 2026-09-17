@@ -1,11 +1,13 @@
 using Account.Application.Features.Account.AccountInfo;
 using Account.Application.Features.Account.ChekEmailAvailability;
 using Account.Application.Features.Account.ConfirmEmail;
+using Account.Application.Features.Account.IsEmailVerified;
 using Account.Application.Features.Account.SendEmailVerification;
 using Account.Application.Features.Account.Setup2Fa;
 using AccountApi.Authorization;
 using AccountApi.Models.RequestModels;
 using AccountApi.Models.ResponseModels;
+using Ardalis.Result;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -55,6 +57,26 @@ public class AccountController(IMediator mediator) : ControllerBase
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
         return Redirect(res.IsSuccess ? "/email-verified.html" : "/email-verification-failed.html");
+    }
+
+    [AuthorizeJWT]
+    [ProducesResponseType<IsEmailVerifiedResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HttpGet("is-email-verified")]
+    public async Task<IActionResult> IsEmailVerified(CancellationToken cancellationToken)
+    {
+        var email = User.FindFirst("email")?.Value;
+        if (string.IsNullOrWhiteSpace(email))
+            return NotFound("Email in credentials not found");
+
+        var res = await mediator.Send(new IsEmailVerifiedCommand(email), cancellationToken);
+        if (res.Status == ResultStatus.NotFound)
+            return NotFound(res.Errors);
+        if (!res.IsSuccess)
+            return BadRequest(res.Errors);
+
+        return Ok(res.Value);
     }
 
     [AuthorizeJWT]

@@ -8,7 +8,7 @@ public class ApiKey : AggregateRoot
     [Key] public int Id { get; set; }
     [Column("Key")] public required string HashApiKey { get; init; }
     public required string KeyPrefix { get; init; }
-    public bool IsAuthorize { get; set; } = true;
+    public bool IsAuthorize { get; set; } = true; 
     public DateTime CreatedAt { get; init; }
     public DateTime ExpiredAt { get; init; }
     public bool IsDeleted { get; set; }

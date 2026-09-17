@@ -37,7 +37,6 @@ public static class HostBuilderExtensions
                 restrictedToMinimumLevel: LogEventLevel.Error,
                 rollingInterval: RollingInterval.Day,
                 retainedFileCountLimit: 30);
-
             loggerConfig.WriteTo.Seq(seqUrl);
             if (env.IsDevelopment())
             {
