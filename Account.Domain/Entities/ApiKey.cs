@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Ardalis.GuardClauses;
 
 namespace Account.Domain.Entities;
 
@@ -20,13 +21,15 @@ public class ApiKey : AggregateRoot
 
     public static ApiKey Create(ApiKeyCreateParams createParams)
     {
+        Guard.Against.NullOrWhiteSpace(createParams.ApiKey, nameof(createParams.ApiKey));
+        
         return new ApiKey
         {
-            HashApiKey = createParams.HashApiKey,
+            HashApiKey = Guard.Against.NullOrWhiteSpace(createParams.HashApiKey),
             CreatedAt = DateTime.UtcNow,
             ExpiredAt = DateTime.UtcNow.AddYears(99),
             IsAuthorize = createParams.IsAuthorize,
-            UserId = createParams.UserId,
+            UserId = Guard.Against.Default(createParams.UserId),
             KeyPrefix = createParams.ApiKey.Substring(0, 8)
         };
     }
