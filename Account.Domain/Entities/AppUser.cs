@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 using Account.Domain.Events;
 using Account.Domain.Models;
+using Ardalis.GuardClauses;
 using Microsoft.EntityFrameworkCore;
 using OtpNet;
 
@@ -9,7 +10,7 @@ namespace Account.Domain.Entities;
 
 public class AppUser : AggregateRoot
 {
-    [Key] public Guid Id { get; init; } 
+    [Key] public Guid Id { get; init; }
     public string? UserName { get; init; }
     public string Email { get; init; } = "";
     public bool EmailConfirmed { get; set; }
@@ -28,23 +29,27 @@ public class AppUser : AggregateRoot
     public string ReferralCode { get; init; } = ""; //GUID or UUID
 
     [Comment("ID of the referrer user who invited this user (referrer)")]
-    public Guid? ReferrerId { get; set; } 
+    public Guid? ReferrerId { get; set; }
 
     public bool IsDeleted { get; set; }
     public ICollection<ApiKey> ApiKeys { get; set; } = [];
 
     public static AppUser Create(AppUserCreateParams createParams)
     {
-        if (string.IsNullOrWhiteSpace(createParams.Id))
-            throw new ArgumentException("createParams.Id cannot be empty", nameof(createParams));
+        Guard.Against.Null(createParams);
+        Guard.Against.NullOrWhiteSpace(createParams.Id, nameof(createParams.Id));
 
-        if (string.IsNullOrWhiteSpace(createParams.Email))
-            throw new ArgumentException("createParams.Email cannot be empty", nameof(createParams));
+        if (!Guid.TryParse(createParams.Id, out var userId))
+            throw new ArgumentException("Id must be valid GUID", nameof(createParams.Id));
+
+        Guard.Against.Default(userId, nameof(createParams.Id));
+        var email = Guard.Against.NullOrWhiteSpace(createParams.Email, nameof(createParams.Email));
+
         var user = new AppUser
         {
-            Id = Guid.Parse(createParams.Id),
-            Email = createParams.Email,
-            UserName = createParams.Email, // Set UserName to Email by default
+            Id = Guard.Against.Default(Guid.Parse(createParams.Id), nameof(createParams.Id)),
+            Email = email,
+            UserName = email,
             PasswordHash = createParams.PasswordHash,
             ReferralCode = GenerateReadableCode(),
             ReferrerId = createParams.ReferrerId,
@@ -75,7 +80,7 @@ public class AppUser : AggregateRoot
 
     public void ChangePassword(string newHashPassword)
     {
-        ArgumentException.ThrowIfNullOrEmpty(newHashPassword);
+        Guard.Against.NullOrWhiteSpace(newHashPassword);
         PasswordHash = newHashPassword;
         AddDomainEvent(new PasswordChangedDomainEvent(Id));
     }
@@ -88,31 +93,46 @@ public class AppUser : AggregateRoot
 
     public void InitiateTwoFactorAuthentication(string otpCode)
     {
+        EnsureActiveAccount();
         AddDomainEvent(new TwoFactorInitiatedDomainEvent
         {
+            CorrelationId = Guid.NewGuid(),
             UserId = Id,
             Email = Email,
-            OtpCode = otpCode,
-            CorrelationId = Guid.NewGuid(),
+            OtpCode = Guard.Against.NullOrWhiteSpace(otpCode),
             ExpirationTime = DateTime.UtcNow.AddMinutes(5)
         });
     }
 
     public void RecordLogin(string? ipAddress, string? userAgent)
     {
+        EnsureActiveAccount();
         LastLoginAt = DateTime.UtcNow;
         AddDomainEvent(new UserLoggedInDomainEvent(Id, Email, ipAddress, userAgent));
     }
 
+    #region these methods can use user and administrator to change the status of the user
+
     public void Logout(string? ipAddress, string? userAgent)
+
     {
         LastLogoutAt = DateTime.UtcNow;
         AddDomainEvent(new UserLoggedOutDomainEvent(Id, Email, ipAddress, userAgent));
     }
 
-
     public void SetTwoFactor(bool isEnable)
     {
         IsTwoFactorEnabled = isEnable;
+    }
+
+    #endregion
+
+
+    private void EnsureActiveAccount()
+    {
+        if (IsBlocked)
+            throw new InvalidOperationException("User is blocked");
+        if (IsDeleted)
+            throw new InvalidOperationException("User is deleted");
     }
 }
