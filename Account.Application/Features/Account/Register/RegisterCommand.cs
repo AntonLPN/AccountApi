@@ -9,7 +9,7 @@ public record RegisterCommand(
     string Email,
     bool EmailConfirmed,
     string Password,
-    string ReferrerCode,
+    string? ReferrerCode,
     string? IpAddress,
     string? UserAgent)
     : ICommand<Result<RegisterUserResult>>;
