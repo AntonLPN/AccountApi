@@ -14,6 +14,7 @@ public class OtpSessions : AggregateRoot
     public DateTime ExpiresAt { get; set; }
     public DateTime? UsedAt { get; set; }
     public DateTime? InvalidatedAt { get; set; }
+    
     public required Guid UserId { get; set; }
     [ForeignKey(nameof(UserId))] public AppUser AppUser { get; set; }
 

@@ -103,6 +103,11 @@ public class AppDbContext : DbContext
             entity.Property(a => a.IsSuspicious).HasColumnName("IsSuspicious");
             entity.Property(a => a.LoggedInAt).HasColumnName("LoggedInAt");
             entity.HasIndex(a => a.UserId);
+            
+            entity.HasOne(a => a.AppUser)
+                .WithMany(u => u.LoginAudits)
+                .HasForeignKey(a => a.UserId)
+                .HasConstraintName("FK_AppUser_LoginAudits");
         });
         
         builder.Entity<TwoFactorSagaState>(entity =>
@@ -130,6 +135,11 @@ public class AppDbContext : DbContext
             entity.Property(a => a.UserAgent).HasMaxLength(512).HasColumnName("UserAgent").IsUnicode();
             entity.Property(a => a.LoggedOutAt).HasColumnName("LoggedOutAt");
             entity.HasIndex(a => a.UserId);
+            
+            entity.HasOne(a => a.AppUser)
+                .WithMany(u => u.LogoutAudits)
+                .HasForeignKey(a => a.UserId)
+                .HasConstraintName("FK_AppUser_LogoutAudits");
         });
         
         builder.Entity<OtpSessions>(entity =>
@@ -143,6 +153,10 @@ public class AppDbContext : DbContext
             entity.Property(a => a.ExpiresAt).HasColumnName("ExpiresAt");
             entity.Property(a => a.UsedAt).HasColumnName("UsedAt");
       
+            entity.HasOne(a => a.AppUser).WithMany(u => u.OtpSessions)
+                .HasForeignKey(a => a.UserId)
+                .HasConstraintName("FK_AppUser_OtpSessions");
+            
             entity.HasIndex(a => a.UserId)
                 .HasDatabaseName("UX_OtpSessions_ActiveUserId");
         });

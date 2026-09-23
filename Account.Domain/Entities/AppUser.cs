@@ -32,7 +32,11 @@ public class AppUser : AggregateRoot
     public Guid? ReferrerId { get; set; }
 
     public bool IsDeleted { get; set; }
+    // Navigation properties
     public ICollection<ApiKey> ApiKeys { get; set; } = [];
+    public ICollection<LoginAudit> LoginAudits { get; set; } = [];
+    public ICollection<LogoutAudit> LogoutAudits { get; set; } = [];
+    public ICollection<OtpSessions> OtpSessions { get; set; } = [];
 
     public static AppUser Create(AppUserCreateParams createParams)
     {

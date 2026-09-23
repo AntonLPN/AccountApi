@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Account.Domain.DTOs;
 using Ardalis.GuardClauses;
 
@@ -7,12 +8,14 @@ namespace Account.Domain.Entities;
 public class LoginAudit : AggregateRoot
 {
     [Key] public int Id { get; set; }
-    public Guid UserId { get; set; }
     public string Email { get; set; } = "";
     public string? IpAddress { get; set; }
     public string? UserAgent { get; set; }
     public bool IsSuspicious { get; set; }
     public DateTime LoggedInAt { get; set; }
+    
+    public Guid UserId { get; set; }
+    [ForeignKey(nameof(UserId))] public AppUser AppUser { get; set; }
 
     public static LoginAudit Create(CreateLoginAuditParams createLoginAuditParams)
     {
