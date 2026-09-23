@@ -6,7 +6,7 @@ namespace Account.Application.Features.Account.ProvidersRegister;
 
 public record ProviderRegisterCommand(
     string ProviderToken,
-    string ReferrerCode,
+    string? ReferrerCode,
     AuthProvider Provider,
     string? IpAddress,
     string? UserAgent)
