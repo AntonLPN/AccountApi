@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Account.Domain.Models;
+using Ardalis.GuardClauses;
 using Ardalis.Result;
 
 namespace Account.Domain.Entities;
@@ -14,7 +15,7 @@ public class OtpSessions : AggregateRoot
     public DateTime ExpiresAt { get; set; }
     public DateTime? UsedAt { get; set; }
     public DateTime? InvalidatedAt { get; set; }
-    
+
     public required Guid UserId { get; set; }
     [ForeignKey(nameof(UserId))] public AppUser AppUser { get; set; }
 
@@ -22,14 +23,14 @@ public class OtpSessions : AggregateRoot
     {
         var session = new OtpSessions
         {
-            CodeHash = createParams.CodeHash,
+            CodeHash = Guard.Against.NullOrWhiteSpace(createParams.CodeHash),
             CreatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddMinutes(5),
-            UserId = createParams.UserId,
+            UserId = Guard.Against.Default(createParams.UserId)
         };
         return session;
     }
-    
+
     public void Invalidate()
     {
         if (UsedAt != null || InvalidatedAt != null) return;
