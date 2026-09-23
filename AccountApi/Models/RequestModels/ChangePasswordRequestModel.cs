@@ -13,7 +13,4 @@ public class ChangePasswordRequestModel
     [Required(ErrorMessage = "PendingToken is required")]
     public required string PendingToken { get; set; }
 
-    [JsonPropertyName("otpCode")]
-    [Required(ErrorMessage = "OtpCode is required")]
-    public required string OtpCode { get; set; }
 }

@@ -172,7 +172,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         var emailClaim = User.FindFirst("email")?.Value;
         if (string.IsNullOrWhiteSpace(emailClaim))
             return BadRequest("User not found");
-        var cmd = new ChangePasswordCommand(emailClaim, model.NewPassword, model.PendingToken, model.OtpCode);
+        var cmd = new ChangePasswordCommand(emailClaim, model.NewPassword, model.PendingToken);
         var res = await mediator.Send(cmd);
         return Ok(res.Value);
     }
