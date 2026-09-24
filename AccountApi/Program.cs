@@ -22,6 +22,11 @@ builder.Services.AddMassTransitMessaging(builder.Configuration);
 builder.Services.AddRedis(builder.Configuration);
 builder.Services.AddLifeTimeServices();
 builder.Services.AddObservabilityMetrics();
+var mysqlConnectionString = builder.Configuration.GetSection("DbConfig").GetValue<string>("ConnectionString");
+builder.Services.AddHealthChecks()
+    .AddMySql(mysqlConnectionString,
+    name: "MySQL",
+    tags: ["db", "mysql"]);
 
 builder.Services.AddRateLimiter(limiter =>
 {
@@ -63,6 +68,7 @@ if (app.Environment.IsDevelopment())
         options.ConfigObject.AdditionalItems["version"] = DateTime.UtcNow.Ticks.ToString();
     });
 }
+
 app.UseStaticFiles();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 using (var scope = app.Services.CreateScope())
@@ -90,4 +96,5 @@ app.UseAuthorization();
 
 app.UseRateLimiter();
 app.MapControllers().RequireRateLimiting(RateLimiterPolices.Fixed);
+app.MapHealthChecks("/health");
 app.Run();
