@@ -3,6 +3,8 @@ using Account.Infrastructure.Persistence;
 using AccountApi.Authorization;
 using AccountApi.Extensions;
 using AccountApi.Middlewares;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,8 +27,8 @@ builder.Services.AddObservabilityMetrics();
 var mysqlConnectionString = builder.Configuration.GetSection("DbConfig").GetValue<string>("ConnectionString");
 builder.Services.AddHealthChecks()
     .AddMySql(mysqlConnectionString,
-    name: "MySQL",
-    tags: ["db", "mysql"]);
+        name: "MySQL",
+        tags: ["db", "mysql"]);
 
 builder.Services.AddRateLimiter(limiter =>
 {
@@ -96,5 +98,8 @@ app.UseAuthorization();
 
 app.UseRateLimiter();
 app.MapControllers().RequireRateLimiting(RateLimiterPolices.Fixed);
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
 app.Run();
