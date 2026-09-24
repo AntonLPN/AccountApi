@@ -33,6 +33,8 @@ public class AccountController(IMediator mediator) : ControllerBase
     }
 
     [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [HttpGet("send-email-verification-link")]
     public async Task<IActionResult> SendEmailVerification()
     {
@@ -49,6 +51,7 @@ public class AccountController(IMediator mediator) : ControllerBase
     }
 
     [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [HttpGet("verify-email")]
     public async Task<IActionResult> ConfirmEmail([FromQuery] string token)
     {
@@ -81,6 +84,8 @@ public class AccountController(IMediator mediator) : ControllerBase
 
     [AuthorizeJWT]
     [ProducesResponseType<AccountInfoResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpGet("get-account-info")]
     public async Task<IActionResult> GetAccountInfo()
     {
@@ -98,6 +103,7 @@ public class AccountController(IMediator mediator) : ControllerBase
     [AuthorizeJWT]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPatch("2fa/setup")]
     public async Task<IActionResult> Enable2FaSetup([FromBody] Enable2FaSetupRequest model)
     {

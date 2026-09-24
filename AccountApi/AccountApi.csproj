@@ -39,6 +39,7 @@
 
     <ItemGroup>
       <Folder Include="Logs\" />
+      <Folder Include="Logs\errors\" />
     </ItemGroup>
 
     <ItemGroup>

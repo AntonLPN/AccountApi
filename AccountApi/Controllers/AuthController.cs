@@ -65,7 +65,6 @@ public class AuthController(IMediator mediator) : ControllerBase
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginModelRequest model)
     {
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
@@ -75,7 +74,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         var res = await mediator.Send(loginCmd);
 
         if (!res.IsSuccess)
-            return Unauthorized();
+            return BadRequest();
 
         if (!res.Value.IsMfaRequired)
             SetRefreshTokenCookie(res.Value?.Token?.RefreshToken);
@@ -165,7 +164,7 @@ public class AuthController(IMediator mediator) : ControllerBase
     [PreAuthOnly]
     [AllowAnonymous]
     [HttpPost("change-password")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ChangePasswordResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestModel model)
     {
@@ -179,6 +178,8 @@ public class AuthController(IMediator mediator) : ControllerBase
 
     [Authorize]
     [HttpPost("create-api-key")]
+    [ProducesResponseType(typeof(CreateApiKeyResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateApiKey()
     {
         var emailClaim = User.FindFirst("email")?.Value;
@@ -197,6 +198,8 @@ public class AuthController(IMediator mediator) : ControllerBase
 
     [Authorize]
     [HttpPost("delete-api-key")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteApiKey([FromBody] DeleteApiKeyRequest model)
     {
         var emailClaim = User.FindFirst("email")?.Value;

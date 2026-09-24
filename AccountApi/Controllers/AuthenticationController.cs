@@ -2,6 +2,7 @@ using Account.Application.Features.Account.Authentication;
 using AccountApi.Helpers;
 using AccountApi.Models.RequestModels;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AccountApi.Controllers;
@@ -11,7 +12,10 @@ namespace AccountApi.Controllers;
 [Produces("application/json")]
 public class AuthenticationController(IMediator mediator) : ControllerBase
 {
+    [AllowAnonymous]
     [HttpPost("refresh")]
+    [ProducesResponseType(typeof(AuthenticationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Refresh([FromBody] RefreshModelRequest model)
     {
         if (!ModelState.IsValid)
