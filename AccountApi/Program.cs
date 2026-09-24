@@ -23,10 +23,13 @@ builder.Services.AddAppAuthentication(builder.Configuration);
 builder.Services.AddMassTransitMessaging(builder.Configuration);
 builder.Services.AddRedis(builder.Configuration);
 builder.Services.AddLifeTimeServices();
+builder.Services.AddMediatorServices();
 builder.Services.AddObservabilityMetrics();
 var mysqlConnectionString = builder.Configuration.GetSection("DbConfig").GetValue<string>("ConnectionString");
 builder.Services.AddHealthChecks()
+#pragma warning disable CS8604 // Possible null reference argument.
     .AddMySql(mysqlConnectionString,
+#pragma warning restore CS8604 // Possible null reference argument.
         name: "MySQL",
         tags: ["db", "mysql"]);
 
