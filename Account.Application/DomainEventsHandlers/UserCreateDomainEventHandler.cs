@@ -21,6 +21,7 @@ public class UserCreateDomainEventHandler(
             Email = notification.Email,
             IpAddress = notification.IpAddress,
             UserAgent = notification.UserAgent,
+            LoggedInAt = DateTime.UtcNow,
             
         }), cancellationToken);
 
