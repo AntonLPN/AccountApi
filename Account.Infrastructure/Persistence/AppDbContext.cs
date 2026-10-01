@@ -35,7 +35,8 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Id).IsRequired()
                 .ValueGeneratedNever();
             entity.HasKey(u => u.Id).HasName("PK_AppUser");
-            entity.Property(e => e.UserName).HasMaxLength(255).HasColumnName("UserName").IsUnicode();
+            entity.Property(e => e.Name).HasMaxLength(255).HasColumnName("UserName").IsUnicode();
+            entity.Property(e => e.Surname).HasMaxLength(255).HasColumnName("Surname").IsUnicode();
             entity.Property(e => e.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode().IsRequired();
             entity.Property(e => e.PasswordHash).HasColumnName("PasswordHash").IsUnicode()
                 .IsRequired();

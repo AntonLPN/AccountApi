@@ -10,7 +10,7 @@ public class AuthenticationHandler(ILogger<AuthenticationHandler> logger, IAuthS
 {
      public async Task<Result<AuthenticationResult>> Handle(AuthenticationCommand request, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrEmpty(request.RefreshToken, nameof(request.RefreshToken));
+        ArgumentException.ThrowIfNullOrEmpty(request.RefreshToken);
         var res = await authService.RefreshTokenAsync(request.RefreshToken); 
         if(res == null)
             return Result<AuthenticationResult>.Unauthorized();

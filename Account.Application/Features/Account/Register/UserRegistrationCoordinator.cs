@@ -24,7 +24,9 @@ public class UserRegistrationCoordinator(
         try
         {
             var whoInvited = await userRepository.FirstOrDefaultAsync(
+#pragma warning disable CS8604 // Possible null reference argument.
                 new UserByReferralCodeSpec(request.RegisterCommand.ReferrerCode), ct);
+#pragma warning restore CS8604 // Possible null reference argument.
             var passwordHash = cryptographyService.Hash(request.RegisterCommand.Password);
             var user = AppUser.Create(new AppUserCreateParams(
                 request.UserId,
@@ -34,6 +36,8 @@ public class UserRegistrationCoordinator(
                 request.RegisterCommand.IpAddress,
                 request.RegisterCommand.UserAgent,
                 request.RegisterCommand.EmailConfirmed,
+                request.RegisterCommand.Name,
+                request.RegisterCommand.Surname,
                 nameof(request.RegisterCommand.Provider)
             ));
             await userRepository.AddAsync(user, ct);

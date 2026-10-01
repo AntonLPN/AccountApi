@@ -9,6 +9,8 @@ public record RegisterCommand(
     string Email,
     bool EmailConfirmed,
     string Password,
+    string? Name,
+    string? Surname,
     string? ReferrerCode,
     string? IpAddress,
     string? UserAgent)

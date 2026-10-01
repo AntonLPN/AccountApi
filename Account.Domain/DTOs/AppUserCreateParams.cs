@@ -8,4 +8,6 @@ public sealed record AppUserCreateParams(
     string? IpAddress,
     string? UserAgent,
     bool EmailConfirmed = false,
+    string? Name = null,
+    string? Surname = null,
     string? ProviderName = "my-corporate-ad");

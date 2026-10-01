@@ -35,7 +35,8 @@ public class AuthController(IMediator mediator) : ControllerBase
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers.UserAgent.ToString();
 
-        var regCmd = new RegisterCommand(AuthProvider.LocalProvider, model.Email, false, model.Password,
+        var regCmd = new RegisterCommand(AuthProvider.LocalProvider, model.Email, false, model.Password, model.Name,
+            model.Surname,
             model.ReferralCode, ipAddress, userAgent);
         var res = await mediator.Send(regCmd);
         if (!res.IsSuccess)

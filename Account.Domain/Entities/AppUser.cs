@@ -11,7 +11,8 @@ namespace Account.Domain.Entities;
 public class AppUser : AggregateRoot
 {
     [Key] public Guid Id { get; init; }
-    public string? UserName { get; init; }
+    public string? Name { get; set; }
+    public string? Surname { get; set; }
     public string Email { get; init; } = "";
     public bool EmailConfirmed { get; set; }
     public bool IsTwoFactorEnabled { get; set; }
@@ -32,6 +33,7 @@ public class AppUser : AggregateRoot
     public Guid? ReferrerId { get; set; }
 
     public bool IsDeleted { get; set; }
+
     // Navigation properties
     public ICollection<ApiKey> ApiKeys { get; set; } = [];
     public ICollection<LoginAudit> LoginAudits { get; set; } = [];
@@ -41,10 +43,10 @@ public class AppUser : AggregateRoot
     public static AppUser Create(AppUserCreateParams createParams)
     {
         Guard.Against.Null(createParams);
-        Guard.Against.NullOrWhiteSpace(createParams.Id, nameof(createParams.Id));
+        Guard.Against.NullOrWhiteSpace(createParams.Id);
 
         if (!Guid.TryParse(createParams.Id, out var userId))
-            throw new ArgumentException("Id must be valid GUID", nameof(createParams.Id));
+            throw new ArgumentException("Id must be valid GUID", createParams.Id);
 
         Guard.Against.Default(userId, nameof(createParams.Id));
         var email = Guard.Against.NullOrWhiteSpace(createParams.Email, nameof(createParams.Email));
@@ -53,7 +55,8 @@ public class AppUser : AggregateRoot
         {
             Id = Guard.Against.Default(Guid.Parse(createParams.Id), nameof(createParams.Id)),
             Email = email,
-            UserName = email,
+            Name = createParams.Name,
+            Surname = createParams.Surname,
             PasswordHash = createParams.PasswordHash,
             ReferralCode = GenerateReadableCode(),
             ReferrerId = createParams.ReferrerId,

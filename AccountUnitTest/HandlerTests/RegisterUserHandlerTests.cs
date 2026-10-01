@@ -28,8 +28,10 @@ public class RegisterUserHandlerTests
         string password = "StrongP@ssw0rd!",
         string referrerCode = "REF123",
         string? ipAddress = "127.0.0.1",
-        string? userAgent = "userAgent")
-        => new(provider, email, emailConfirmed, password, referrerCode, ipAddress, userAgent);
+        string? userAgent = "userAgent",
+        string? name = "TestName",
+        string? surname = "TestSurname")
+        => new(provider, email, emailConfirmed, password, name, surname, referrerCode, ipAddress, userAgent);
 
     private void SetupUserByEmail(AppUser? user)
         => _userRepository

@@ -40,7 +40,7 @@ public class LogoutUserHandlerTests
         {
             Id =  Guid.NewGuid(),
             Email = "test@mail.com",
-            UserName = "test@mail.com",
+            Name = "test@mail.com",
             PasswordHash = "hash",
             EmailConfirmed = true
         };

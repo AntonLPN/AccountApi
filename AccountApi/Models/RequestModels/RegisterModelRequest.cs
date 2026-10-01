@@ -6,6 +6,9 @@ namespace AccountApi.Models.RequestModels;
 
 public sealed class RegisterModelRequest
 {
+    [JsonPropertyName("name")] public string? Name { get; set; } 
+    [JsonPropertyName("surname")] public string? Surname { get; set; }
+
     [Required(ErrorMessage = "Email is required")]
     [EmailAddress]
     [JsonPropertyName("email")]
@@ -18,9 +21,5 @@ public sealed class RegisterModelRequest
     [JsonPropertyName("password")]
     public required string Password { get; set; }
 
-    [Required(ErrorMessage = "ReferralCode is required")]
-    [SwaggerSchema(
-        "Can be empty. If the user was referred by someone, then this field should contain the referral code of that person.")]
-    [JsonPropertyName("referralCode")]
-    public required string ReferralCode { get; set; }
+    [JsonPropertyName("referralCode")] public string? ReferralCode { get; set; }
 }
