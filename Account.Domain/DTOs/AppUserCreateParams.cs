@@ -3,6 +3,7 @@ namespace Account.Domain.Models;
 public sealed record AppUserCreateParams(
     string Id,
     string Email,
+    string PhoneNumber,
     string? PasswordHash,
     Guid? ReferrerId,
     string? IpAddress,

@@ -20,6 +20,11 @@ public class UserRegistrationCoordinator(
     public async Task<Result<RegisterUserResult>> RegisterAsync(UserCoordinatorParams request, CancellationToken ct)
     {
         var normalizedEmail = Email.Create(request.RegisterCommand.Email);
+        Phone.TryNormalize(request.RegisterCommand.PhoneNumber, out var normalizedPhone);
+        if (string.IsNullOrEmpty(normalizedPhone))
+            return Result<RegisterUserResult>.Invalid(new ValidationError("PhoneNumber",
+                "Phone number parse error. Please check the format and try again."));
+        
         await using var tx = await unitOfWork.BeginTransactionAsync(ct);
         try
         {
@@ -31,6 +36,7 @@ public class UserRegistrationCoordinator(
             var user = AppUser.Create(new AppUserCreateParams(
                 request.UserId,
                 normalizedEmail,
+                normalizedPhone,
                 passwordHash,
                 whoInvited?.Id,
                 request.RegisterCommand.IpAddress,

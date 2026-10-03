@@ -13,5 +13,6 @@ public record RegisterCommand(
     string? Surname,
     string? ReferrerCode,
     string? IpAddress,
-    string? UserAgent)
+    string? UserAgent,
+    string PhoneNumber)
     : ICommand<Result<RegisterUserResult>>;

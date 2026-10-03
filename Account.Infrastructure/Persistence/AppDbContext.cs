@@ -38,6 +38,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Name).HasMaxLength(255).HasColumnName("UserName").IsUnicode();
             entity.Property(e => e.Surname).HasMaxLength(255).HasColumnName("Surname").IsUnicode();
             entity.Property(e => e.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode().IsRequired();
+            entity.Property(e => e.PhoneNumber).HasMaxLength(20).HasColumnName("PhoneNumber").IsUnicode();
             entity.Property(e => e.PasswordHash).HasColumnName("PasswordHash").IsUnicode()
                 .IsRequired();
             entity.Property(e => e.EmailConfirmed).HasColumnName("EmailConfirmed").HasDefaultValue(false);
@@ -53,7 +54,8 @@ public class AppDbContext : DbContext
             entity.Property(e => e.LastLogoutAt).HasColumnName("LastLogoutAt");
             entity.Property(e => e.IsDeleted).HasColumnName("IsDeleted").HasDefaultValue(false);
 
-            entity.HasIndex(u => u.Email).IsUnique();
+            entity.HasIndex(u => u.Email).IsUnique().HasDatabaseName("UX_AppUser_Email");
+            entity.HasIndex(u=>u.PhoneNumber).IsUnique().HasDatabaseName("UX_AppUser_PhoneNumber");
         });
 
         builder.Entity<ApiKey>(entity =>

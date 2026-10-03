@@ -18,5 +18,7 @@ public class RegisterUserCommandValidator : AbstractValidator<RegisterCommand>
             .MaximumLength(256);
          RuleFor(x => x.ReferrerCode)
             .MaximumLength(10);
+          RuleFor(x => x.PhoneNumber).NotEmpty().WithMessage("Phone number is required")
+            .MaximumLength(16);
     }
 }

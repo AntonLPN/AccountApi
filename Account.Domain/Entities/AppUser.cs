@@ -13,6 +13,7 @@ public class AppUser : AggregateRoot
     [Key] public Guid Id { get; init; }
     public string? Name { get; set; }
     public string? Surname { get; set; }
+    public string? PhoneNumber { get; set; }//E.164
     public string Email { get; init; } = "";
     public bool EmailConfirmed { get; set; }
     public bool IsTwoFactorEnabled { get; set; }
@@ -57,6 +58,7 @@ public class AppUser : AggregateRoot
             Email = email,
             Name = createParams.Name,
             Surname = createParams.Surname,
+            PhoneNumber = createParams.PhoneNumber,
             PasswordHash = createParams.PasswordHash,
             ReferralCode = GenerateReadableCode(),
             ReferrerId = createParams.ReferrerId,

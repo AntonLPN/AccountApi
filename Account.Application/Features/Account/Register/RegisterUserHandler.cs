@@ -23,6 +23,10 @@ public class RegisterUserHandler(
         if (existing is not null)
             return Result<RegisterUserResult>.Conflict("User already exists");
 
+        var phoneE164 = Phone.TryNormalize(request.PhoneNumber, out var normalizedPhone) ? normalizedPhone : null;
+        if (phoneE164 is not null && await userRepository.AnyAsync(new UserByPhoneSpec(phoneE164), ct))
+            return Result<RegisterUserResult>.Conflict("Phone number already exists");
+
         Result<string> keycloakResult = await userAccountService.RegisterUserAsync(normalizedEmail, request.Password);
         if (!keycloakResult.IsSuccess)
             return Result<RegisterUserResult>.Error(

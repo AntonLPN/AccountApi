@@ -1,18 +1,22 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
-using Swashbuckle.AspNetCore.Annotations;
 
 namespace AccountApi.Models.RequestModels;
 
 public sealed class RegisterModelRequest
 {
-    [JsonPropertyName("name")] public string? Name { get; set; } 
-    [JsonPropertyName("surname")] public string? Surname { get; set; }
-
     [Required(ErrorMessage = "Email is required")]
     [EmailAddress]
     [JsonPropertyName("email")]
     public required string Email { get; set; }
+
+    [JsonPropertyName("name")] public string? Name { get; set; }
+    [JsonPropertyName("surname")] public string? Surname { get; set; }
+
+    [JsonPropertyName("phoneNumber")]
+    [Phone]
+    [Required(ErrorMessage = "Phone number is required")]
+    public string PhoneNumber { get; set; } = "";
 
     [Required(ErrorMessage = "Password is required")]
     [MinLength(6, ErrorMessage = "Password must be at least 6 characters long")]
