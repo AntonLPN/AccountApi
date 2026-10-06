@@ -13,7 +13,6 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddMemoryCache(); //for debug
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Host.AddSerilogLogging();
 
@@ -25,6 +24,7 @@ builder.Services.AddRedis(builder.Configuration);
 builder.Services.AddLifeTimeServices();
 builder.Services.AddMediatorServices();
 builder.Services.AddObservabilityMetrics();
+builder.Services.AddCorsPolicy(builder.Configuration);
 var mysqlConnectionString = builder.Configuration.GetSection("DbConfig").GetValue<string>("ConnectionString");
 builder.Services.AddHealthChecks()
 #pragma warning disable CS8604 // Possible null reference argument.
@@ -96,6 +96,7 @@ using (var scope = app.Services.CreateScope())
 
 app.MapPrometheusScrapingEndpoint();
 app.UseHttpsRedirection();
+app.UseCors("CorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 
