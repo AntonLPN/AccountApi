@@ -34,7 +34,7 @@ Resiliency Pipelines: Configured MassTransit retry configurations, exponential b
 
 
 🛠️ Technology Stack
-Runtime: .NET 8 
+Runtime: .NET 10
 
 Frameworks: ASP.NET Core Web API, Entity Framework Core
 
