@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+
 namespace Account.Domain.Models;
 
 public sealed record AppUserCreateParams(
@@ -11,4 +13,5 @@ public sealed record AppUserCreateParams(
     bool EmailConfirmed = false,
     string? Name = null,
     string? Surname = null,
-    string? ProviderName = "my-corporate-ad");
+    string? ProviderName = "my-corporate-ad",
+    JsonObject? Metadata = null);

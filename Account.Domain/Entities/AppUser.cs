@@ -68,7 +68,7 @@ public class AppUser : AggregateRoot
             CreatedAt = DateTime.UtcNow
         };
         user.AddDomainEvent(new UserCreatedDomainEvent(user.Id, user.Email, createParams.IpAddress,
-            createParams.UserAgent));
+            createParams.UserAgent, createParams.Metadata));
         return user;
     }
 

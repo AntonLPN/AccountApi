@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+using Account.Contracts.Events.External;
 using Account.Contracts.Saga.UserRegisterSagaEvents.Commands;
 using Account.Contracts.Saga.UserRegisterSagaEvents.Events;
 using Account.Infrastructure.Persistence.SagaModels;
@@ -64,6 +66,55 @@ public class UserRegistrationSagaTests : IAsyncLifetime
         // Check the SendEmailConfirmationCommandIntegrationEvent was published
         (await _harness.Published.Any<SendWelcomeEmailIntegrationCommand>(TestContext.Current
                 .CancellationToken))
+            .Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task RegistrationStarted_ShouldKeepAndPublishMetadata()
+    {
+        var correlationId = Guid.NewGuid();
+        var metadata = new JsonObject
+        {
+            ["source"] = "registration-form",
+            ["campaign"] = "autumn"
+        };
+        var userId = Guid.NewGuid();
+
+        await _harness.Bus.Publish(new UserRegisterSagaStartedIntegrationEvent
+        {
+            CorrelationId = correlationId,
+            UserId = userId,
+            Email = "metadata@example.com",
+            Metadata = metadata
+        }, cancellationToken: CancellationToken.None);
+
+        var sagaHarness = _harness.GetSagaStateMachineHarness<UserRegistrationSaga, UserRegistrationSagaState>();
+        var instance = sagaHarness.Sagas
+            .Select(x => x.CorrelationId == correlationId, TestContext.Current.CancellationToken)
+            .FirstOrDefault();
+
+        (await _harness.Published.Any<SendWelcomeEmailIntegrationCommand>(
+                x => x.Context.Message.Metadata?["source"]?.GetValue<string>() == "registration-form",
+                TestContext.Current.CancellationToken))
+            .Should().BeTrue();
+        (await _harness.Published.Any<UserRegisteredIntegrationEvent>(
+                x => x.Context.Message.Metadata?["campaign"]?.GetValue<string>() == "autumn",
+                TestContext.Current.CancellationToken))
+            .Should().BeTrue();
+
+        instance.Should().NotBeNull();
+        instance!.Saga.MetadataJson.Should().Be(metadata.ToJsonString());
+
+        await _harness.Bus.Publish(new WelcomeEmailSentIntegrationEvent
+        {
+            CorrelationId = correlationId,
+            UserId = userId,
+            Email = "metadata@example.com"
+        }, cancellationToken: CancellationToken.None);
+
+        (await _harness.Published.Any<InitializeUserProfileIntegrationCommand>(
+                x => x.Context.Message.Metadata?["campaign"]?.GetValue<string>() == "autumn",
+                TestContext.Current.CancellationToken))
             .Should().BeTrue();
     }
 

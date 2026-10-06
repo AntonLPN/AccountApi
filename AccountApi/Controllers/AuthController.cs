@@ -43,7 +43,8 @@ public class AuthController(IMediator mediator) : ControllerBase
             model.ReferralCode,
             ipAddress, 
             userAgent, 
-            model.PhoneNumber);
+            model.PhoneNumber,
+            model.Metadata);
         var res = await mediator.Send(regCmd);
         if (!res.IsSuccess)
             return BadRequest(res.Errors);

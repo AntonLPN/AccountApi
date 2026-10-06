@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace AccountApi.Models.RequestModels;
@@ -26,4 +28,5 @@ public sealed class RegisterModelRequest
     public required string Password { get; set; }
 
     [JsonPropertyName("referralCode")] public string? ReferralCode { get; set; }
+    [JsonPropertyName("metadata")] public JsonObject? Metadata { get; set; }
 }

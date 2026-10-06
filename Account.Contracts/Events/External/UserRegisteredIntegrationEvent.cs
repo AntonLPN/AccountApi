@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Nodes;
 
 namespace Account.Contracts.Events.External;
 
@@ -14,4 +15,5 @@ public class UserRegisteredIntegrationEvent
     public string? ReferralCode { get; set; }
     public bool IsActive { get; set; }
     public bool EmailConfirmed { get; set; }
+    public JsonObject? Metadata { get; init; }
 }

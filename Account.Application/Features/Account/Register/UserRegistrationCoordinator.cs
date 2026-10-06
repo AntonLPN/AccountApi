@@ -44,7 +44,8 @@ public class UserRegistrationCoordinator(
                 request.RegisterCommand.EmailConfirmed,
                 request.RegisterCommand.Name,
                 request.RegisterCommand.Surname,
-                nameof(request.RegisterCommand.Provider)
+                nameof(request.RegisterCommand.Provider),
+                request.RegisterCommand.Metadata
             ));
             await userRepository.AddAsync(user, ct);
             await unitOfWork.SaveChangesAsync(ct);

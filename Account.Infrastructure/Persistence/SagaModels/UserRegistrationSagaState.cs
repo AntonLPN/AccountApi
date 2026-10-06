@@ -11,6 +11,7 @@ public class UserRegistrationSagaState : SagaStateMachineInstance, ISagaVersion
 
     public Guid UserId { get; set; } 
     public string Email { get; set; } = "";
+    public string? MetadataJson { get; set; }
 
     public string ApiKey { get; set; } = "";
     public bool EmailConfirmationSent { get; set; }

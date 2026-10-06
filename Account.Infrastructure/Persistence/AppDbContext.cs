@@ -87,6 +87,7 @@ public class AppDbContext : DbContext
             entity.Property(s => s.CurrentState).HasMaxLength(64);
             entity.Property(x => x.UserId).HasMaxLength(255);
             entity.Property(x => x.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode();
+            entity.Property(x => x.MetadataJson).HasColumnType("longtext").HasColumnName("MetadataJson");
             entity.Property(x => x.ApiKey).HasMaxLength(255).HasColumnName("ApiKey").IsUnicode();
             entity.Property(x => x.CreatedAt).HasColumnName("CreatedAt");
             entity.Property(x => x.UpdatedAt).HasColumnName("UpdatedAt");

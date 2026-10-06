@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Account.Application.Features.Account.Register;
 using Account.Domain.Entities;
 using Account.Domain.Enums;
@@ -31,8 +32,9 @@ public class RegisterUserHandlerTests
         string? userAgent = "userAgent",
         string? name = "TestName",
         string? surname = "TestSurname",
-        string? phone = "+30961112233")
-        => new(provider, email, emailConfirmed, password, name, surname, referrerCode, ipAddress, userAgent, phone);
+        string phone = "+30961112233",
+        JsonObject? metadata = null)
+        => new(provider, email, emailConfirmed, password, name, surname, referrerCode, ipAddress, userAgent, phone, metadata);
 
     private void SetupUserByEmail(AppUser? user)
         => _userRepository

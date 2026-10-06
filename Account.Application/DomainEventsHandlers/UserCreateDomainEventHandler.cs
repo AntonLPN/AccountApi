@@ -1,4 +1,5 @@
 using Account.Contracts.Saga.UserRegisterSagaEvents.Events;
+using System.Text.Json.Nodes;
 using Account.Domain.DTOs;
 using Account.Domain.Entities;
 using Account.Domain.Events;
@@ -29,7 +30,8 @@ public class UserCreateDomainEventHandler(
         {
             CorrelationId = Guid.NewGuid(),
             UserId = notification.UserId,
-            Email = notification.Email
+            Email = notification.Email,
+            Metadata = notification.Metadata?.DeepClone() as JsonObject
         }, cancellationToken);
     }
 }
