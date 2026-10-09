@@ -32,6 +32,7 @@ public class AuthController(IMediator mediator) : ControllerBase
     [ProducesResponseType(typeof(RegisterUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Register([FromBody] RegisterModelRequest model)
     {
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
