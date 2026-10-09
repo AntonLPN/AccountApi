@@ -10,6 +10,7 @@ using Account.Application.Features.Account.ProvidersRegister;
 using Account.Application.Features.Account.Register;
 using Account.Domain.Enums;
 using AccountApi.Authorization;
+using AccountApi.Extensions;
 using AccountApi.Helpers;
 using AccountApi.Models.RequestModels;
 using AccountApi.Models.ResponseModels;
@@ -30,25 +31,27 @@ public class AuthController(IMediator mediator) : ControllerBase
     [HttpPost("register")]
     [ProducesResponseType(typeof(RegisterUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Register([FromBody] RegisterModelRequest model)
     {
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers.UserAgent.ToString();
 
         var regCmd = new RegisterCommand(AuthProvider.LocalProvider,
-            model.Email, false, 
+            model.Email, false,
             model.Password,
             model.Name,
             model.Surname,
             model.ReferralCode,
-            ipAddress, 
-            userAgent, 
+            ipAddress,
+            userAgent,
             model.PhoneNumber,
             model.Metadata);
         var res = await mediator.Send(regCmd);
-        if (!res.IsSuccess)
-            return BadRequest(res.Errors);
-        return Ok(res.Value);
+        if (res.IsSuccess)
+            return Ok(res.Value);
+
+        return this.HandleResult(res);
     }
 
     [MasterKeyOnly]
