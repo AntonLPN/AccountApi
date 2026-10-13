@@ -1,7 +1,7 @@
 using Account.Application.Features.Account.Authentication;
-using AccountApi.Helpers;
 using AccountApi.Models.RequestModels;
 using MediatR;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,7 +10,7 @@ namespace AccountApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-public class AuthenticationController(IMediator mediator) : ControllerBase
+public class AuthenticationController(IMediator mediator, IAntiforgery antiforgery) : ControllerBase
 {
     [AllowAnonymous]
     [HttpPost("refresh")]
@@ -20,16 +20,26 @@ public class AuthenticationController(IMediator mediator) : ControllerBase
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
-        
+
         var cmd = new AuthenticationCommand(model.RefreshToken);
         var res = await mediator.Send(cmd);
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
-        
+
         SetRefreshTokenCookie(res.Value.Token?.RefreshToken);
         return Ok(res.Value);
     }
+
     [AllowAnonymous]
+    [HttpGet("csrf")]
+    public IActionResult GetCsrfToken()
+    {
+        var tokens = antiforgery.GetAndStoreTokens(HttpContext);
+        return Ok(new { requestToken = tokens.RequestToken });
+    }
+
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
     [HttpPost("refresh-cookie")]
     public async Task<IActionResult> RefreshFromCookie()
     {
@@ -57,7 +67,7 @@ public class AuthenticationController(IMediator mediator) : ControllerBase
             expiresIn = token.ExpiresIn
         });
     }
-    
+
     private void SetRefreshTokenCookie(string? refreshToken)
     {
         if (string.IsNullOrEmpty(refreshToken))

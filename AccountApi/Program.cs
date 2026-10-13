@@ -25,6 +25,14 @@ builder.Services.AddLifeTimeServices();
 builder.Services.AddMediatorServices();
 builder.Services.AddObservabilityMetrics();
 builder.Services.AddCorsPolicy(builder.Configuration);
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.Name = "__Host-Antiforgery";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // нужен HTTPS
+});
 var mysqlConnectionString = builder.Configuration.GetSection("DbConfig").GetValue<string>("ConnectionString");
 builder.Services.AddHealthChecks()
 #pragma warning disable CS8604 // Possible null reference argument.
