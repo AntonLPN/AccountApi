@@ -27,7 +27,6 @@ namespace AccountApi.Controllers;
 public class AuthController(IMediator mediator) : ControllerBase
 {
     [AllowAnonymous]
-    //[MasterKeyOnly]
     [HttpPost("register")]
     [ProducesResponseType(typeof(RegisterUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -55,7 +54,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return this.HandleResult(res);
     }
 
-    [MasterKeyOnly]
+    [AllowAnonymous]
     [HttpPost("google-register")]
     [ProducesResponseType(typeof(ProviderRegisterResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -74,7 +73,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    [AuthorizeApiKeyAndMasterKey]
+    [AllowAnonymous]
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -94,7 +93,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    [MasterKeyOnly]
+    [AllowAnonymous]
     [HttpPost("google-login")]
     [ProducesResponseType(typeof(ProviderLoginResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -159,7 +158,6 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    [AuthorizeApiKeyOnly]
     [AllowAnonymous]
     [HttpPost("forgot-password")]
     [ProducesResponseType(typeof(ForgotPasswordResult), StatusCodes.Status200OK)]
@@ -175,7 +173,6 @@ public class AuthController(IMediator mediator) : ControllerBase
     }
 
     [PreAuthOnly]
-    [AllowAnonymous]
     [HttpPost("change-password")]
     [ProducesResponseType(typeof(ChangePasswordResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

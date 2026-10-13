@@ -70,24 +70,14 @@ public static class AuthenticationExtensions
 //                 };
 // #endif
             })
-            .AddScheme<ApiKeyAuthSchemeOptions, ApiKeyAuthHandler>(AuthPolicies.ApiKeyOnly, _ => { })
-            .AddScheme<MasterKeyAuthSchemeOptions, MasterKeyAuthHandler>(AuthPolicies.MasterKeyOnly, _ => { });
+            .AddScheme<ApiKeyAuthSchemeOptions, ApiKeyAuthHandler>(AuthPolicies.ApiKeyOnly, _ => { });
 
         services.AddAuthorizationBuilder()
             .AddPolicy(AuthPolicies.TokenOnly, policy => policy
                 .AddAuthenticationSchemes("Bearer")
                 .RequireAuthenticatedUser())
-            .AddPolicy(AuthPolicies.ApiKeyAndMasterKey, policy => policy
-                .AddAuthenticationSchemes(AuthPolicies.ApiKeyOnly, AuthPolicies.MasterKeyOnly)
-                .RequireAssertion(context =>
-                {
-                    return context.User.Identities.Any(i => i.IsAuthenticated);
-                }))
             .AddPolicy(AuthPolicies.ApiKeyOnly, policy => policy
                 .AddAuthenticationSchemes(AuthPolicies.ApiKeyOnly)
-                .RequireAuthenticatedUser())
-            .AddPolicy(AuthPolicies.MasterKeyOnly, policy => policy
-                .AddAuthenticationSchemes(AuthPolicies.MasterKeyOnly)
                 .RequireAuthenticatedUser())
             //for /verify-otp
             .AddPolicy(AuthPolicies.PreAuthOnly, policy => policy

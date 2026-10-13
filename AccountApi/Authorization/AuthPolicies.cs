@@ -7,32 +7,13 @@ public static class AuthPolicies
     public const string PreAuthOnly = "MfaPreAuthOnlyPolicy";
     public const string MfaRequired = "MfaRequiredPolicy";
     public const string ApiKeyOnly = "ApiKeyOnlyPolicy";
-    public const string MasterKeyOnly = "MasterKeyOnlyPolicy";
     public const string TokenOnly = "TokenOnlyPolicy";
-    public const string ApiKeyAndMasterKey = "ApiKeyAndMasterKeyPolicy";
-}
-
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public class AuthorizeApiKeyAndMasterKeyAttribute : AuthorizeAttribute
-{
-    public AuthorizeApiKeyAndMasterKeyAttribute() : base(AuthPolicies.ApiKeyAndMasterKey)
-    {
-    }   
 }
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public class AuthorizeJWTAttribute : AuthorizeAttribute
 {
     public AuthorizeJWTAttribute() : base(AuthPolicies.TokenOnly)
-    {
-        
-    }
-}
-
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public class MasterKeyOnlyAttribute : AuthorizeAttribute
-{
-    public MasterKeyOnlyAttribute() :base(AuthPolicies.MasterKeyOnly)
     {
         
     }

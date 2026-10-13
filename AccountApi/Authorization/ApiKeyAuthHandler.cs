@@ -2,7 +2,6 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using Account.Domain.Interfaces;
-using Account.Infrastructure.Configuration;
 using Account.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
@@ -19,13 +18,10 @@ public class ApiKeyAuthHandler(
     ILoggerFactory logger,
     UrlEncoder encoder,
     IDataCache dataCache,
-    IOptions<ApiKeyOptions> apiKeyOptions,
     AppDbContext dbContext,
     ICryptography cryptographyService)
     : AuthenticationHandler<ApiKeyAuthSchemeOptions>(options, logger, encoder)
 {
-    private readonly string _masterApiKey = apiKeyOptions.Value.Key;
-
     // ReSharper disable once NotAccessedPositionalProperty.Local
     private record CachedApiKeyInfo(string UserId, bool IsActive);
 
@@ -36,11 +32,6 @@ public class ApiKeyAuthHandler(
             return AuthenticateResult.NoResult();
 
         var apiKey = keyHeader.ToString();
-
-        if (!string.IsNullOrEmpty(_masterApiKey) && apiKey == _masterApiKey)
-        {
-            return AuthenticateResult.NoResult();
-        }
 
         if (!await IsAuthorizedAsync(apiKey))
             return AuthenticateResult.Fail("Invalid API key");
