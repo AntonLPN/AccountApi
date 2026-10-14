@@ -36,8 +36,10 @@
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "accessTokenLifespan": 900,
-  "ssoSessionIdleTimeout": 1800,
-  "ssoSessionMaxLifespan": 36000,
+  "ssoSessionIdleTimeout": 604800,
+  "ssoSessionMaxLifespan": 7776000,
+  "clientSessionIdleTimeout": 604800,
+  "clientSessionMaxLifespan": 7776000,
   "clients": [
     {
       "clientId": "account-api",

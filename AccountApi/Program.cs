@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddControllers();
+builder.Services.AddControllersWithViews();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -28,10 +28,18 @@ builder.Services.AddCorsPolicy(builder.Configuration);
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-CSRF-TOKEN";
-    options.Cookie.Name = "__Host-Antiforgery";
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Strict;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // нужен HTTPS
+    if (builder.Environment.IsDevelopment())
+    {
+        options.Cookie.Name = "AccountApi-Antiforgery";
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    }
+    else
+    {
+        options.Cookie.Name = "__Host-Antiforgery";
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    }
 });
 var mysqlConnectionString = builder.Configuration.GetSection("DbConfig").GetValue<string>("ConnectionString");
 builder.Services.AddHealthChecks()

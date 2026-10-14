@@ -74,7 +74,6 @@ public class AuthenticationController(IMediator mediator, IAntiforgery antiforge
             return;
         var cookieOptions = new CookieOptions
         {
-            //HttpOnly — защита от XSS (JS в браузере не имеет доступа к cookie)
             HttpOnly = true,
             Secure = Request.IsHttps,
             SameSite = SameSiteMode.Strict,
