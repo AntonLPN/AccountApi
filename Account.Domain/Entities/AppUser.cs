@@ -11,9 +11,9 @@ namespace Account.Domain.Entities;
 public class AppUser : AggregateRoot
 {
     [Key] public Guid Id { get; init; }
-    public string? Name { get; set; }
-    public string? Surname { get; set; }
-    public string? PhoneNumber { get; set; }//E.164
+    public string Name { get; set; } ="";
+    public string Surname { get; set; } = "";
+    public string PhoneNumber { get; set; } = ""; //E.164
     public string Email { get; init; } = "";
     public bool EmailConfirmed { get; set; }
     public bool IsTwoFactorEnabled { get; set; }
@@ -21,6 +21,7 @@ public class AppUser : AggregateRoot
     public string? PasswordHash { get; set; } = "";
 
     public string? ProviderName { get; set; } = "my-corporate-ad"; //Google, Aple, etc.
+    public string? MetadataJson { get; set; }
     public bool IsBlocked { get; set; }
     public DateTime CreatedAt { get; init; }
     public DateTime? LastLoginAt { get; set; }
@@ -63,6 +64,7 @@ public class AppUser : AggregateRoot
             ReferralCode = GenerateReadableCode(),
             ReferrerId = createParams.ReferrerId,
             ProviderName = createParams.ProviderName,
+            MetadataJson = createParams.Metadata?.ToJsonString(),
             EmailConfirmed = createParams.EmailConfirmed,
             EncryptedTwoFactorSecret = Convert.ToBase64String(KeyGeneration.GenerateRandomKey(20)),
             CreatedAt = DateTime.UtcNow

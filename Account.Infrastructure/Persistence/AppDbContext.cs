@@ -48,6 +48,7 @@ public class AppDbContext : DbContext
                 .IsRequired();
             entity.Property(e => e.ReferrerId).HasMaxLength(255).HasColumnName("ReferrerId").IsUnicode();
             entity.Property(e => e.ProviderName).HasMaxLength(60).HasColumnName("ProviderName").IsUnicode();
+            entity.Property(e => e.MetadataJson).HasColumnType("longtext").HasColumnName("MetadataJson");
             entity.Property(e => e.IsBlocked).HasColumnName("IsBlocked").HasDefaultValue(false);
             entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt");
             entity.Property(e => e.LastLoginAt).HasColumnName("LastLoginAt");

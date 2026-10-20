@@ -11,7 +11,7 @@ public sealed record AppUserCreateParams(
     string? IpAddress,
     string? UserAgent,
     bool EmailConfirmed = false,
-    string? Name = null,
-    string? Surname = null,
+    string Name = "",
+    string Surname = "",
     string? ProviderName = "my-corporate-ad",
     JsonObject? Metadata = null);

@@ -86,6 +86,7 @@ public class AccountController(IMediator mediator) : ControllerBase
     [ProducesResponseType<AccountInfoResult>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [HttpGet("get-account-info")]
     public async Task<IActionResult> GetAccountInfo()
     {

@@ -5,21 +5,20 @@ namespace Account.Application.Features.Account.AccountInfo;
 
 public class AccountInfoResult
 {
-    [Required] [JsonPropertyName("email")] public string Email { get; set; } = "";
+    [JsonPropertyName("email")] public string Email { get; set; } = "";
+    [JsonPropertyName("name")] public string Name { get; set; } = "";
+    [JsonPropertyName("surname")] public string Surname { get; set; } = "";
 
-    [Required]
-    [JsonPropertyName("emailConfirmed")]
-    public bool EmailConfirmed { get; set; }
+    [JsonPropertyName("emailConfirmed")] public bool EmailConfirmed { get; set; }
 
     [JsonPropertyName("referralCode")] public string? ReferralCode { get; set; } = "";
 
-    [Required]
     [JsonPropertyName("isTwoFactorEnabled")]
     public bool IsTwoFactorEnabled { get; set; }
 
-    [Required]
-    [JsonPropertyName("createdAt")]
-    public DateTime CreatedAt { get; set; }
+    [JsonPropertyName("createdAt")] public DateTime CreatedAt { get; set; }
 
     [JsonPropertyName("lastLoginAt")] public DateTime? LastLoginAt { get; set; }
+    [JsonPropertyName("type")] public string Type { get; set; } = "Role";
+    [JsonPropertyName("metadata")] public string Metadata { get; set; } = "";
 }
