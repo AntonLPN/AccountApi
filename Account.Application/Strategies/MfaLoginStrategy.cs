@@ -22,6 +22,7 @@ public class MfaLoginStrategy(
         return Result<LoginUserResult>.Success(new LoginUserResult
         {
             IsMfaRequired = true,
+            PendingToken = preAuthToken,
             Token = new TokenResponse
             {
                 AccessToken = preAuthToken,
