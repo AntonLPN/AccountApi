@@ -12,14 +12,11 @@ public class PreAuthTokenService(IOptions<AuthenticationOptions> authenticationO
     : IPreAuthTokenService
 {
     private const string KEY_NAME_PREFIX = "pending_token_";
+    private const int LIFE_TIME_TOKEN = 15; 
     public string GeneratePreAuthToken(string email)
     {
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(authenticationOptions.Value.PreAuth.SigningKey));
-        int lifeTime = 5;
-#if DEBUG
-        lifeTime = 60;
-#endif
         var claims = new[]
         {
             new Claim("email", email),
@@ -30,7 +27,7 @@ public class PreAuthTokenService(IOptions<AuthenticationOptions> authenticationO
             issuer: "account-api-preauth",
             audience: "account-api-preauth",
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(lifeTime), //TTL OTP
+            expires: DateTime.UtcNow.AddMinutes(LIFE_TIME_TOKEN), //TTL OTP
             signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

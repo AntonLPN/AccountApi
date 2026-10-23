@@ -1,6 +1,5 @@
 using System.Text;
 using AccountApi.Authorization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 
@@ -10,7 +9,7 @@ namespace AccountApi.Extensions;
 
 public static class AuthenticationExtensions
 {
-    private const string PRE_AUTH_SHEME = "PreAuth";
+    private const string PRE_AUTH_SCHEME = "PreAuth";
     private const string ISSUER_NAME = "account-api-preauth";
     private const string AUDIENCE_NAME = "account-api-preauth";
 
@@ -45,7 +44,7 @@ public static class AuthenticationExtensions
 // #endif
             })
             //PreAuth - second authentication scheme, for /verify-otp
-            .AddJwtBearer(PRE_AUTH_SHEME, options =>
+            .AddJwtBearer(PRE_AUTH_SCHEME, options =>
             {
                 options.MapInboundClaims = false;
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -81,7 +80,7 @@ public static class AuthenticationExtensions
                 .RequireAuthenticatedUser())
             //for /verify-otp
             .AddPolicy(AuthPolicies.PreAuthOnly, policy => policy
-                .AddAuthenticationSchemes(PRE_AUTH_SHEME)
+                .AddAuthenticationSchemes(PRE_AUTH_SCHEME)
                 .RequireAuthenticatedUser()
                 .RequireClaim("purpose",
                     "otp_pending"))

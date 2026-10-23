@@ -8,6 +8,7 @@ using Account.Application.Features.Account.OtpCodeVerification;
 using Account.Application.Features.Account.ProviderLogin;
 using Account.Application.Features.Account.ProvidersRegister;
 using Account.Application.Features.Account.Register;
+using Account.Application.Features.Account.ResendOtpCode;
 using Account.Domain.Enums;
 using AccountApi.Authorization;
 using AccountApi.Extensions;
@@ -156,6 +157,21 @@ public class AuthController(IMediator mediator) : ControllerBase
             return BadRequest(res.Errors);
 
         return Ok(res.Value);
+    }
+
+    [PreAuthOnly]
+    [HttpPost("otp-code-resend")]
+    [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [EnableRateLimiting(RateLimiterPolices.VerifyOtpPolicy)]
+    public async Task<IActionResult> ResendOtpCode()
+    {
+        var emailClaim = User.FindFirst("email")?.Value;
+        if (string.IsNullOrWhiteSpace(emailClaim))
+            return BadRequest("User not found");
+
+        var res = await mediator.Send(new ResendOtpCodeCommand(emailClaim));
+        return this.HandleResult(res);
     }
 
     [AllowAnonymous]
