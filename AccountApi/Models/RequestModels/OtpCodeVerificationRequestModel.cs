@@ -9,7 +9,4 @@ public class OtpCodeVerificationRequestModel
     [JsonPropertyName("otpCode")]
     public required string OtpCode { get; set; }
     
-    [Required(ErrorMessage = "PendingToken is required.")]
-    [JsonPropertyName("pendingToken")]
-    public required string PendingToken { get; set; }
 }
