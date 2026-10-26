@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Account.Domain.Entities;
 using Account.Domain.Models;
 
 namespace Account.Application.Features.Account.Models;

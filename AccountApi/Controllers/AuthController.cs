@@ -9,6 +9,7 @@ using Account.Application.Features.Account.ProviderLogin;
 using Account.Application.Features.Account.ProvidersRegister;
 using Account.Application.Features.Account.Register;
 using Account.Application.Features.Account.ResendOtpCode;
+using Account.Application.Features.SendOtpCode;
 using Account.Domain.Enums;
 using AccountApi.Authorization;
 using AccountApi.Extensions;
@@ -174,22 +175,33 @@ public class AuthController(IMediator mediator) : ControllerBase
         var res = await mediator.Send(new ResendOtpCodeCommand(emailClaim));
         return this.HandleResult(res);
     }
+    
+    [AllowAnonymous]
+    [HttpPost("request-otp-code")]
+    [ProducesResponseType(typeof(GenerateOtpCodeResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GenerateOtpCode([FromBody] GenerateOtpCodeRequestModel model)
+    {
+        var res = await mediator.Send(new GenerateOtpCodeCommand(model.Email));
+        return this.HandleResult(res);
+    }
 
+    //flow forgot-password (generate otp under the hood)-> otp-code-verification->change-password
     [AllowAnonymous]
     [HttpPost("forgot-password")]
     [ProducesResponseType(typeof(ForgotPasswordResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestModel model)
     {
-        var cmd = new ForgotPasswordCommand(model.Email);
-        var res = await mediator.Send(cmd);
+        var forgotPasswordCommand = new ForgotPasswordCommand(model.Email);
+        var res = await mediator.Send(forgotPasswordCommand);
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
 
         return Ok(res.Value);
     }
 
-    [PreAuthOnly]
+    [AuthorizeJWT]
     [HttpPost("change-password")]
     [ProducesResponseType(typeof(ChangePasswordResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

@@ -1,11 +1,10 @@
-using Account.Application.Features.Account.Login;
 using Account.Application.Interfaces;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
 using Ardalis.Result;
 
-namespace Account.Application.Strategies;
+namespace Account.Application.Features.Account.Login.Strategies;
 
 public class StandardLoginStrategy(
     IAuthService authService,

@@ -1,4 +1,3 @@
-using Account.Application.Features.Account.Login;
 using Account.Application.Interfaces;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
@@ -6,7 +5,7 @@ using Account.Domain.Models;
 using Account.Domain.ValueObjects;
 using Ardalis.Result;
 
-namespace Account.Application.Strategies;
+namespace Account.Application.Features.Account.Login.Strategies;
 
 public class MfaLoginStrategy(
     IPreAuthTokenService preAuthTokenService,

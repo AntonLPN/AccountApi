@@ -1,7 +1,7 @@
+using Account.Application.Features.Account.Login.Strategies;
 using Account.Application.Features.Account.ProvidersRegister;
 using Account.Application.Features.Account.Register;
 using Account.Application.Interfaces;
-using Account.Application.Strategies;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Account.Application.Extensions;
