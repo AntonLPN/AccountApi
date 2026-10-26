@@ -215,7 +215,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(res.Value);
     }
 
-    [Authorize]
+    [AuthorizeJWT]
     [HttpPost("create-api-key")]
     [ProducesResponseType(typeof(CreateApiKeyResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -235,7 +235,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         });
     }
 
-    [Authorize]
+    [AuthorizeJWT]
     [HttpPost("delete-api-key")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
