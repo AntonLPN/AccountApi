@@ -162,6 +162,26 @@ public class AuthController(IMediator mediator) : ControllerBase
     }
 
     [PreAuthOnly]
+    [HttpPost("change-password-otp-code-verification")]
+    [ProducesResponseType(typeof(OtpConfirmationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [EnableRateLimiting(RateLimiterPolices.VerifyOtpPolicy)]
+    public async Task<IActionResult> ChangePasswordOtpCodeVerification([FromBody] OtpCodeVerificationRequestModel model)
+    {
+        var emailClaim = User.FindFirst("email")?.Value;
+        if (string.IsNullOrWhiteSpace(emailClaim))
+            return BadRequest("User not found");
+
+        var cmd = new OtpCodeVerificationCommand(emailClaim, model.OtpCode);
+        var res = await mediator.Send(cmd);
+        if (!res.IsSuccess)
+            return BadRequest(res.Errors);
+        
+        res.Value?.Token?.RefreshToken = null;
+        return Ok(res.Value);
+    }
+
+    [PreAuthOnly]
     [HttpPost("otp-code-resend")]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -175,7 +195,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         var res = await mediator.Send(new ResendOtpCodeCommand(emailClaim));
         return this.HandleResult(res);
     }
-    
+
     [AllowAnonymous]
     [HttpPost("request-otp-code")]
     [ProducesResponseType(typeof(GenerateOtpCodeResult), StatusCodes.Status200OK)]

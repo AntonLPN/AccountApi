@@ -12,5 +12,5 @@ public class GenerateOtpCodeRequestModel
     [MinLength(5)]
     [RegularExpression(@"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$", ErrorMessage = "Email is not valid")]
     [JsonPropertyName("email")]
-    public string Email { get; set; }
+    public string Email { get; set; } = "";
 }
