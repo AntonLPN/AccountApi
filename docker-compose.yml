@@ -146,9 +146,8 @@ services:
   #      Messaging__RabbitMq__Host: "rabbitmq"
   #      RABBITMQ_HOST: "rabbitmq"
   #      ConnectionStrings__Redis: "redis:6379"
-  #      # Настройка Serilog внутри Docker (отправка логов на контейнер dev-seq)
-  #      Serilog__WriteTo__0__Name: "Seq"
-  #      Serilog__WriteTo__0__Args__serverUrl: "http://seq:5341"
+  #      # Отправка логов в общий Seq
+  #      Seq__ServerUrl: "http://seq:5341"
   #    ports:
   #      - "5001:8080"
   #    depends_on:
@@ -160,35 +159,7 @@ services:
   #        condition: service_healthy
   #    networks:
   #      - account-net
-
-  # ---------------------------------------------------------------------------
-  # Prometheus
-  # ---------------------------------------------------------------------------
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: account-prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus-data:/prometheus
-    networks:
-      - account-net
-
-  # ---------------------------------------------------------------------------
-  # Grafana
-  # ---------------------------------------------------------------------------
-  grafana:
-    image: grafana/grafana-oss:latest
-    container_name: account-grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
-    depends_on:
-      - prometheus
-    networks:
-      - account-net
+  #      - observability-net
 
   # ---------------------------------------------------------------------------
   # Papercut (SMTP Dev Server)
@@ -204,30 +175,15 @@ services:
     networks:
       - account-net
 
-  # ---------------------------------------------------------------------------
-  # Seq (Log aggregation)
-  # UI: http://localhost:8081
-  # ---------------------------------------------------------------------------
-  seq:
-    image: datalust/seq:latest
-    container_name: dev-seq
-    environment:
-      - ACCEPT_EULA=Y
-      - SEQ_FIRSTRUN_NOAUTHENTICATION=true
-    ports:
-      - "5341:5341" # Вход для Serilog
-      - "8081:80"   # Веб-интерфейс Seq
-    networks:
-      - account-net
-
 networks:
   account-net:
     driver: bridge
+  observability-net:
+    external: true
+    name: observability-net
 
 volumes:
   keycloak-db-data:
   redis-data:
   rabbitmq-data:
   mysql-data:
-  grafana-data:
-  prometheus-data:

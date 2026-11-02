@@ -9,4 +9,4 @@ scrape_configs:
 
   - job_name: 'account-api'
     static_configs:
-      - targets: ['api:5001']  # 5001 is the port exposed by the account-api container
+      - targets: ['api:8080']  # Use the service DNS name and container port on observability-net.
