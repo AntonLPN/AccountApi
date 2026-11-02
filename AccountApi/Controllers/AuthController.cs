@@ -206,7 +206,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return this.HandleResult(res);
     }
 
-    //flow forgot-password (generate otp under the hood)-> otp-code-verification->change-password
+    //flow forgot-password (generate otp under the hood)-> change-password-otp-code-verification ->change-password
     [AllowAnonymous]
     [HttpPost("forgot-password")]
     [ProducesResponseType(typeof(ForgotPasswordResult), StatusCodes.Status200OK)]
