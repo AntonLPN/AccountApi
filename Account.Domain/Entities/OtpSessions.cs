@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Account.Domain.Models;
 using Ardalis.GuardClauses;
-using Ardalis.Result;
 
 namespace Account.Domain.Entities;
 
@@ -17,7 +16,9 @@ public class OtpSessions : AggregateRoot
     public DateTime? InvalidatedAt { get; set; }
 
     public required Guid UserId { get; set; }
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     [ForeignKey(nameof(UserId))] public AppUser AppUser { get; set; }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
     public static OtpSessions Create(OtpSessionCreateParams createParams)
     {
