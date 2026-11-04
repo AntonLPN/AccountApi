@@ -66,6 +66,24 @@ services:
       - seq-data:/data
     networks:
       - observability-net
+  # ---------------------------------------------------------------------------
+  # Redis
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: [ "redis-server", "--appendonly", "yes" ]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - observability-net
 
 networks:
   observability-net:
@@ -77,3 +95,4 @@ volumes:
   prometheus-data:
   grafana-data:
   seq-data:
+  redis-data:
