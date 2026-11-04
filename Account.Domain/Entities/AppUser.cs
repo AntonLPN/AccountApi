@@ -24,6 +24,7 @@ public class AppUser : AggregateRoot
     public string? MetadataJson { get; set; }
     public bool IsBlocked { get; set; }
     public DateTime CreatedAt { get; init; }
+    public DateTime? FirstLoginAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
     public DateTime? LastLogoutAt { get; set; }
 
@@ -118,6 +119,15 @@ public class AppUser : AggregateRoot
     public void RecordLogin(string? ipAddress, string? userAgent)
     {
         EnsureActiveAccount();
+        // Отлавливаем самый первый вход: если LastLoginAt еще null
+        //TODO
+        // if (LastLoginAt == null)
+        // {
+        //     FirstLoginAt = now;
+        //     
+        //     // Генерируем доменное событие первого входа
+        //     AddDomainEvent(new UserFirstLoggedInDomainEvent(Id, Email, ipAddress, userAgent));
+        // }
         LastLoginAt = DateTime.UtcNow;
         AddDomainEvent(new UserLoggedInDomainEvent(Id, Email, ipAddress, userAgent));
     }

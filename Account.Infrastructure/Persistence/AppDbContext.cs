@@ -51,6 +51,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.MetadataJson).HasColumnType("longtext").HasColumnName("MetadataJson");
             entity.Property(e => e.IsBlocked).HasColumnName("IsBlocked").HasDefaultValue(false);
             entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt");
+            entity.Property(e => e.FirstLoginAt).HasColumnName("FirstLoginAt");
             entity.Property(e => e.LastLoginAt).HasColumnName("LastLoginAt");
             entity.Property(e => e.LastLogoutAt).HasColumnName("LastLogoutAt");
             entity.Property(e => e.IsDeleted).HasColumnName("IsDeleted").HasDefaultValue(false);
