@@ -8,7 +8,7 @@
 
     <ItemGroup>
       <PackageReference Include="Ardalis.Result.AspNetCore" Version="10.1.0" />
-      <PackageReference Include="Ardalis.SharedKernel" Version="3.0.1" />
+      <PackageReference Include="Ardalis.SharedKernel" Version="2.1.1" />
       <PackageReference Include="Ardalis.Specification" Version="9.3.1" />
       <PackageReference Include="AutoMapper" Version="16.1.1" />
       <PackageReference Include="libphonenumber-csharp" Version="9.0.40" />
