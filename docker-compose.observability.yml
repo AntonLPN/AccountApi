@@ -47,9 +47,10 @@ services:
       - "3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./deploy/grafana/provisioning/datasources/prometheus.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
+      - ./deploy/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
     depends_on:
       - prometheus
+      - tempo
     networks:
       - observability-net
 
@@ -66,6 +67,21 @@ services:
       - seq-data:/data
     networks:
       - observability-net
+
+  tempo:
+    image: grafana/tempo:2.7.2
+    restart: unless-stopped
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./deploy/tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    networks:
+      - observability-net
+
   # ---------------------------------------------------------------------------
   # Redis
   # ---------------------------------------------------------------------------
@@ -117,5 +133,6 @@ volumes:
   prometheus-data:
   grafana-data:
   seq-data:
+  tempo-data:
   redis-data:
   rabbitmq-data:

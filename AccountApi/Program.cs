@@ -23,7 +23,7 @@ builder.Services.AddMassTransitMessaging(builder.Configuration);
 builder.Services.AddRedis(builder.Configuration);
 builder.Services.AddLifeTimeServices();
 builder.Services.AddMediatorServices();
-builder.Services.AddObservabilityMetrics();
+builder.Services.AddObservabilityMetrics(builder.Configuration);
 builder.Services.AddCorsPolicy(builder.Configuration);
 builder.Services.AddAntiforgery(options =>
 {
