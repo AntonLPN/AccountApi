@@ -25,7 +25,14 @@ public static class MassTransitExtensions
                 o.UseBusOutbox();
                 o.QueryDelay = TimeSpan.FromSeconds(5);
                 o.QueryTimeout = TimeSpan.FromSeconds(30);
+                o.DuplicateDetectionWindow = TimeSpan.FromDays(7);
             });
+
+            x.AddConfigureEndpointsCallback((context, _, endpoint) =>
+            {
+                endpoint.UseEntityFrameworkOutbox<AppDbContext>(context);
+            });
+
             var useRabbit = configuration.GetValue<bool>("Messaging:UseRabbitMq");
             if (useRabbit)
             {
@@ -52,25 +59,6 @@ public static class MassTransitExtensions
                     });
 
                     cfg.ConfigureEndpoints(context); //important for saga
-                });
-            }
-            else //for debug only if not use RabbitMq
-            {
-                x.UsingInMemory((context, cfg) =>
-                {
-                    cfg.UseMessageRetry(r =>
-                    {
-                        r.Handle<TimeoutException>();
-                        r.Handle<HttpRequestException>();
-                        r.Interval(3, TimeSpan.FromSeconds(5));
-                    });
-
-                    cfg.UseDelayedRedelivery(r => r.Intervals(
-                        TimeSpan.FromMinutes(1),
-                        TimeSpan.FromMinutes(5),
-                        TimeSpan.FromMinutes(15)));
-
-                    cfg.ConfigureEndpoints(context);
                 });
             }
         });
