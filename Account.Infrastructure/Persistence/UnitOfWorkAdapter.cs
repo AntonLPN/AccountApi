@@ -1,7 +1,6 @@
 using Account.Domain;
 using Account.Domain.Interfaces;
 using Account.Domain.Repositories;
-using MediatR;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Account.Infrastructure.Persistence;

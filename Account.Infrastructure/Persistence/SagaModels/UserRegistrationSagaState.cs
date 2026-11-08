@@ -1,4 +1,3 @@
-using System;
 using MassTransit;
 
 namespace Account.Infrastructure.Persistence.SagaModels;
@@ -11,6 +10,7 @@ public class UserRegistrationSagaState : SagaStateMachineInstance, ISagaVersion
 
     public Guid UserId { get; set; } 
     public string Email { get; set; } = "";
+    public string ? PhoneNumber{ get; set; }
     public string? MetadataJson { get; set; }
 
     public string ApiKey { get; set; } = "";

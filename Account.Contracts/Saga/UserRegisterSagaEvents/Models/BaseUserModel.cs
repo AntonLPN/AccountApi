@@ -7,5 +7,6 @@ public class BaseUserModel
     public Guid CorrelationId  { get; init; }
     public Guid UserId  { get; init; } 
     public string Email  { get; init; } = null!;
+    public string? PhoneNumber { get; set; }
     public JsonObject? Metadata { get; init; }
 }

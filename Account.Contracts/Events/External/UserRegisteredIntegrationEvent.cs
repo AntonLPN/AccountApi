@@ -10,10 +10,11 @@ public class UserRegisteredIntegrationEvent
 {
     public Guid CorrelationId { get; set; }
     public Guid? UserId { get; init; }
-    public string? Email { get; init; }
-    public string? ApiKey { get; init; }
-    public string? ReferralCode { get; set; }
-    public bool IsActive { get; set; }
-    public bool EmailConfirmed { get; set; }
+    public string Email { get; init; } = "";
+    public string? PhoneNumber { get; set; }
+    public bool IsEmailConfirmed { get; set; }
+    public string? Name { get; set; }
+    public string? Surname { get; set; }
+    
     public JsonObject? Metadata { get; init; }
 }

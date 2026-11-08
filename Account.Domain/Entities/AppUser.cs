@@ -11,7 +11,7 @@ namespace Account.Domain.Entities;
 public class AppUser : AggregateRoot
 {
     [Key] public Guid Id { get; init; }
-    public string Name { get; set; } ="";
+    public string Name { get; set; } = "";
     public string Surname { get; set; } = "";
     public string PhoneNumber { get; set; } = ""; //E.164
     public string Email { get; init; } = "";
@@ -70,7 +70,16 @@ public class AppUser : AggregateRoot
             EncryptedTwoFactorSecret = Convert.ToBase64String(KeyGeneration.GenerateRandomKey(20)),
             CreatedAt = DateTime.UtcNow
         };
-        user.AddDomainEvent(new UserCreatedDomainEvent(user.Id, user.Email, createParams.IpAddress,
+        user.AddDomainEvent(new UserCreatedDomainEvent(
+            user.Id, 
+            user.Email, 
+            user.PhoneNumber,
+            user.EmailConfirmed,
+            user.Name,
+            user.Surname,
+            
+            
+            createParams.IpAddress,
             createParams.UserAgent, createParams.Metadata));
         return user;
     }

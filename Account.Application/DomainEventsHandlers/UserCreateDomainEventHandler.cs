@@ -31,6 +31,11 @@ public class UserCreateDomainEventHandler(
             CorrelationId = Guid.NewGuid(),
             UserId = notification.UserId,
             Email = notification.Email,
+            IsEmailConfirmed = notification.IsEmailConfirmed,
+            PhoneNumber = notification.PhoneNumber,
+            Name = notification.Name,
+            Surname = notification.Surname,
+            
             Metadata = notification.Metadata?.DeepClone() as JsonObject
         }, cancellationToken);
     }

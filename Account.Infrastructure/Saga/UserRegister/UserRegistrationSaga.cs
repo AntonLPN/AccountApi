@@ -59,7 +59,10 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                         CorrelationId = context.Saga.CorrelationId,
                         UserId = context.Saga.UserId,
                         Email = context.Saga.Email,
-                        ApiKey = context.Saga.ApiKey,
+                        PhoneNumber = context.Saga.PhoneNumber,
+                        IsEmailConfirmed = context.Message.IsEmailConfirmed,
+                        Name = context.Message.Name,
+                        Surname = context.Message.Surname,
                         Metadata = ReadMetadata(context.Saga.MetadataJson)
                     })
                 .TransitionTo(AwaitingWelcomeEmailSent));

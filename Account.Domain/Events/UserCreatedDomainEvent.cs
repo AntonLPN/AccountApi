@@ -7,6 +7,13 @@ public sealed class UserCreatedDomainEvent : INotification
 {
     public Guid UserId { get; }
     public string Email { get; }
+    public string? PhoneNumber { get; }
+    public bool IsEmailConfirmed { get; }
+    public string? Name { get; }
+    public string? Surname { get; }
+    
+    
+
     public string? IpAddress { get; }
     public string? UserAgent { get; }
     public JsonObject? Metadata { get; }
@@ -14,6 +21,11 @@ public sealed class UserCreatedDomainEvent : INotification
     public UserCreatedDomainEvent(
         Guid userId,
         string email,
+        string? phoneNumber,
+        bool isEmailConfirmed,
+        string? name,
+        string? surname,
+        
         string? ipAddress,
         string? userAgent,
         JsonObject? metadata = null)
@@ -23,5 +35,9 @@ public sealed class UserCreatedDomainEvent : INotification
         IpAddress = ipAddress;
         UserAgent = userAgent;
         Metadata = metadata;
+        PhoneNumber = phoneNumber;
+        IsEmailConfirmed = isEmailConfirmed;
+        Name = name;
+        Surname = surname;
     }
 }
