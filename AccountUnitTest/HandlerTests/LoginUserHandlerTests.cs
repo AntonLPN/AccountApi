@@ -113,7 +113,7 @@ public class LoginUserHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenNoStrategyMatches_ThrowsInvalidOperationException()
+    public async Task Handle_WhenNoStrategyMatches_ReturnsError()
     {
         var sut = CreateSut(_standardStrategy.Object, _mfaStrategy.Object);
         var cmd = CreateCommand();
@@ -123,9 +123,11 @@ public class LoginUserHandlerTests
         _standardStrategy.Setup(x => x.CanHandle(user)).Returns(false);
         _mfaStrategy.Setup(x => x.CanHandle(user)).Returns(false);
 
-        // First() без совпадений бросает InvalidOperationException — фиксируем текущее поведение.
-        // Если заменишь First на FirstOrDefault + явную бизнес-ошибку — обнови этот тест соответственно.
-        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.Handle(cmd, CancellationToken.None));
+        var result = await sut.Handle(cmd, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.Error, result.Status);
+        Assert.Contains("No login strategy available for this user", result.Errors);
     }
 
     [Fact]
