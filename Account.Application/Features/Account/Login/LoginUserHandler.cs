@@ -17,12 +17,13 @@ public class LoginUserHandler(
         var normalizedEmail = Email.Create(request.Email);
         var user = await userRepository.FirstOrDefaultAsync(
             new UserByEmailWithAuthorizedApiKeysSpec(normalizedEmail), cancellationToken);
-        
+
         if (user is null)
             return Result<LoginUserResult>.NotFound("User not found");
-        var strategy = loginStrategies.First(s => s.CanHandle(user));
+        var strategy = loginStrategies.FirstOrDefault(s => s.CanHandle(user));
+        if (strategy is null)
+            return Result<LoginUserResult>.Error("No login strategy available for this user");
+
         return await strategy.HandleAsync(user, request, cancellationToken);
-        
     }
-    
 }
