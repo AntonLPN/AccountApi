@@ -5,7 +5,7 @@ namespace AccountApi.Extensions;
 
 public static class HandlerResultExtensions
 {
-    public static IActionResult HandleResult<T>(
+    public static IActionResult HandleErrorResult<T>(
         this ControllerBase controller,
         Result<T> result)
     {

@@ -52,7 +52,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         if (res.IsSuccess)
             return Ok(res.Value);
 
-        return this.HandleResult(res);
+        return this.HandleErrorResult(res);
     }
 
     [AllowAnonymous]
@@ -192,7 +192,7 @@ public class AuthController(IMediator mediator) : ControllerBase
             return BadRequest("User not found");
 
         var res = await mediator.Send(new ResendOtpCodeCommand(emailClaim));
-        return this.HandleResult(res);
+        return this.HandleErrorResult(res);
     }
 
     [AllowAnonymous]
@@ -202,7 +202,7 @@ public class AuthController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GenerateOtpCode([FromBody] GenerateOtpCodeRequestModel model)
     {
         var res = await mediator.Send(new GenerateOtpCodeCommand(model.Email));
-        return this.HandleResult(res);
+        return this.HandleErrorResult(res);
     }
 
     //flow forgot-password (generate otp under the hood)-> change-password-otp-code-verification ->change-password

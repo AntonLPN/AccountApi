@@ -19,19 +19,29 @@ public class RegisterUserHandler(
     {
         logger.LogInformation("Registering user: {Email}", MaskedEmail.Create(request.Email));
         var normalizedEmail = Email.Create(request.Email);
-        var existing = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(normalizedEmail), ct);
-        if (existing is not null)
-            return Result<RegisterUserResult>.Conflict("User already exists");
+        try
+        {
+            var existing = await userRepository.FirstOrDefaultAsync(new UserByEmailSpec(normalizedEmail), ct);
+            if (existing is not null)
+                return Result<RegisterUserResult>.Conflict("User already exists");
 
-        var phoneE164 = Phone.TryNormalize(request.PhoneNumber, out var normalizedPhone) ? normalizedPhone : null;
-        if (phoneE164 is not null && await userRepository.AnyAsync(new UserByPhoneSpec(phoneE164), ct))
-            return Result<RegisterUserResult>.Conflict("Phone number already exists");
+            var phoneE164 = Phone.TryNormalize(request.PhoneNumber, out var normalizedPhone) ? normalizedPhone : null;
+            if (phoneE164 is not null && await userRepository.AnyAsync(new UserByPhoneSpec(phoneE164), ct))
+                return Result<RegisterUserResult>.Conflict("Phone number already exists");
 
-        Result<string> keycloakResult = await userAccountService.RegisterUserAsync(normalizedEmail, request.Password);
-        if (!keycloakResult.IsSuccess)
-            return Result<RegisterUserResult>.Error(
-                keycloakResult.Errors.FirstOrDefault() ?? "Registration failed");
+            Result<string> keycloakResult = await userAccountService.RegisterUserAsync(normalizedEmail, request.Password);
+            if (!keycloakResult.IsSuccess)
+                return Result<RegisterUserResult>.Error(
+                    keycloakResult.Errors.FirstOrDefault() ?? "Registration failed");
+            return await coordinator.RegisterAsync(new UserCoordinatorParams(request, keycloakResult.Value), ct);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error occurred while registering user: {Email}", MaskedEmail.Create(request.Email));
+            throw;
+        }
+     
 
-        return await coordinator.RegisterAsync(new UserCoordinatorParams(request, keycloakResult.Value), ct);
+    
     }
 }
