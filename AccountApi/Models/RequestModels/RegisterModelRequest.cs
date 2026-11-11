@@ -28,5 +28,4 @@ public sealed class RegisterModelRequest
     public required string Password { get; set; }
 
     [JsonPropertyName("referralCode")] public string? ReferralCode { get; set; }
-    [JsonPropertyName("metadata")] public JsonObject? Metadata { get; set; }
 }

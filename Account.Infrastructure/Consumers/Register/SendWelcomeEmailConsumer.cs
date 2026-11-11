@@ -20,7 +20,6 @@ public class SendWelcomeEmailConsumer(ILogger<SendWelcomeEmailConsumer> logger, 
                 CorrelationId = context.Message.CorrelationId,
                 UserId = context.Message.UserId,
                 FailureReason = "Failed to send welcome email",
-                Metadata = context.Message.Metadata?.DeepClone() as System.Text.Json.Nodes.JsonObject
             });
             return;
         }
@@ -33,7 +32,6 @@ public class SendWelcomeEmailConsumer(ILogger<SendWelcomeEmailConsumer> logger, 
             CorrelationId = context.Message.CorrelationId,
             UserId = context.Message.UserId,
             Email = context.Message.Email,
-            Metadata = context.Message.Metadata?.DeepClone() as System.Text.Json.Nodes.JsonObject
         });
     }
 }

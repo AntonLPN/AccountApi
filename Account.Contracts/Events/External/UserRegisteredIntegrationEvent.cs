@@ -16,5 +16,4 @@ public class UserRegisteredIntegrationEvent
     public string? Name { get; set; }
     public string? Surname { get; set; }
     
-    public JsonObject? Metadata { get; init; }
 }

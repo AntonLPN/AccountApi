@@ -27,7 +27,6 @@ public class AccountInfoHandler(ILogger<AccountInfoHandler> logger, IRepository<
             var result = new AccountInfoResult
             {
                 Email = user.Email,
-                Type = GetTypeFromMetadata(user.MetadataJson),
                 Name = user.Name,
                 Surname = user.Surname,
                 EmailConfirmed = user.EmailConfirmed,
@@ -35,7 +34,6 @@ public class AccountInfoHandler(ILogger<AccountInfoHandler> logger, IRepository<
                 IsTwoFactorEnabled = user.IsTwoFactorEnabled,
                 CreatedAt = user.CreatedAt,
                 LastLoginAt = user.LastLoginAt,
-                Metadata = user.MetadataJson ?? ""
             };
 
             return Result<AccountInfoResult>.Success(result);

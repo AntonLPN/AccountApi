@@ -1,5 +1,10 @@
 namespace Account.Infrastructure.Configuration;
 
+/// <summary>
+/// Represents the configuration options for authentication in the application.For keycloak,
+/// the configuration is typically provided in the appsettings.json file under the "Authentication" section.
+/// The options include settings for authentication schemes and pre-authentication.
+/// </summary>
 public class AuthenticationOptions
 {
     public const string SectionName = "Authentication";

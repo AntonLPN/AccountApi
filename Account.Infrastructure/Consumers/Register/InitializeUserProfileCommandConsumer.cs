@@ -20,7 +20,6 @@ public class InitializeUserProfileCommandConsumer(
             CorrelationId = context.Message.CorrelationId,
             UserId = context.Message.UserId,
             Email = context.Message.Email,
-            Metadata = context.Message.Metadata?.DeepClone() as System.Text.Json.Nodes.JsonObject
         });
         logger.LogInformation(
             "Profile initialized successfully for UserId={UserId}", context.Message.UserId);

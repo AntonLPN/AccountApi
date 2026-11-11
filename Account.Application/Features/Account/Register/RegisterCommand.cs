@@ -16,6 +16,5 @@ public record RegisterCommand(
     string? ReferrerCode,
     string? IpAddress,
     string? UserAgent,
-    string PhoneNumber,
-    JsonObject? Metadata)
+    string PhoneNumber)
     : ICommand<Result<RegisterUserResult>>;

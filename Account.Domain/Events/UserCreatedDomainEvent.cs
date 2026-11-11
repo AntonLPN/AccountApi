@@ -16,7 +16,6 @@ public sealed class UserCreatedDomainEvent : INotification
 
     public string? IpAddress { get; }
     public string? UserAgent { get; }
-    public JsonObject? Metadata { get; }
 
     public UserCreatedDomainEvent(
         Guid userId,
@@ -34,7 +33,6 @@ public sealed class UserCreatedDomainEvent : INotification
         Email = email;
         IpAddress = ipAddress;
         UserAgent = userAgent;
-        Metadata = metadata;
         PhoneNumber = phoneNumber;
         IsEmailConfirmed = isEmailConfirmed;
         Name = name;

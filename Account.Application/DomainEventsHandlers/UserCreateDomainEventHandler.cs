@@ -15,7 +15,6 @@ public class UserCreateDomainEventHandler(
 {
     public async Task Handle(UserCreatedDomainEvent notification, CancellationToken cancellationToken)
     {
-    
         await loginAuditRepository.AddAsync(LoginAudit.Create(new CreateLoginAuditParams
         {
             UserId = notification.UserId,
@@ -23,7 +22,6 @@ public class UserCreateDomainEventHandler(
             IpAddress = notification.IpAddress,
             UserAgent = notification.UserAgent,
             LoggedInAt = DateTime.UtcNow,
-            
         }), cancellationToken);
 
         await publisher.AddOutboxEventAsync(new UserRegisterSagaStartedIntegrationEvent()
@@ -35,8 +33,6 @@ public class UserCreateDomainEventHandler(
             PhoneNumber = notification.PhoneNumber,
             Name = notification.Name,
             Surname = notification.Surname,
-            
-            Metadata = notification.Metadata?.DeepClone() as JsonObject
         }, cancellationToken);
     }
 }

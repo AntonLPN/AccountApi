@@ -34,7 +34,7 @@ public class RegisterUserHandlerTests
         string? surname = "TestSurname",
         string phone = "+30961112233",
         JsonObject? metadata = null)
-        => new(provider, email, emailConfirmed, password, name, surname, referrerCode, ipAddress, userAgent, phone, metadata);
+        => new(provider, email, emailConfirmed, password, name, surname, referrerCode, ipAddress, userAgent, phone);
 
     private void SetupUserByEmail(AppUser? user)
         => _userRepository

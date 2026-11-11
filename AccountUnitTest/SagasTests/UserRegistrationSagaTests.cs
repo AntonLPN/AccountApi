@@ -85,7 +85,6 @@ public class UserRegistrationSagaTests : IAsyncLifetime
             CorrelationId = correlationId,
             UserId = userId,
             Email = "metadata@example.com",
-            Metadata = metadata
         }, cancellationToken: CancellationToken.None);
 
         var sagaHarness = _harness.GetSagaStateMachineHarness<UserRegistrationSaga, UserRegistrationSagaState>();
@@ -93,17 +92,7 @@ public class UserRegistrationSagaTests : IAsyncLifetime
             .Select(x => x.CorrelationId == correlationId, TestContext.Current.CancellationToken)
             .FirstOrDefault();
 
-        (await _harness.Published.Any<SendWelcomeEmailIntegrationCommand>(
-                x => x.Context.Message.Metadata?["source"]?.GetValue<string>() == "registration-form",
-                TestContext.Current.CancellationToken))
-            .Should().BeTrue();
-        (await _harness.Published.Any<UserRegisteredIntegrationEvent>(
-                x => x.Context.Message.Metadata?["campaign"]?.GetValue<string>() == "autumn",
-                TestContext.Current.CancellationToken))
-            .Should().BeTrue();
-
         instance.Should().NotBeNull();
-        instance!.Saga.MetadataJson.Should().Be(metadata.ToJsonString());
 
         await _harness.Bus.Publish(new WelcomeEmailSentIntegrationEvent
         {
@@ -112,10 +101,6 @@ public class UserRegistrationSagaTests : IAsyncLifetime
             Email = "metadata@example.com"
         }, cancellationToken: CancellationToken.None);
 
-        (await _harness.Published.Any<InitializeUserProfileIntegrationCommand>(
-                x => x.Context.Message.Metadata?["campaign"]?.GetValue<string>() == "autumn",
-                TestContext.Current.CancellationToken))
-            .Should().BeTrue();
     }
 
     [Fact]

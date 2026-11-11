@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
+using Account.Domain.DTOs;
 using Account.Domain.Events;
 using Account.Domain.Models;
 using Ardalis.GuardClauses;
@@ -21,7 +22,6 @@ public class AppUser : AggregateRoot
     public string? PasswordHash { get; set; } = "";
 
     public string? ProviderName { get; set; } = "my-corporate-ad"; //Google, Aple, etc.
-    public string? MetadataJson { get; set; }
     public bool IsBlocked { get; set; }
     public DateTime CreatedAt { get; init; }
     public DateTime? FirstLoginAt { get; set; }
@@ -65,7 +65,6 @@ public class AppUser : AggregateRoot
             ReferralCode = GenerateReadableCode(),
             ReferrerId = createParams.ReferrerId,
             ProviderName = createParams.ProviderName,
-            MetadataJson = createParams.Metadata?.ToJsonString(),
             EmailConfirmed = createParams.EmailConfirmed,
             EncryptedTwoFactorSecret = Convert.ToBase64String(KeyGeneration.GenerateRandomKey(20)),
             CreatedAt = DateTime.UtcNow
@@ -80,7 +79,7 @@ public class AppUser : AggregateRoot
             
             
             createParams.IpAddress,
-            createParams.UserAgent, createParams.Metadata));
+            createParams.UserAgent));
         return user;
     }
 

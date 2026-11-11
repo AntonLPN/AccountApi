@@ -20,7 +20,6 @@ public class AccountInfoHandlerTests
             .ReturnsAsync(new AppUser
             {
                 Email = "type@example.com",
-                MetadataJson = """{"Type":"Partner"}"""
             });
         var handler = new AccountInfoHandler(
             Mock.Of<ILogger<AccountInfoHandler>>(),
@@ -29,7 +28,6 @@ public class AccountInfoHandlerTests
         var result = await handler.Handle(new AccountInfoCommand("type@example.com"), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("Partner", result.Value.Type);
     }
 
     [Fact]
@@ -43,7 +41,6 @@ public class AccountInfoHandlerTests
             .ReturnsAsync(new AppUser
             {
                 Email = "type@example.com",
-                MetadataJson = """{"source":"registration-form"}"""
             });
         var handler = new AccountInfoHandler(
             Mock.Of<ILogger<AccountInfoHandler>>(),
@@ -52,6 +49,5 @@ public class AccountInfoHandlerTests
         var result = await handler.Handle(new AccountInfoCommand("type@example.com"), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("Role", result.Value.Type);
     }
 }

@@ -19,6 +19,4 @@ public class AccountInfoResult
     [JsonPropertyName("createdAt")] public DateTime CreatedAt { get; set; }
 
     [JsonPropertyName("lastLoginAt")] public DateTime? LastLoginAt { get; set; }
-    [JsonPropertyName("type")] public string Type { get; set; } = "Role";
-    [JsonPropertyName("metadata")] public string Metadata { get; set; } = "";
 }

@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<LogoutAudit> LogoutAudits { get; set; } = null!;
 
     public DbSet<OtpSessions> OptSessions { get; set; } = null!;
+
     //Sagas
     public DbSet<UserRegistrationSagaState> UserRegistrationSagaStates { get; set; } = null!;
     public DbSet<TwoFactorSagaState> TwoFactorSagaStates { get; set; } = null!;
@@ -48,7 +49,6 @@ public class AppDbContext : DbContext
                 .IsRequired();
             entity.Property(e => e.ReferrerId).HasMaxLength(255).HasColumnName("ReferrerId").IsUnicode();
             entity.Property(e => e.ProviderName).HasMaxLength(60).HasColumnName("ProviderName").IsUnicode();
-            entity.Property(e => e.MetadataJson).HasColumnType("longtext").HasColumnName("MetadataJson");
             entity.Property(e => e.IsBlocked).HasColumnName("IsBlocked").HasDefaultValue(false);
             entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt");
             entity.Property(e => e.FirstLoginAt).HasColumnName("FirstLoginAt");
@@ -57,7 +57,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.IsDeleted).HasColumnName("IsDeleted").HasDefaultValue(false);
 
             entity.HasIndex(u => u.Email).IsUnique().HasDatabaseName("UX_AppUser_Email");
-            entity.HasIndex(u=>u.PhoneNumber).IsUnique().HasDatabaseName("UX_AppUser_PhoneNumber");
+            entity.HasIndex(u => u.PhoneNumber).IsUnique().HasDatabaseName("UX_AppUser_PhoneNumber");
         });
 
         builder.Entity<ApiKey>(entity =>
@@ -76,7 +76,7 @@ public class AppDbContext : DbContext
                 .WithMany(u => u.ApiKeys)
                 .HasForeignKey(a => a.UserId)
                 .HasConstraintName("FK_AppUser_ApiKeys");
-            
+
             entity.HasIndex(a => a.HashApiKey)
                 .IsUnique()
                 .HasDatabaseName("UX_ApiKey_Key");
@@ -90,7 +90,6 @@ public class AppDbContext : DbContext
             entity.Property(x => x.UserId).HasMaxLength(255);
             entity.Property(x => x.Email).HasMaxLength(255).HasColumnName("Email").IsUnicode();
             entity.Property(x => x.PhoneNumber).HasMaxLength(20).HasColumnName("PhoneNumber").IsUnicode();
-            entity.Property(x => x.MetadataJson).HasColumnType("longtext").HasColumnName("MetadataJson");
             entity.Property(x => x.ApiKey).HasMaxLength(255).HasColumnName("ApiKey").IsUnicode();
             entity.Property(x => x.CreatedAt).HasColumnName("CreatedAt");
             entity.Property(x => x.UpdatedAt).HasColumnName("UpdatedAt");
@@ -99,7 +98,7 @@ public class AppDbContext : DbContext
             entity.Property(x => x.FailureReason).HasMaxLength(255).HasColumnName("FailureReason").IsUnicode();
             entity.HasIndex(x => x.UserId);
         });
-        
+
         builder.Entity<LoginAudit>(entity =>
         {
             entity.HasKey(a => a.Id).HasName("PK_LoginAudit");
@@ -110,13 +109,13 @@ public class AppDbContext : DbContext
             entity.Property(a => a.IsSuspicious).HasColumnName("IsSuspicious");
             entity.Property(a => a.LoggedInAt).HasColumnName("LoggedInAt");
             entity.HasIndex(a => a.UserId);
-            
+
             entity.HasOne(a => a.AppUser)
                 .WithMany(u => u.LoginAudits)
                 .HasForeignKey(a => a.UserId)
                 .HasConstraintName("FK_AppUser_LoginAudits");
         });
-        
+
         builder.Entity<TwoFactorSagaState>(entity =>
         {
             entity.HasKey(s => s.CorrelationId);
@@ -142,13 +141,13 @@ public class AppDbContext : DbContext
             entity.Property(a => a.UserAgent).HasMaxLength(512).HasColumnName("UserAgent").IsUnicode();
             entity.Property(a => a.LoggedOutAt).HasColumnName("LoggedOutAt");
             entity.HasIndex(a => a.UserId);
-            
+
             entity.HasOne(a => a.AppUser)
                 .WithMany(u => u.LogoutAudits)
                 .HasForeignKey(a => a.UserId)
                 .HasConstraintName("FK_AppUser_LogoutAudits");
         });
-        
+
         builder.Entity<OtpSessions>(entity =>
         {
             entity.HasKey(a => a.Id).HasName("PK_OptSessions");
@@ -159,11 +158,11 @@ public class AppDbContext : DbContext
             entity.Property(a => a.CreatedAt).HasColumnName("CreatedAt");
             entity.Property(a => a.ExpiresAt).HasColumnName("ExpiresAt");
             entity.Property(a => a.UsedAt).HasColumnName("UsedAt");
-      
+
             entity.HasOne(a => a.AppUser).WithMany(u => u.OtpSessions)
                 .HasForeignKey(a => a.UserId)
                 .HasConstraintName("FK_AppUser_OtpSessions");
-            
+
             entity.HasIndex(a => a.UserId)
                 .HasDatabaseName("UX_OtpSessions_ActiveUserId");
         });

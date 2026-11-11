@@ -40,7 +40,6 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                 {
                     context.Saga.UserId = context.Message.UserId;
                     context.Saga.Email = context.Message.Email;
-                    context.Saga.MetadataJson = context.Message.Metadata?.ToJsonString();
                     context.Saga.CreatedAt = DateTime.UtcNow;
                     context.Saga.UpdatedAt = DateTime.UtcNow;
                     logger.LogInformation("Saga registration started for UserId={UserId}", context.Message.UserId);
@@ -50,7 +49,6 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                         CorrelationId = context.Saga.CorrelationId,
                         UserId = context.Message.UserId,
                         Email = context.Message.Email,
-                        Metadata = ReadMetadata(context.Saga.MetadataJson)
                     }
                 )
                 .Publish(context =>
@@ -63,7 +61,6 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                         IsEmailConfirmed = context.Message.IsEmailConfirmed,
                         Name = context.Message.Name,
                         Surname = context.Message.Surname,
-                        Metadata = ReadMetadata(context.Saga.MetadataJson)
                     })
                 .TransitionTo(AwaitingWelcomeEmailSent));
         During(AwaitingWelcomeEmailSent,
@@ -77,7 +74,6 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                     CorrelationId = context.Saga.CorrelationId,
                     UserId = context.Saga.UserId,
                     Email = context.Saga.Email,
-                    Metadata = ReadMetadata(context.Saga.MetadataJson)
                 })
                 .TransitionTo(AwaitingProfileInitialization));
         During(AwaitingProfileInitialization,
@@ -99,8 +95,4 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                 })
                 .TransitionTo(RegistrationFailed));
     }
-
-    private static JsonObject? ReadMetadata(string? metadataJson)
-        => metadataJson is null ? null : JsonNode.Parse(metadataJson) as JsonObject
-           ?? throw new JsonException("Registration metadata must be a JSON object.");
 }

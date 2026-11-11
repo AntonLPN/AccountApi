@@ -1,3 +1,4 @@
+using Account.Domain.DTOs;
 using Account.Domain.Entities;
 using Account.Domain.Interfaces;
 using Account.Domain.Models;
@@ -24,7 +25,7 @@ public class UserRegistrationCoordinator(
         if (string.IsNullOrEmpty(normalizedPhone))
             return Result<RegisterUserResult>.Invalid(new ValidationError("PhoneNumber",
                 "Phone number parse error. Please check the format and try again."));
-        
+
         await using var tx = await unitOfWork.BeginTransactionAsync(ct);
         try
         {
@@ -44,8 +45,7 @@ public class UserRegistrationCoordinator(
                 request.RegisterCommand.EmailConfirmed,
                 request.RegisterCommand.Name,
                 request.RegisterCommand.Surname,
-                nameof(request.RegisterCommand.Provider),
-                request.RegisterCommand.Metadata
+                nameof(request.RegisterCommand.Provider)
             ));
             await userRepository.AddAsync(user, ct);
             await unitOfWork.SaveChangesAsync(ct);
