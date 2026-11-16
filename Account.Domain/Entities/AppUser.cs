@@ -159,9 +159,9 @@ public class AppUser : AggregateRoot
 
     public enum LanguageType
     {
-        EN,
-        UA,
-        RU
+        en,
+        ua,
+        ru
     }
 
     private void EnsureActiveAccount()

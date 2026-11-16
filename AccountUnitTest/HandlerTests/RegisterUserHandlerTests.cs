@@ -35,7 +35,7 @@ public class RegisterUserHandlerTests
         string phone = "+30961112233",
         JsonObject? metadata = null)
         => new(provider, email, emailConfirmed, password, name, surname, referrerCode, ipAddress, userAgent, phone,
-            AppUser.LanguageType.EN);
+            AppUser.LanguageType.en);
 
     private void SetupUserByEmail(AppUser? user)
         => _userRepository

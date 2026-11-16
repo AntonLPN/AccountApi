@@ -34,9 +34,9 @@ public class UserCreateDomainEventHandler(
             Surname = notification.Surname,
             Language = notification.Language switch
             {
-                AppUser.LanguageType.EN => Contracts.Common.LanguageType.EN,
-                AppUser.LanguageType.UA => Contracts.Common.LanguageType.UA,
-                AppUser.LanguageType.RU => Contracts.Common.LanguageType.RU,
+                AppUser.LanguageType.en => Contracts.Common.LanguageType.en,
+                AppUser.LanguageType.ua => Contracts.Common.LanguageType.ua,
+                AppUser.LanguageType.ru => Contracts.Common.LanguageType.ru,
                 _ => throw new ArgumentOutOfRangeException(nameof(notification.Language))
             }
         }, cancellationToken);

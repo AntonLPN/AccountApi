@@ -25,7 +25,7 @@ public class ProviderRegisterHandlerTests
         AuthProvider provider = AuthProvider.Google,
         string? ipAddress = "127.0.0.1",
         string? userAgent = "userAgent",
-        AppUser.LanguageType la = AppUser.LanguageType.EN)
+        AppUser.LanguageType la = AppUser.LanguageType.en)
         => new(providerToken, referrerCode, provider, ipAddress, userAgent, la);
 
     private void SetupUserByEmail(AppUser? user)
