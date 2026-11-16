@@ -30,11 +30,12 @@ public class RegisterUserHandlerTests
         string referrerCode = "REF123",
         string? ipAddress = "127.0.0.1",
         string? userAgent = "userAgent",
-        string? name = "TestName",
-        string? surname = "TestSurname",
+        string name = "TestName",
+        string surname = "TestSurname",
         string phone = "+30961112233",
         JsonObject? metadata = null)
-        => new(provider, email, emailConfirmed, password, name, surname, referrerCode, ipAddress, userAgent, phone);
+        => new(provider, email, emailConfirmed, password, name, surname, referrerCode, ipAddress, userAgent, phone,
+            AppUser.LanguageType.EN);
 
     private void SetupUserByEmail(AppUser? user)
         => _userRepository

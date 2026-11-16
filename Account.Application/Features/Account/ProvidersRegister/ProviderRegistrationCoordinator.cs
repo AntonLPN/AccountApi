@@ -35,7 +35,8 @@ public class ProviderRegistrationCoordinator(
         {
             var whoInvited = await userRepository.FirstOrDefaultAsync(
                 new UserByReferralCodeSpec(request.ReferrerCode), ct);
-            var user = AppUser.Create(new AppUserCreateParams(
+            
+            var user = AppUser.Create(new AppUserCreateParams(request.Language,
                 userId, email, "", null, whoInvited?.Id,
                 request.IpAddress, request.UserAgent, true, nameof(AuthProvider.Google)));
             await userRepository.AddAsync(user, ct);

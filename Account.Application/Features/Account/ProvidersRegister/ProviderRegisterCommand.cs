@@ -1,3 +1,4 @@
+using Account.Domain.Entities;
 using Account.Domain.Enums;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
@@ -9,5 +10,6 @@ public record ProviderRegisterCommand(
     string? ReferrerCode,
     AuthProvider Provider,
     string? IpAddress,
-    string? UserAgent)
+    string? UserAgent,
+    AppUser.LanguageType Language)
     : ICommand<Result<ProviderRegisterResult>>;

@@ -35,6 +35,7 @@ public class UserRegistrationCoordinator(
 #pragma warning restore CS8604 // Possible null reference argument.
             var passwordHash = cryptographyService.Hash(request.RegisterCommand.Password);
             var user = AppUser.Create(new AppUserCreateParams(
+                request.RegisterCommand.Language,
                 request.UserId,
                 normalizedEmail,
                 normalizedPhone,

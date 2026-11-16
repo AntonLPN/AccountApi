@@ -61,6 +61,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                         IsEmailConfirmed = context.Message.IsEmailConfirmed,
                         Name = context.Message.Name,
                         Surname = context.Message.Surname,
+                        Language = context.Message.Language
                     })
                 .TransitionTo(AwaitingWelcomeEmailSent));
         During(AwaitingWelcomeEmailSent,

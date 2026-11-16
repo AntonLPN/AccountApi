@@ -24,8 +24,9 @@ public class ProviderRegisterHandlerTests
         string referrerCode = "REF123",
         AuthProvider provider = AuthProvider.Google,
         string? ipAddress = "127.0.0.1",
-        string? userAgent = "userAgent")
-        => new(providerToken, referrerCode, provider, ipAddress, userAgent);
+        string? userAgent = "userAgent",
+        AppUser.LanguageType la = AppUser.LanguageType.EN)
+        => new(providerToken, referrerCode, provider, ipAddress, userAgent, la);
 
     private void SetupUserByEmail(AppUser? user)
         => _userRepository
@@ -81,7 +82,8 @@ public class ProviderRegisterHandlerTests
         await sut.Handle(cmd, CancellationToken.None);
 
         _coordinator.Verify(
-            x => x.RegisterAsync(It.IsAny<ProviderRegisterCommand>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            x => x.RegisterAsync(It.IsAny<ProviderRegisterCommand>(), It.IsAny<string>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -135,7 +137,8 @@ public class ProviderRegisterHandlerTests
         await sut.Handle(cmd, CancellationToken.None);
 
         _coordinator.Verify(
-            x => x.RegisterAsync(It.IsAny<ProviderRegisterCommand>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            x => x.RegisterAsync(It.IsAny<ProviderRegisterCommand>(), It.IsAny<string>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
     }
 

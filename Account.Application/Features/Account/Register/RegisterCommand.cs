@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Account.Domain.Entities;
 using Account.Domain.Enums;
 using Ardalis.Result;
 using Ardalis.SharedKernel;
@@ -16,5 +17,6 @@ public record RegisterCommand(
     string? ReferrerCode,
     string? IpAddress,
     string? UserAgent,
-    string PhoneNumber)
+    string PhoneNumber,
+    AppUser.LanguageType Language)
     : ICommand<Result<RegisterUserResult>>;

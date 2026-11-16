@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using Account.Domain.Entities;
 
 namespace AccountApi.Models.RequestModels;
 
@@ -12,8 +13,8 @@ public sealed class RegisterModelRequest
     [JsonPropertyName("email")]
     public required string Email { get; set; }
 
-    [JsonPropertyName("name")] public string? Name { get; set; }
-    [JsonPropertyName("surname")] public string? Surname { get; set; }
+    [JsonPropertyName("name")] public string Name { get; set; } = "";
+    [JsonPropertyName("surname")] public string Surname { get; set; } = "";
 
     [JsonPropertyName("phoneNumber")]
     [Phone]
@@ -28,4 +29,5 @@ public sealed class RegisterModelRequest
     public required string Password { get; set; }
 
     [JsonPropertyName("referralCode")] public string? ReferralCode { get; set; }
+    [JsonPropertyName("language")] public AppUser.LanguageType Language { get; set; }
 }

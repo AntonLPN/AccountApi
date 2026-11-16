@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
+using Account.Contracts.Common;
 
 namespace Account.Contracts.Events.External;
 
@@ -16,5 +17,5 @@ public class UserRegisteredIntegrationEvent
     public bool IsEmailConfirmed { get; set; }
     public string? Name { get; set; }
     public string? Surname { get; set; }
-    
+    public LanguageType Language { get; set; }
 }

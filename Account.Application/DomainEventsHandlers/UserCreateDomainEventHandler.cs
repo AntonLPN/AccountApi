@@ -1,5 +1,4 @@
 using Account.Contracts.Saga.UserRegisterSagaEvents.Events;
-using System.Text.Json.Nodes;
 using Account.Domain.DTOs;
 using Account.Domain.Entities;
 using Account.Domain.Events;
@@ -33,6 +32,13 @@ public class UserCreateDomainEventHandler(
             PhoneNumber = notification.PhoneNumber,
             Name = notification.Name,
             Surname = notification.Surname,
+            Language = notification.Language switch
+            {
+                AppUser.LanguageType.EN => Contracts.Common.LanguageType.EN,
+                AppUser.LanguageType.UA => Contracts.Common.LanguageType.UA,
+                AppUser.LanguageType.RU => Contracts.Common.LanguageType.RU,
+                _ => throw new ArgumentOutOfRangeException(nameof(notification.Language))
+            }
         }, cancellationToken);
     }
 }

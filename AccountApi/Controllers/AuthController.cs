@@ -47,7 +47,8 @@ public class AuthController(IMediator mediator) : ControllerBase
             model.ReferralCode,
             ipAddress,
             userAgent,
-            model.PhoneNumber);
+            model.PhoneNumber,
+            model.Language);
         var res = await mediator.Send(regCmd);
         if (res.IsSuccess)
             return Ok(res.Value);
@@ -65,7 +66,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         var userAgent = Request.Headers.UserAgent.ToString();
 
         var regCmd = new ProviderRegisterCommand(model.Token, model.ReferralCode, AuthProvider.Google, ipAddress,
-            userAgent);
+            userAgent, model.Language);
         var res = await mediator.Send(regCmd);
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
@@ -175,7 +176,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         var res = await mediator.Send(cmd);
         if (!res.IsSuccess)
             return BadRequest(res.Errors);
-        
+
         res.Value?.Token?.RefreshToken = null;
         return Ok(res.Value);
     }

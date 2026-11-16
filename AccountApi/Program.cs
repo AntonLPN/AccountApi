@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Account.Infrastructure.HttpClients;
 using Account.Infrastructure.Persistence;
 using AccountApi.Authorization;
@@ -25,6 +26,9 @@ builder.Services.AddLifeTimeServices();
 builder.Services.AddMediatorServices();
 builder.Services.AddObservabilityMetrics(builder.Configuration);
 builder.Services.AddCorsPolicy(builder.Configuration);
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+        o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false)));
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-CSRF-TOKEN";

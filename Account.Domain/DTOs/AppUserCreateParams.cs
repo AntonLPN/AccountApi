@@ -1,6 +1,9 @@
+using Account.Domain.Entities;
+
 namespace Account.Domain.DTOs;
 
 public sealed record AppUserCreateParams(
+    AppUser.LanguageType Language,
     string Id,
     string Email,
     string PhoneNumber,

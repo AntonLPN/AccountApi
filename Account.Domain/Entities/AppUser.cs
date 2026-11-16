@@ -20,6 +20,7 @@ public class AppUser : AggregateRoot
     public bool IsTwoFactorEnabled { get; set; }
     public string? EncryptedTwoFactorSecret { get; init; }
     public string? PasswordHash { get; set; } = "";
+    public LanguageType Language { get; set; }
 
     public string? ProviderName { get; set; } = "my-corporate-ad"; //Google, Aple, etc.
     public bool IsBlocked { get; set; }
@@ -56,6 +57,7 @@ public class AppUser : AggregateRoot
 
         var user = new AppUser
         {
+            Language = createParams.Language,
             Id = Guard.Against.Default(Guid.Parse(createParams.Id), nameof(createParams.Id)),
             Email = email,
             Name = createParams.Name,
@@ -76,10 +78,9 @@ public class AppUser : AggregateRoot
             user.EmailConfirmed,
             user.Name,
             user.Surname,
-            
-            
             createParams.IpAddress,
-            createParams.UserAgent));
+            createParams.UserAgent,
+            user.Language));
         return user;
     }
 
@@ -156,6 +157,12 @@ public class AppUser : AggregateRoot
 
     #endregion
 
+    public enum LanguageType
+    {
+        EN,
+        UA,
+        RU
+    }
 
     private void EnsureActiveAccount()
     {

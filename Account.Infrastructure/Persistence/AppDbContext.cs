@@ -55,6 +55,10 @@ public class AppDbContext : DbContext
             entity.Property(e => e.LastLoginAt).HasColumnName("LastLoginAt");
             entity.Property(e => e.LastLogoutAt).HasColumnName("LastLogoutAt");
             entity.Property(e => e.IsDeleted).HasColumnName("IsDeleted").HasDefaultValue(false);
+            entity.Property(x => x.Language).HasConversion(
+                status => status.ToString().ToLowerInvariant(),
+                value => Enum.Parse<AppUser.LanguageType>(value, ignoreCase: true));
+
 
             entity.HasIndex(u => u.Email).IsUnique().HasDatabaseName("UX_AppUser_Email");
             entity.HasIndex(u => u.PhoneNumber).IsUnique().HasDatabaseName("UX_AppUser_PhoneNumber");
