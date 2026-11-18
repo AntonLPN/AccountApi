@@ -32,16 +32,7 @@ public static class AuthenticationExtensions
                                    throw new InvalidOperationException($"ValidAudience for keycloak is missing.");
                 options.RequireHttpsMetadata = allowInsecureHttp;
                 options.MapInboundClaims = false;
-// #if DEBUG
-//                 options.Events = new JwtBearerEvents
-//                 {
-//                     OnAuthenticationFailed = ctx =>
-//                     {
-//                         Console.WriteLine($"Bearer auth FAILED: {ctx.Exception.Message}");
-//                         return Task.CompletedTask;
-//                     }
-//                 };
-// #endif
+
             })
             //PreAuth - second authentication scheme, for /verify-otp
             .AddJwtBearer(PRE_AUTH_SCHEME, options =>
@@ -58,16 +49,7 @@ public static class AuthenticationExtensions
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(preAuthKey)),
                     ClockSkew = TimeSpan.FromMinutes(5)
                 };
-// #if DEBUG
-//                 options.Events = new JwtBearerEvents
-//                 {
-//                     OnAuthenticationFailed = ctx =>
-//                     {
-//                         Console.WriteLine($"PreAuth FAILED: {ctx.Exception.Message}");
-//                         return Task.CompletedTask;
-//                     }
-//                 };
-// #endif
+
             })
             .AddScheme<ApiKeyAuthSchemeOptions, ApiKeyAuthHandler>(AuthPolicies.ApiKeyOnly, _ => { });
 
