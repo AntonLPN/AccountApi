@@ -1,114 +1,65 @@
 services:
   # ---------------------------------------------------------------------------
-  # Keycloak + Postgres
-  # ---------------------------------------------------------------------------
-  keycloak-db:
-    image: postgres:16-alpine
-    container_name: keycloak-db
-    environment:
-      POSTGRES_DB: keycloak
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: keycloak
-    ports:
-      - "5432:5432"
-    volumes:
-      - keycloak-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U keycloak" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - account-net
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.2
-    container_name: keycloak
-    command: start-dev --import-realm
-    environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: keycloak
-      KC_HOSTNAME_STRICT: "false"
-      KC_HTTP_ENABLED: "true"
-      KC_HEALTH_ENABLED: "true"
-      KC_FEATURES: "token-exchange"
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./deploy/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
-    healthcheck:
-      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q '200 OK'" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    depends_on:
-      keycloak-db:
-        condition: service_healthy
-    networks:
-      - account-net
- 
-
-
-  # ---------------------------------------------------------------------------
-  # Account API
-  # ---------------------------------------------------------------------------
-  #  api:
-  #    build:
-  #      context: .
-  #      dockerfile: Dockerfile
-  #    container_name: account-api
-  #    environment:
-  #      ASPNETCORE_ENVIRONMENT: Development
-  #      ASPNETCORE_URLS: "http://+:8080"
-  #      DbConfig__ConnectionString: "server=mysql;port=3306;user=root;password=123456;database=AccountDb;"
-  #      Authentication__Schemes__Bearer__Authority: "http://keycloak:8080/realms/account-api"
-  #      Authentication__Schemes__Bearer__MetadataAddress: "http://keycloak:8080/realms/account-api/.well-known/openid-configuration"
-  #      Authentication__Schemes__Bearer__ValidAudience: "account-api"
-  #      KeycloakAdminClient__BaseUrl: "http://keycloak:8080/"
-  #      KeycloakAdminClient__Realm: "account-api"
-  #      KeycloakAdminClient__ClientId: "account-api"
-  #      KeycloakAdminClient__ClientSecret: "l3OVF0TX1w9VME5rFrlqlDayfCUMt8ZL"
-  #      Messaging__UseRabbitMq: "true"
-  #      Messaging__RabbitMq__Host: "rabbitmq"
-  #      RABBITMQ_HOST: "rabbitmq"
-  #      ConnectionStrings__Redis: "redis:6379"
-  #      # Отправка логов в общий Seq
-  #      Seq__ServerUrl: "http://seq:5341"
-  #    ports:
-  #      - "5001:8080"
-  #    depends_on:
-  #      rabbitmq:
-  #        condition: service_healthy
-  #      keycloak:
-  #        condition: service_healthy
-  #    networks:
-  #      - account-net
-  #      - observability-net # Shared network includes MySQL and observability services.
-
-  # ---------------------------------------------------------------------------
   # Papercut (SMTP Dev Server)
   # UI: http://localhost:8082
   # ---------------------------------------------------------------------------
   papercut:
-    image: jijiechen/papercut:latest
+    image: rnwood/smtp4dev:latest
     container_name: dev-papercut
-    platform: linux/amd64
     ports:
       - "3025:25"
-      - "8082:37408"
+      - "8082:80"
     networks:
       - account-net
-
+  # ---------------------------------------------------------------------------
+  # Account API
+  # ---------------------------------------------------------------------------
+  api:
+      build:
+        context: .
+        dockerfile: AccountApi/Dockerfile
+      container_name: account-api
+      environment:
+        ASPNETCORE_ENVIRONMENT: Development
+        ASPNETCORE_URLS: "http://+:8080"
+        DbConfig__ConnectionString: "server=mysql;port=3306;user=root;password=123456;database=AccountDb;"
+        Authentication__Schemes__Bearer__Authority: "http://keycloak:8080/realms/account-api"
+        Authentication__Schemes__Bearer__MetadataAddress: "http://keycloak:8080/realms/account-api/.well-known/openid-configuration"
+        Authentication__Schemes__Bearer__ValidAudience: "account-api"
+        KeycloakAdminClient__BaseUrl: "http://keycloak:8080/"
+        KeycloakAdminClient__Realm: "account-api"
+        KeycloakAdminClient__ClientId: "account-api"
+        KeycloakAdminClient__ClientSecret: "l3OVF0TX1w9VME5rFrlqlDayfCUMt8ZL"
+        Messaging__UseRabbitMq: "true"
+        Messaging__RabbitMq__Host: "rabbitmq"
+        RABBITMQ_HOST: "rabbitmq"
+        Messaging__Email__OwnerName: "Account API Local Dev"
+        Messaging__Email__Email: "no-reply@account-api.local"
+        Messaging__Email__HostName: "papercut"
+        Messaging__Email__Port: "25"
+        Messaging__Email__EnableSsl: "false"
+        Redis__Host: "redis"
+        Redis__Port: "6379"
+        Redis__User: ""
+        Redis__Password: ""
+        Redis__Ssl: "false"
+        Redis__CacheStorageTime: "30"
+        # Отправка логов в общий Seq
+        Seq__ServerUrl: "http://seq:5341"
+      ports:
+        - "5001:8080"
+      volumes:
+        - aspnet-data-protection-keys:/home/app/.aspnet/DataProtection-Keys
+ 
+      networks:
+        - account-net
+        - observability-net # Shared network includes MySQL and observability services.
 networks:
   account-net:
     driver: bridge
   observability-net:
     external: true
     name: observability-net
-
+  
 volumes:
-  keycloak-db-data:
+    aspnet-data-protection-keys:
