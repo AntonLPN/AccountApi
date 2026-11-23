@@ -14,14 +14,24 @@ services:
   # ---------------------------------------------------------------------------
   # Account API
   # ---------------------------------------------------------------------------
+  api-data-protection-init:
+    image: busybox:1.36
+    command: ["chown", "-R", "1654:1654", "/keys"]
+    volumes:
+      - aspnet-data-protection-keys:/keys
+
   api:
       build:
         context: .
         dockerfile: AccountApi/Dockerfile
       container_name: account-api
+      depends_on:
+        api-data-protection-init:
+          condition: service_completed_successfully
       environment:
         ASPNETCORE_ENVIRONMENT: Development
         ASPNETCORE_URLS: "http://+:8080"
+        Serilog__MinimumLevel__Default: Warning
         DbConfig__ConnectionString: "server=mysql;port=3306;user=root;password=123456;database=AccountDb;"
         Authentication__Schemes__Bearer__Authority: "http://keycloak:8080/realms/account-api"
         Authentication__Schemes__Bearer__MetadataAddress: "http://keycloak:8080/realms/account-api/.well-known/openid-configuration"
