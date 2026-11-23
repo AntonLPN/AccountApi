@@ -125,20 +125,6 @@ services:
     networks:
       - observability-net
 
-  tempo:
-    image: grafana/tempo:2.7.2
-    restart: unless-stopped
-    command: [ "-config.file=/etc/tempo.yaml" ]
-    ports:
-      - "3200:3200"
-      - "4317:4317"
-      - "4318:4318"
-    volumes:
-      - ./deploy/tempo/tempo.yaml:/etc/tempo.yaml:ro
-      - tempo-data:/var/tempo
-    networks:
-      - observability-net
-
   # ---------------------------------------------------------------------------
   # Redis
   # ---------------------------------------------------------------------------
