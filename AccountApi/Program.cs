@@ -115,7 +115,10 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapPrometheusScrapingEndpoint();
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors("CorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
