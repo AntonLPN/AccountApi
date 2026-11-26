@@ -42,6 +42,7 @@ public class UserRegistrationSaga : MassTransitStateMachine<UserRegistrationSaga
                     context.Saga.Email = context.Message.Email;
                     context.Saga.CreatedAt = DateTime.UtcNow;
                     context.Saga.UpdatedAt = DateTime.UtcNow;
+                    context.Saga.PhoneNumber = context.Message.PhoneNumber;
                     logger.LogInformation("Saga registration started for UserId={UserId}", context.Message.UserId);
                 })
                 .Publish(context => new SendWelcomeEmailIntegrationCommand

@@ -25,6 +25,5 @@ public class TwoFactorSagaDefinition : SagaDefinition<TwoFactorSagaState>
             cb.ResetInterval = TimeSpan.FromSeconds(30);
         });
         endpointConfigurator.UseRateLimit(50, TimeSpan.FromSeconds(1));
-        endpointConfigurator.UseEntityFrameworkOutbox<AppDbContext>(context);
     }
 }

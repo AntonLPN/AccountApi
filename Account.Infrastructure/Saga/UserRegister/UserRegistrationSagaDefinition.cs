@@ -28,6 +28,5 @@ public class UserRegistrationSagaDefinition : SagaDefinition<UserRegistrationSag
         });
         // 3. Rate Limiting (example: 50 messages per second)
         endpointConfigurator.UseRateLimit(50, TimeSpan.FromSeconds(1));
-        endpointConfigurator.UseEntityFrameworkOutbox<AppDbContext>(context);
     }
 }
